@@ -1,0 +1,132 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { routes } from "@/lib/routes";
+import { formatDateLong } from "@/lib/format";
+import { getSession } from "@/lib/demo-session";
+import { getNotificationPreferences } from "@/lib/data/preferences";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { SectionHeader } from "@/components/layout/SectionHeader";
+import { Icon, type IconName } from "@/components/ui/Icon";
+import { NotificationPreferencesForm } from "@/components/account/NotificationPreferencesForm";
+import { ProfileForm } from "@/components/account/ProfileForm";
+
+export const metadata: Metadata = {
+  title: "Profil",
+  description: "Tes infos (nom, programme, année, photo) et ce que tu veux recevoir, dans ton espace ou par mail.",
+};
+
+/** Where each piece of the profile shows up on the site: the margin note. */
+const WHERE_IT_SHOWS: Array<{ icon: IconName; what: string; where: string }> = [
+  {
+    icon: "user",
+    what: "Ton nom et ta photo",
+    where: "Dans le menu de ton compte, et sur chaque candidature que lit le bureau qui recrute.",
+  },
+  {
+    icon: "file",
+    what: "Ton programme et ton année",
+    where: "Sur tes candidatures, pour que le bureau sache qui il rencontre en entretien.",
+  },
+  {
+    icon: "mail",
+    what: "Ton adresse de l'école",
+    where: "Pour te connecter et recevoir les mails que tu choisis plus bas. Elle n'apparaît sur aucune page publique.",
+  },
+];
+
+/**
+ * Profil: "Tes infos" (name, programme, year, read-only school email, photo
+ * placeholder), then what the student wants to hear about, per kind and
+ * channel. In the margin: where each piece shows up, and the card. PHASE 1:
+ * both forms keep what was typed and say that nothing is stored.
+ */
+export default async function AccountProfilePage() {
+  const { user } = await getSession();
+  if (!user) return null;
+
+  const preferences = await getNotificationPreferences(user.id);
+  const card = user.memberCard;
+
+  return (
+    <>
+      <PageHeader
+        variant="document"
+        kicker="Mon espace"
+        title="Profil"
+        intro="Ce que les bureaux lisent quand tu candidates, et ce que tu veux recevoir : ici, par mail, ou les deux."
+        meta={
+          <>
+            <span className="break-all">{user.email}</span>
+            <span>{card ? `Carte n° ${card.number}` : "Pas encore cotisant·e"}</span>
+          </>
+        }
+      />
+
+      <div className="wrap grid gap-x-8 gap-y-16 lg:grid-cols-12">
+        <div className="flex min-w-0 flex-col gap-16 lg:col-span-8">
+          <section aria-labelledby="infos-titre">
+            <SectionHeader id="infos-titre" index="01" kicker="Qui tu es" title="Tes infos" />
+            <ProfileForm user={user} className="mt-8" />
+          </section>
+
+          <section aria-labelledby="recus-titre">
+            <SectionHeader
+              id="recus-titre"
+              index="02"
+              kicker="Notifications"
+              title="Ce que tu reçois"
+              description="Coche où tu veux être prévenu·e, sorte par sorte. Le reste, tu le verras en passant sur le site."
+            />
+            <NotificationPreferencesForm preferences={preferences} email={user.email} className="mt-6" />
+          </section>
+        </div>
+
+        <aside
+          aria-label="À savoir sur ton profil"
+          className="flex min-w-0 flex-col gap-10 lg:sticky lg:top-[calc(var(--header-h)+2rem)] lg:col-span-4 lg:col-start-9 lg:self-start"
+        >
+          <section aria-labelledby="visible-titre" className="border-t-2 border-fg pt-3">
+            <h2 id="visible-titre" className="type-label text-muted">
+              Où se voient tes infos
+            </h2>
+            <dl className="mt-2">
+              {WHERE_IT_SHOWS.map((row) => (
+                <div key={row.what} className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 border-b border-line py-4">
+                  <Icon name={row.icon} size={18} className="mt-0.5 text-accent-text" />
+                  <dt className="font-bold leading-snug">{row.what}</dt>
+                  <dd className="col-start-2 mt-1 type-small text-muted">{row.where}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          <section aria-labelledby="carte-profil-titre" className="border-t-2 border-fg pt-3">
+            <h2 id="carte-profil-titre" className="type-label text-muted">
+              Carte cotisante
+            </h2>
+            {card ? (
+              <p className="mt-3 type-small">
+                <span className="block font-mono text-[0.9375rem] font-bold">N° {card.number}</span>
+                <span className="text-muted">
+                  Saison {card.season}, valable jusqu&apos;au {formatDateLong(card.validUntil)}. À montrer à
+                  l&apos;entrée des soirées du BDE, avec une pièce d&apos;identité.
+                </span>
+              </p>
+            ) : (
+              <p className="mt-3 type-small text-muted">
+                Pas encore cotisant·e. La carte se prend auprès du BDE et s&apos;affiche ensuite dans ton espace.
+              </p>
+            )}
+            <Link
+              href={routes.account}
+              className="mt-4 inline-flex items-center gap-1.5 type-small font-bold hover:text-accent-text"
+            >
+              {card ? "Voir ma carte" : "Retour à mon espace"}
+              <Icon name="arrow-right" size={16} />
+            </Link>
+          </section>
+        </aside>
+      </div>
+    </>
+  );
+}

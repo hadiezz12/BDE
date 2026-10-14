@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vpc-dev",
+      "runtimeExecutable": "H:\\tools\\vpc-dev.cmd",
+      "runtimeArgs": [],
+      "port": 3020,
+      "autoPort": false
+    }
+  ]
+}

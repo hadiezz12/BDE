@@ -1,0 +1,613 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   VERY PINK CLUB — design tokens
+   --------------------------------------------------------------------------
+   Two materials, both taken from the supplied logo:
+   · the NEON SIGN (pink ring, palm, triangle, the event emblems) → night
+   · the STICKER PRINT (cartoon ink outline, wordmark keyline, cream tank
+     top) → paper
+   Plus a calm STUDIO surface for association management.
+
+   A surface is chosen with data-surface="night|paper|studio" on any element;
+   every component reads the semantic tokens below and adapts. Association
+   theming is data-accent="<AccentKey>" (closed palette, AA-checked).
+   ========================================================================== */
+
+@theme {
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* Raw brand palette (sampled from the logo files) — prefer semantic tokens. */
+  --color-ink: #0c0a0e;
+  --color-pink: #fa0479; /* wordmark sticker pink */
+  --color-panther: #f5226e; /* panther body */
+  --color-blush: #ffc6dc; /* muzzle / ears */
+  --color-cream: #fdf7e9; /* "I ♥ PANTIN" tank top */
+  --color-keyline: #f6edf0; /* wordmark white keyline */
+  --color-maroon: #3a0414;
+  --color-palm: #45f27a;
+  --color-triangle: #12d8f0;
+  --color-amber: #ffb81c; /* VSS / VDH — safety only */
+
+  --breakpoint-xs: 25rem;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-snap: cubic-bezier(0.3, 1.4, 0.5, 1);
+  --duration-fast: 140ms;
+  --duration-base: 240ms;
+  --duration-slow: 520ms;
+}
+
+/* Semantic tokens → Tailwind utilities (bg-bg, text-muted, border-line…). */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-raised: var(--bg-raised);
+  --color-sunken: var(--bg-sunken);
+  --color-inverse: var(--bg-inverse);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+  --color-on-inverse: var(--fg-inverse);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-text: var(--accent-text);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-assoc: var(--assoc);
+  --color-assoc-fg: var(--assoc-fg);
+  --color-assoc-text: var(--assoc-text);
+  --color-assoc-soft: var(--assoc-soft);
+}
+
+:root {
+  --gutter: clamp(1rem, 0.4rem + 2.8vw, 3rem);
+  --section: clamp(3.5rem, 1.8rem + 6.5vw, 8.5rem);
+  --header-h: 4rem;
+  --tabbar-h: 4.25rem;
+  --wrap: 90rem;
+}
+
+/* ---- Surfaces ----------------------------------------------------------- */
+
+:root,
+[data-surface="night"] {
+  --is-night: 1;
+  --bg: #0c0a0e;
+  --bg-raised: #16131a;
+  --bg-sunken: #08070a;
+  --bg-inverse: #fdf7e9;
+  --fg: #f7f1f4;
+  --fg-muted: #b9aeb5;
+  --fg-subtle: #8e838b;
+  --fg-inverse: #0c0a0e;
+  --line: rgb(247 241 244 / 0.13);
+  --line-strong: rgb(247 241 244 / 0.34);
+  --accent: #fa0479;
+  --accent-fg: #0c0a0e;
+  --accent-text: #ff3d9a;
+  --ok: #45f27a;
+  --warn: #ffb81c;
+  --danger: #ff6b7a;
+  --info: #12d8f0;
+  --focus: #12d8f0;
+  --sticker-line: #f6edf0;
+  --sticker-shadow: 0 0 0 0 transparent;
+  --btn-line: transparent;
+  --press-shadow: 0 0 0 1px var(--accent), 0 0 1.4rem -0.2rem rgb(250 4 121 / 0.6);
+  color-scheme: dark;
+}
+
+[data-surface="paper"] {
+  --is-night: 0;
+  --bg: #fdf7e9;
+  --bg-raised: #fffdf7;
+  --bg-sunken: #f3ead6;
+  --bg-inverse: #0c0a0e;
+  --fg: #0c0a0e;
+  --fg-muted: #4a4248;
+  --fg-subtle: #6b6168;
+  --fg-inverse: #fdf7e9;
+  --line: rgb(12 10 14 / 0.15);
+  --line-strong: #0c0a0e;
+  --accent: #fa0479;
+  --accent-fg: #0c0a0e;
+  --accent-text: #c8005e;
+  --ok: #0b7336;
+  --warn: #8a5a00;
+  --danger: #b8102a;
+  --info: #00697f;
+  --focus: #0c0a0e;
+  --sticker-line: #0c0a0e;
+  --sticker-shadow: 2px 2px 0 #0c0a0e;
+  --btn-line: #0c0a0e;
+  --press-shadow: 3px 3px 0 #0c0a0e;
+  color-scheme: light;
+}
+
+[data-surface="studio"] {
+  --is-night: 0;
+  --bg: #f5f3f0;
+  --bg-raised: #ffffff;
+  --bg-sunken: #ece8e3;
+  --bg-inverse: #141216;
+  --fg: #141216;
+  --fg-muted: #57505a;
+  --fg-subtle: #6f6872;
+  --fg-inverse: #f7f1f4;
+  --line: #e4dfd8;
+  --line-strong: #cbc3ba;
+  --accent: #fa0479;
+  --accent-fg: #0c0a0e;
+  --accent-text: #c8005e;
+  --ok: #0b7336;
+  --warn: #8a5a00;
+  --danger: #b8102a;
+  --info: #00697f;
+  --focus: #c8005e;
+  --sticker-line: #141216;
+  --sticker-shadow: none;
+  --btn-line: transparent;
+  --press-shadow: 0 2px 0 rgb(20 18 22 / 0.18);
+  color-scheme: light;
+}
+
+/* Painting a surface lives in the base layer so utilities (bg-*, text-*) can override it. */
+@layer base {
+  [data-surface] {
+    background-color: var(--bg);
+    color: var(--fg);
+  }
+}
+
+/* ---- Association accents ------------------------------------------------
+   --a-fill  : flat fill (stickers, buttons, rings); text on it is --a-fg
+   --a-night : accent used as text on night surfaces
+   --a-paper : accent used as text on paper / studio surfaces
+   Re-resolved on every surface *and* accent boundary, so an accent can sit
+   above or below a surface change and the text colour still passes AA. */
+
+[data-accent="rose"] { --a-fill: #fa0479; --a-fg: #0c0a0e; --a-night: #ff3d9a; --a-paper: #c8005e; }
+[data-accent="cyan"] { --a-fill: #12d8f0; --a-fg: #0c0a0e; --a-night: #12d8f0; --a-paper: #00697f; }
+[data-accent="violet"] { --a-fill: #b14cf0; --a-fg: #0c0a0e; --a-night: #c98bff; --a-paper: #7a1fb8; }
+[data-accent="vert"] { --a-fill: #3be36b; --a-fg: #0c0a0e; --a-night: #4bf07a; --a-paper: #0b7336; }
+[data-accent="or"] { --a-fill: #f5bc12; --a-fg: #0c0a0e; --a-night: #f5bc12; --a-paper: #855c00; }
+[data-accent="bleu"] { --a-fill: #3d8bff; --a-fg: #0c0a0e; --a-night: #6fa8ff; --a-paper: #1554c4; }
+[data-accent="orange"] { --a-fill: #ff8a1f; --a-fg: #0c0a0e; --a-night: #ff9a3d; --a-paper: #a44a00; }
+[data-accent="corail"] { --a-fill: #ff5a5f; --a-fg: #0c0a0e; --a-night: #ff7a7e; --a-paper: #b42332; }
+
+:root,
+[data-surface],
+[data-accent] {
+  --assoc: var(--a-fill, #fa0479);
+  --assoc-fg: var(--a-fg, #0c0a0e);
+  --assoc-text: color-mix(
+    in srgb,
+    var(--a-night, #ff3d9a) calc(var(--is-night) * 100%),
+    var(--a-paper, #c8005e)
+  );
+  --assoc-soft: color-mix(in srgb, var(--a-fill, #fa0479) 14%, transparent);
+  --assoc-glow: 0 0 0.35rem color-mix(in srgb, var(--a-fill, #fa0479) 80%, transparent),
+    0 0 1.6rem color-mix(in srgb, var(--a-fill, #fa0479) 45%, transparent);
+  /* Hover for accent-filled controls: neon halo on night, ink offset on paper. */
+  --assoc-press: 0 0 0 calc(var(--is-night) * 1px) var(--a-fill, #fa0479),
+    calc((1 - var(--is-night)) * 3px) calc((1 - var(--is-night)) * 3px) 0 #0c0a0e,
+    0 0 calc(var(--is-night) * 1.4rem) color-mix(in srgb, var(--a-fill, #fa0479) calc(var(--is-night) * 55%), transparent);
+}
+
+/* ---- Base ---------------------------------------------------------------- */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--header-h) + 1rem);
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    font-stretch: 100%;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ---- Typography -----------------------------------------------------------
+   One family (Archivo, width axis 62–125) does both the expanded display
+   voice of the maquette and condensed poster/tabloid type. Space Mono is
+   reserved for metadata: times, counts, codes. */
+
+@utility type-hero {
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: clamp(2.6rem, 0.9rem + 8.2vw, 9rem);
+  line-height: 0.86;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+}
+
+@utility type-display {
+  font-weight: 900;
+  font-stretch: 118%;
+  font-size: clamp(2.3rem, 1rem + 5.4vw, 6.25rem);
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+@utility type-poster {
+  font-weight: 850;
+  font-stretch: 70%;
+  font-size: clamp(2.2rem, 1rem + 4.8vw, 5.5rem);
+  line-height: 0.88;
+  text-transform: uppercase;
+}
+
+@utility type-title {
+  font-weight: 800;
+  font-stretch: 108%;
+  font-size: clamp(1.9rem, 1.1rem + 3vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: -0.012em;
+}
+
+@utility type-section {
+  font-weight: 850;
+  font-stretch: 115%;
+  font-size: clamp(1.35rem, 0.95rem + 1.7vw, 2.15rem);
+  line-height: 1.02;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+
+@utility type-headline {
+  font-weight: 800;
+  font-stretch: 74%;
+  font-size: clamp(1.55rem, 1rem + 2.2vw, 2.7rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+@utility type-card {
+  font-weight: 750;
+  font-stretch: 100%;
+  font-size: 1.1875rem;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+}
+
+@utility type-lead {
+  font-weight: 400;
+  font-size: clamp(1.08rem, 1rem + 0.4vw, 1.3rem);
+  line-height: 1.5;
+}
+
+@utility type-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+@utility type-small {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+@utility type-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@utility type-meta {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+@utility type-caption {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--fg-subtle);
+}
+
+@utility type-button {
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: 0.875rem;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+@utility type-nav {
+  font-weight: 700;
+  font-stretch: 108%;
+  font-size: 0.9375rem;
+  line-height: 1;
+}
+
+/* Calendar numerals: maximum condensed, tabular. */
+@utility type-numeral {
+  font-weight: 900;
+  font-stretch: 62%;
+  line-height: 0.8;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Underlined inline links inside running text. */
+@utility link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  transition: text-decoration-color var(--duration-fast) var(--ease-out);
+  &:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* ---- Token-backed effects (usable with hover:/focus: variants) ---------- */
+
+@utility shadow-press {
+  box-shadow: var(--press-shadow);
+}
+
+@utility shadow-assoc-press {
+  box-shadow: var(--assoc-press);
+}
+
+@utility shadow-assoc-glow {
+  box-shadow: var(--assoc-glow);
+}
+
+@utility shadow-sticker {
+  box-shadow: var(--sticker-shadow);
+}
+
+@utility border-btn-line {
+  border-color: var(--btn-line);
+}
+
+@utility border-sticker-line {
+  border-color: var(--sticker-line);
+}
+
+/* Focus ring on a wrapper whose real control is visually hidden (radio tiles). */
+@utility focus-ring-within {
+  &:has(:focus-visible) {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+/* ---- Layout ----------------------------------------------------------- */
+
+@utility wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+@utility wrap-text {
+  width: 100%;
+  max-width: 46rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+@utility py-section {
+  padding-block: var(--section);
+}
+
+/* Horizontal scroller that bleeds to the screen edge on small screens. */
+@utility rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  padding-inline: var(--gutter);
+  margin-inline: calc(var(--gutter) * -1);
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  & > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+}
+
+/* ---- Brand effects ------------------------------------------------------ */
+
+/* Neon tube lettering. Colour comes from --neon (defaults to brand pink). */
+@utility neon {
+  color: color-mix(in srgb, var(--neon, #fa0479) 70%, white);
+  text-shadow:
+    0 0 0.02em #fff,
+    0 0 0.1em var(--neon, #fa0479),
+    0 0 0.28em var(--neon, #fa0479),
+    0 0 0.7em color-mix(in srgb, var(--neon, #fa0479) 60%, transparent);
+}
+
+/* The maquette's blinking neon, made irregular like a tired tube. */
+@utility neon-flicker {
+  animation: neon-power-on 1.6s steps(1, end) 0.3s both, neon-flicker 9s steps(1, end) 2.4s infinite;
+}
+
+@keyframes neon-power-on {
+  0% { opacity: 0.15; text-shadow: none; }
+  12% { opacity: 1; }
+  16% { opacity: 0.2; text-shadow: none; }
+  24% { opacity: 1; }
+  27% { opacity: 0.35; text-shadow: none; }
+  40% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes neon-flicker {
+  0%, 41%, 43%, 44.5%, 79%, 80.5%, 100% { opacity: 1; }
+  42%, 44% { opacity: 0.4; text-shadow: none; }
+  80% { opacity: 0.55; text-shadow: none; }
+}
+
+/* Sticker label: wordmark-style keyline on night, ink outline + offset on paper. */
+@utility sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.42em 0.75em 0.36em;
+  border-radius: 999px;
+  border: 2px solid var(--sticker-line);
+  background: var(--sticker-bg, var(--accent));
+  color: var(--sticker-fg, var(--accent-fg));
+  box-shadow: var(--sticker-shadow);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  rotate: var(--tilt, 0deg);
+}
+
+/* Paper grain, for print surfaces and poster fallbacks. */
+@utility grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Halftone dots, used by generated posters when no photo exists. */
+@utility halftone {
+  background-image: radial-gradient(
+    circle at center,
+    var(--dot, rgb(0 0 0 / 0.35)) 0 var(--dot-size, 1.4px),
+    transparent calc(var(--dot-size, 1.4px) + 0.5px)
+  );
+  background-size: var(--dot-gap, 7px) var(--dot-gap, 7px);
+}
+
+/* Perforated edge for ticket stubs. */
+@utility perforation {
+  background-image: radial-gradient(circle, var(--perf-hole, var(--bg)) 0 3px, transparent 3.5px);
+  background-size: 2px 12px;
+  background-repeat: repeat-y;
+  background-position: center;
+}
+
+/* ---- Motion ---------------------------------------------------------------- */
+
+@keyframes marquee {
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@utility marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee var(--marquee-duration, 45s) linear infinite;
+}
+
+@keyframes shimmer {
+  to { background-position-x: -200%; }
+}
+
+@utility skeleton {
+  background: linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--fg) 7%, transparent) 30%,
+      color-mix(in srgb, var(--fg) 13%, transparent) 50%,
+      color-mix(in srgb, var(--fg) 7%, transparent) 70%
+    )
+    0 0 / 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: var(--radius-xs);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(1.25rem); }
+}
+
+@keyframes unveil {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* Scroll-driven reveal where supported; content is fully visible otherwise. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+    .reveal-image {
+      animation: unveil linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 55%;
+    }
+  }
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}

@@ -1,0 +1,279 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import type { EventItem } from "@/lib/types";
+import { routes } from "@/lib/routes";
+import { formatDateLong, formatDayFull, formatTime, plural, relativeDay } from "@/lib/format";
+import { getSession } from "@/lib/demo-session";
+import { getAssociations, getAssociationsByIds, toRef } from "@/lib/data/associations";
+import { getEventsByIds } from "@/lib/data/events";
+import { getApplications, getNotifications } from "@/lib/data/users";
+import { AssociationRow } from "@/components/associations/AssociationRow";
+import { MemberCard } from "@/components/brand/MemberCard";
+import { eventPhase, isTonight } from "@/components/events/event-facts";
+import { SectionHeader } from "@/components/layout/SectionHeader";
+import { ButtonLink } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ApplicationRow } from "@/components/account/ApplicationRow";
+import { NotificationItem } from "@/components/account/NotificationItem";
+import { RegisteredTicket } from "@/components/account/RegisteredTicket";
+import {
+  academicSeason,
+  formatMonthYear,
+  greeting,
+  isOngoing,
+  needsAttention,
+  shortEventName,
+  splitMyEvents,
+} from "@/components/account/account-facts";
+
+export const metadata: Metadata = {
+  title: "Mon espace",
+  description: "Ta carte cotisante, ton prochain billet, tes candidatures et ce que tu n'as pas encore lu.",
+};
+
+/** The one sentence under the hello: what's next, said like a friend would. */
+function nextOutLine(next: EventItem | undefined, now: Date): string {
+  if (!next) return "Rien de prévu pour l'instant. L'agenda, lui, est plein.";
+  const name = shortEventName(next.title);
+  if (isTonight(next, now)) return `Ce soir, c'est ${name}. Le reste peut attendre demain.`;
+  if (eventPhase(next, now) === "live") return `${name} est en cours. Le reste peut attendre.`;
+  return `Prochaine sortie : ${name}, ${relativeDay(next.startsAt, now).toLowerCase()} à ${formatTime(next.startsAt)}.`;
+}
+
+/**
+ * "Mon espace": hello, the carte cotisante (pointer tilt), the next ticket,
+ * then what deserves a look today — applications that moved, unread
+ * notifications — and the associations the student belongs to.
+ */
+export default async function AccountHomePage() {
+  const { user } = await getSession();
+  if (!user) return null;
+
+  const now = new Date();
+  const [events, applications, notifications, associations] = await Promise.all([
+    getEventsByIds([...user.registeredEventIds, ...user.savedEventIds]),
+    getApplications(user.id),
+    getNotifications(user.id),
+    getAssociationsByIds(user.memberships.map((m) => m.associationId)),
+  ]);
+
+  const { tickets, saved } = splitMyEvents(user, events, now);
+  const next = tickets[0];
+  const attention = applications.filter((a) => needsAttention(a, now));
+  const ongoing = applications.filter(isOngoing);
+  const unread = notifications.filter((n) => !n.read);
+  const byId = new Map(associations.map((a) => [a.id, a]));
+  const card = user.memberCard;
+  // Without a card, point to the BDE page, where the card is sold.
+  const bde = card ? null : (await getAssociations({ category: "bde" }))[0];
+
+  return (
+    <div className="wrap pt-8 sm:pt-12">
+      <div className="grid gap-x-8 gap-y-12 lg:grid-cols-12">
+        {/* Hello */}
+        <header className="flex flex-col gap-5 lg:col-span-7 lg:row-start-1">
+          <p className="type-label text-accent-text">
+            {formatDayFull(now.toISOString())} · {user.programme} {user.year}
+          </p>
+          <h1 className="type-title">
+            {greeting(now)} {user.firstName}.
+          </h1>
+          <p className="max-w-2xl type-lead text-muted">{nextOutLine(next, now)}</p>
+          <p className="flex flex-wrap gap-x-5 gap-y-1 type-meta text-muted">
+            <span>{plural(tickets.length, "billet à venir", "billets à venir")}</span>
+            <span>{plural(ongoing.length, "candidature en cours", "candidatures en cours")}</span>
+            <span>{plural(unread.length, "non lue", "non lues")}</span>
+          </p>
+        </header>
+
+        {/* Next ticket */}
+        <section aria-labelledby="billet-titre" className="flex flex-col gap-6 lg:col-span-7 lg:row-start-2">
+          <SectionHeader
+            id="billet-titre"
+            title="Ton prochain billet"
+            action={tickets.length + saved.length > 0 ? { href: routes.accountEvents, label: "Mes événements" } : undefined}
+          />
+          {next ? (
+            <>
+              <RegisteredTicket event={next} holder={user} practicalLimit={3} now={now} />
+              {tickets.length > 1 && (
+                <p className="type-small text-muted">
+                  Et {plural(tickets.length - 1, "autre inscription", "autres inscriptions")} à venir,{" "}
+                  <Link href={routes.accountEvents} className="link font-bold text-fg">
+                    dans Mes événements
+                  </Link>
+                  .
+                </p>
+              )}
+            </>
+          ) : (
+            <EmptyState
+              tone="quiet"
+              title="Pas de billet en vue."
+              actions={
+                <>
+                  <ButtonLink href={routes.events} icon="arrow-right">
+                    Voir l&apos;agenda
+                  </ButtonLink>
+                  {saved.length > 0 && (
+                    <ButtonLink href={routes.accountEvents} variant="secondary">
+                      Mes enregistrés ({saved.length})
+                    </ButtonLink>
+                  )}
+                </>
+              }
+            >
+              Quand tu t&apos;inscris à un événement, ton billet arrive ici avec ce qu&apos;il faut savoir avant
+              d&apos;y aller.
+            </EmptyState>
+          )}
+        </section>
+
+        {/* The card */}
+        <section aria-labelledby="carte-titre" className="lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
+          <h2 id="carte-titre" className="type-label text-muted">
+            {card ? "Ta carte cotisante" : "Carte cotisante"}
+          </h2>
+          <div className="mx-auto mt-4 max-w-[28rem] lg:mx-0">
+            {card ? (
+              <MemberCard
+                season={card.season}
+                holder={`${user.firstName} ${user.lastName}`}
+                number={card.number}
+                validUntilLabel={`Valable jusqu'au ${formatDateLong(card.validUntil)}`}
+              />
+            ) : (
+              <MemberCard season={academicSeason(now)} />
+            )}
+          </div>
+          <p className="mt-5 max-w-[28rem] type-small text-muted">
+            {card ? (
+              <>
+                À montrer à l&apos;entrée avec une pièce d&apos;identité. C&apos;est elle qui te donne le tarif cotisant
+                sur les billetteries du BDE.
+              </>
+            ) : (
+              <>
+                Pas encore cotisant·e : la carte te donne le tarif réduit sur les soirées du BDE.{" "}
+                {bde && (
+                  <Link href={routes.association(bde.slug)} className="link font-bold text-fg">
+                    Comment l&apos;avoir
+                  </Link>
+                )}
+              </>
+            )}
+          </p>
+        </section>
+      </div>
+
+      <div className="mt-[var(--section)] grid gap-x-8 gap-y-14 lg:grid-cols-12">
+        {/* Applications that deserve a look */}
+        <section aria-labelledby="candidatures-titre" className="lg:col-span-7">
+          <SectionHeader
+            id="candidatures-titre"
+            kicker={plural(attention.length, "à regarder", "à regarder")}
+            title="Tes candidatures"
+            action={
+              applications.length > 0
+                ? { href: routes.accountApplications, label: `Toutes (${applications.length})` }
+                : undefined
+            }
+          />
+          {attention.length > 0 ? (
+            <div className="mt-6 border-b border-line-strong">
+              {attention.map((a) => (
+                <ApplicationRow key={a.id} application={a} now={now} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              tone="quiet"
+              className="mt-6"
+              title={applications.length ? "Rien qui bouge aujourd'hui." : "Aucune candidature pour l'instant."}
+              actions={
+                <ButtonLink href={applications.length ? routes.accountApplications : routes.recruitment} variant="secondary" icon="arrow-right">
+                  {applications.length ? "Mes candidatures" : "Voir les recrutements"}
+                </ButtonLink>
+              }
+            >
+              {applications.length
+                ? "Pas d'entretien à venir ni de réponse cette semaine : les bureaux lisent, ça viendra."
+                : "Les assos recrutent toute l'année : bureau, staff de soirée, antenne radio. Tu suivras tes candidatures ici."}
+            </EmptyState>
+          )}
+        </section>
+
+        {/* Unread */}
+        <section aria-labelledby="non-lu-titre" className="lg:col-span-5">
+          <SectionHeader
+            id="non-lu-titre"
+            kicker={plural(unread.length, "notification", "notifications")}
+            title="Pas encore lu"
+            action={{ href: routes.accountNotifications, label: "Tout voir" }}
+          />
+          {unread.length > 0 ? (
+            <div className="mt-6 border-b border-line">
+              {unread.slice(0, 3).map((n) => (
+                <NotificationItem key={n.id} notification={n} when="relative" now={now} />
+              ))}
+              {unread.length > 3 && (
+                <p className="border-t border-line py-3 pl-4 type-small sm:pl-5">
+                  <Link href={routes.accountNotifications} className="link font-bold">
+                    {plural(unread.length - 3, "autre non lue", "autres non lues")}
+                  </Link>
+                </p>
+              )}
+            </div>
+          ) : (
+            <EmptyState tone="quiet" className="mt-6" title="Tu es à jour.">
+              Les nouvelles de tes soirées, de tes candidatures et de tes assos arriveront ici.
+            </EmptyState>
+          )}
+        </section>
+      </div>
+
+      {/* Memberships */}
+      <section aria-labelledby="assos-titre" className="mt-[var(--section)]">
+        <SectionHeader
+          id="assos-titre"
+          kicker={plural(user.memberships.length, "asso", "assos")}
+          title="Tes assos"
+          action={{ href: routes.associations, label: "Toutes les assos" }}
+        />
+        {user.memberships.length > 0 ? (
+          <ul className="mt-6 grid gap-x-8 border-b border-line md:grid-cols-2">
+            {user.memberships.map((m) => {
+              const a = byId.get(m.associationId);
+              if (!a) return null;
+              return (
+                <li key={m.associationId}>
+                  <AssociationRow
+                    association={toRef(a)}
+                    detail={`${m.role} · depuis ${formatMonthYear(m.since)}`}
+                    aside={
+                      user.managedAssociationIds.includes(a.id) ? <StatusBadge tone="accent">Bureau</StatusBadge> : undefined
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <EmptyState
+            tone="quiet"
+            className="mt-6"
+            title="Tu n'es membre d'aucune asso pour l'instant."
+            actions={
+              <ButtonLink href={routes.associations} variant="secondary" icon="arrow-right">
+                Voir les associations
+              </ButtonLink>
+            }
+          >
+            Sport, radio, finance, solidarité : il y a une asso pour chaque soir de la semaine.
+          </EmptyState>
+        )}
+      </section>
+    </div>
+  );
+}
