@@ -1,0 +1,65 @@
+# Checks only: this workflow never deploys and holds no secrets.
+# Database deployment stays a deliberate, manual step (docs/backend/supabase-workflow.md).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App — types, lint, unit tests, build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+      # Builds without any Supabase settings on purpose: the Phase 1 pages
+      # read mock data and must not depend on a database yet.
+      - run: npm run build
+
+  database:
+    name: Database — reset from scratch, tests, lint, types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          # Keep in step with the "supabase" devDependency in package.json.
+          version: 2.120.0
+      - name: Start the local database
+        run: supabase db start
+      - name: Rebuild it from the migrations and the seed
+        run: supabase db reset
+      - name: Database tests (pgTAP)
+        run: supabase test db
+      - name: Database lint (plpgsql_check)
+        run: supabase db lint --fail-on error
+      - name: Generated types match the migrations
+        # The PostgrestVersion line names the API server version, which differs
+        # between the hosted project and the local stack; it is not schema.
+        run: |
+          supabase gen types --lang typescript --local --schema public > "$RUNNER_TEMP/generated.ts"
+          grep -v 'PostgrestVersion' "$RUNNER_TEMP/generated.ts" > "$RUNNER_TEMP/database.types.ts"
+          grep -v 'PostgrestVersion' src/types/database.types.ts > "$RUNNER_TEMP/committed.ts"
+          if ! diff -u "$RUNNER_TEMP/committed.ts" "$RUNNER_TEMP/database.types.ts" > "$RUNNER_TEMP/types.diff"; then
+            echo "::error file=src/types/database.types.ts::Generated types are out of date. Run npm run db:types (or db:types:linked) and commit the result.%0A$(sed -e 's/%/%25/g' "$RUNNER_TEMP/types.diff" | head -c 60000 | sed -e ':a;N;$!ba;s/\n/%0A/g')"
+            exit 1
+          fi

@@ -34,7 +34,9 @@ Sur la machine de dev Windows (Node portable), utiliser `H:\tools\vpc-dev.cmd`.
 | `npm run dev` | serveur de dev (Turbopack) |
 | `npm run build` | build de production |
 | `npm run lint` | ESLint |
-| `npx tsc --noEmit` | vérification des types |
+| `npm run typecheck` | vérification des types |
+| `npm run test:unit` | tests unitaires (runner intégré de Node) |
+| `npm run db:check` | connexion au projet Supabase de `.env.local` |
 
 ## Mode démo (Phase 1)
 
@@ -67,11 +69,18 @@ src/
 public/brand/            logos fournis (non modifiés) et emblèmes néon des 8 événements
 ```
 
-## Intégration Supabase (phases suivantes)
+## Backend Supabase (Phase 2)
 
-Les pages n'appellent que `src/lib/data/*` (fonctions `async`, `server-only`) qui renvoient des modèles
-typés (`EventItem`, `CampaignItem`…). Remplacer le corps de ces fonctions par des requêtes Supabase suffit ;
-les composants ne connaissent pas la source des données.
+Le socle backend est en place, sans tables métier pour l'instant : les pages lisent encore `src/lib/data/*`
+(fonctions `async`, `server-only`) qui renvoient des modèles typés (`EventItem`, `CampaignItem`…). Chaque
+fonctionnalité passera sur Supabase en remplaçant le corps de ces fonctions ; les composants ne changent pas.
+
+- Documentation : [`docs/backend/`](docs/backend/README.md) — à lire avant de toucher à la base.
+- Variables : copier `.env.example` en `.env.local` et le remplir ([environnements](docs/backend/environments.md)).
+- Vérifier la connexion au projet Supabase configuré : `npm run db:check`.
+- Base de données : `npm run db:migration`, `db:reset`, `db:test`, `db:lint`, `db:types` (stack locale, Docker
+  requis ; la CI les exécute à chaque push) — détail dans [le workflow](docs/backend/supabase-workflow.md).
+- Vérifications de l'app : `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run build`.
 
 ## Crédits
 
