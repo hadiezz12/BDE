@@ -77,20 +77,23 @@ Both everyday clients carry the same rights. The server is not a way around row 
 `server.ts` and `admin.ts` import `server-only`, so importing them from browser code fails the
 build.
 
-## Future authentication (Phase 3)
+## Authentication (Phase 3, implemented)
 
-- Supabase Auth provides identity. `auth.users` stays managed by Supabase: we never alter it.
-- A `public.profiles` table (Phase 3) holds what the platform needs to show about a person and
-  references `auth.users(id)`. It has **no role column**: roles are scoped and live in the
-  authorization model (below).
-- Sign-in methods, the school-email restriction, onboarding and MFA are Phase 3 decisions.
-- Session refresh: Phase 3 adds `src/proxy.ts` (Next 16's name for middleware) calling an
-  `updateSession` helper, as in Supabase's current Next.js guide. It refreshes the auth cookie
-  before rendering, which is why `createSupabaseServerClient` may ignore cookie writes from
-  Server Components today.
-- Server code must identify the user with `supabase.auth.getClaims()` (verifies the JWT
-  signature), never with data read from the request body.
-- The Phase 1 demo cookie (`src/lib/demo-session.ts`) is removed when real auth lands.
+Details: [authentication.md](authentication.md).
+
+- Supabase Auth provides identity; `auth.users` stays managed by Supabase. Sign-in is the school
+  e-mail plus a 6-digit code; institutional sign-in (Microsoft / Google) is wired but off until
+  the school's provider exists.
+- Who may sign up is decided inside Supabase Auth by the before-user-created hook
+  (`private.before_user_created`), against `private.allowed_signup_domains` and
+  `private.signup_email_exceptions`. Default deny.
+- `public.profiles` (one row per user, created by a trigger) holds the name, studies and avatar
+  path. **No role column**, no e-mail copy. Private to its owner.
+- `src/proxy.ts` refreshes the session cookie on every page request; server code identifies the
+  user with `getClaims()` through `src/lib/auth/context.ts` (`requireUser`, `requireAal2`).
+- TOTP two-factor authentication is optional for students and enforced by restrictive RLS once
+  enrolled (aal1 sessions read nothing).
+- The Phase 1 demo cookie is gone. `/manage` is unavailable in production until Phase 4.
 
 ## Future authorization and RLS (Phase 4)
 

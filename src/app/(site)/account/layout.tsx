@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { getSession } from "@/lib/demo-session";
-import { getNotifications } from "@/lib/data/users";
-import { AccountGate } from "@/components/account/AccountGate";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { routes } from "@/lib/routes";
+import { requireUser } from "@/lib/auth/context";
+import { withNext } from "@/lib/auth/next-path";
+import { getMyProfile } from "@/lib/data/profile";
+import { PATHNAME_HEADER } from "@/lib/supabase/proxy";
 import { AccountNav } from "@/components/account/AccountNav";
-import { academicSeason } from "@/components/account/account-facts";
+import { AccountUnavailable } from "@/components/account/AccountUnavailable";
 
 export const metadata: Metadata = {
   title: "Mon espace",
@@ -13,26 +17,31 @@ export const metadata: Metadata = {
 
 /**
  * The student space: a paper surface (personal, calm, not a CRM) under the
- * night header, with its own tabs. Visitors get the way in instead of any
- * data — here, once, for every /account page. A layout does not stop its
- * pages from rendering, so each page also returns nothing without a user.
+ * night header, with its own tabs. Only for signed-in students (the proxy
+ * already sends visitors to sign in; this checks again, from the verified
+ * session). A first visit goes through the short profile form before
+ * anything else. Personal data only ever comes from the student's own rows.
  */
 export default async function AccountLayout({ children }: { children: ReactNode }) {
-  const session = await getSession();
+  const path = (await headers()).get(PATHNAME_HEADER) ?? routes.account;
+  await requireUser(path);
 
-  if (!session.user) {
+  const profile = await getMyProfile();
+  // Signed in but no profile row: the signup trigger failed. Say so, never guess.
+  if (!profile) {
     return (
       <div data-surface="paper" className="grain">
-        <AccountGate season={academicSeason()} />
+        <AccountUnavailable />
       </div>
     );
   }
 
-  const unread = (await getNotifications(session.user.id)).filter((n) => !n.read).length;
+  const onboarding = path === routes.accountOnboarding;
+  if (!profile.onboardingCompleted && !onboarding) redirect(withNext(routes.accountOnboarding, path));
 
   return (
     <div data-surface="paper" className="grain pb-[var(--section)]">
-      <AccountNav unread={unread} />
+      {!onboarding && <AccountNav />}
       {children}
     </div>
   );

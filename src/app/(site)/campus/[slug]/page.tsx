@@ -7,7 +7,7 @@ import { cx } from "@/lib/cx";
 import { getPost, getPosts } from "@/lib/data/posts";
 import { getEventsByIds } from "@/lib/data/events";
 import { getAssociationById } from "@/lib/data/associations";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { Icon } from "@/components/ui/Icon";
 import { MediaFrame } from "@/components/media/MediaFrame";
 import { SectionHeader } from "@/components/layout/SectionHeader";

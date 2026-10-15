@@ -315,6 +315,10 @@ export interface UserProfile {
   id: string;
   firstName: string;
   lastName: string;
+  /** Name the student chose to be shown by, when set. */
+  displayName?: string;
+  /** Short-lived signed URL of the student's own avatar (private bucket). */
+  avatarUrl?: string;
   /**
    * Set on Phase 1 demo accounts only: the label to show instead of a person
    * ("Compte démo — étudiant·e"). Absent on real accounts.
@@ -435,11 +439,22 @@ export type ApplicationItem = ApplicationSummary & {
 
 /* ---- Session (Phase 1 demo only) -------------------------------------- */
 
+/**
+ * How a page renders for the current visitor. "etudiant" is any signed-in
+ * student; "responsable" exists only for the development preview of the
+ * association workspace (Phase 4 brings real, scoped management rights).
+ */
 export type DemoRole = "visiteur" | "etudiant" | "responsable";
 
 export interface Session {
   role: DemoRole;
   user: UserProfile | null;
+  /**
+   * Signed in but not finished: "mfa" = second factor still to enter (the
+   * session is treated as signed out until then); "onboarding" = profile
+   * not completed yet.
+   */
+  pending?: "mfa" | "onboarding";
 }
 
 /* ---- Search ------------------------------------------------------------ */

@@ -7,21 +7,21 @@ import type { UserProfile } from "@/lib/types";
  * out instead of printing stray separators. Pure, client-safe.
  */
 
-type Named = Pick<UserProfile, "firstName" | "lastName" | "demoLabel">;
+type Named = Pick<UserProfile, "firstName" | "lastName" | "demoLabel" | "displayName">;
 
 /** "Compte démo — étudiant·e" on a demo account, the person's full name otherwise. */
 export function accountName(user: Named): string {
-  return user.demoLabel ?? [user.firstName, user.lastName].filter(Boolean).join(" ");
+  return user.demoLabel ?? user.displayName ?? ([user.firstName, user.lastName].filter(Boolean).join(" ") || "Mon compte");
 }
 
 /** Short name beside the avatar: "Compte démo", or the first name. */
 export function accountShortName(user: Named): string {
-  return user.demoLabel ? "Compte démo" : user.firstName || accountName(user);
+  return user.demoLabel ? "Compte démo" : user.displayName || user.firstName || accountName(user);
 }
 
 /** The first name to greet, or null on a demo account (no one to greet by name). */
 export function greetingName(user: Named): string | null {
-  return user.demoLabel ? null : user.firstName || null;
+  return user.demoLabel ? null : user.displayName || user.firstName || null;
 }
 
 /** "Programme Grande École · 2A" with only the parts that are known; "" when none is. */

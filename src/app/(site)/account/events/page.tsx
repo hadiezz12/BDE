@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { routes } from "@/lib/routes";
 import { plural } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getEventsByIds } from "@/lib/data/events";
 import { EventRow } from "@/components/events/EventRow";
 import { PageHeader } from "@/components/layout/PageHeader";

@@ -3,10 +3,11 @@ import Link from "next/link";
 import type { EventItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { formatDateLong, formatDayFull, formatTime, plural, relativeDay } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getAssociations, getAssociationsByIds, toRef } from "@/lib/data/associations";
 import { getEventsByIds } from "@/lib/data/events";
 import { getApplications, getNotifications } from "@/lib/data/users";
+import { getMyMfaStatus } from "@/lib/auth/mfa";
 import { AssociationRow } from "@/components/associations/AssociationRow";
 import { MemberCard } from "@/components/brand/MemberCard";
 import { eventPhase, isTonight } from "@/components/events/event-facts";
@@ -53,11 +54,12 @@ export default async function AccountHomePage() {
   if (!user) return null;
 
   const now = new Date();
-  const [events, applications, notifications, associations] = await Promise.all([
+  const [events, applications, notifications, associations, mfa] = await Promise.all([
     getEventsByIds([...user.registeredEventIds, ...user.savedEventIds]),
     getApplications(user.id),
     getNotifications(user.id),
     getAssociationsByIds([...new Set([...user.memberships.map((m) => m.associationId), ...user.managedAssociationIds])]),
+    getMyMfaStatus(),
   ]);
 
   const { tickets, saved } = splitMyEvents(user, events, now);
@@ -240,6 +242,35 @@ export default async function AccountHomePage() {
           )}
         </section>
       </div>
+
+      {/* The account itself: profile and security */}
+      <section aria-labelledby="compte-titre" className="mt-[var(--section)]">
+        <SectionHeader id="compte-titre" title="Ton compte" />
+        <ul className="mt-6 grid gap-x-8 border-b border-line md:grid-cols-2">
+          <li className="border-t border-line">
+            <Link href={routes.accountProfile} className="group flex min-h-16 items-center gap-4 py-4">
+              <Icon name="user" size={22} className="shrink-0 text-accent-text" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-bold group-hover:text-accent-text">Profil</span>
+                <span className="block type-small text-muted">Ton nom, ta photo, tes études</span>
+              </span>
+              <Icon name="arrow-right" size={18} className="text-muted" />
+            </Link>
+          </li>
+          <li className="border-t border-line">
+            <Link href={routes.accountSecurity} className="group flex min-h-16 items-center gap-4 py-4">
+              <Icon name="lock" size={22} className="shrink-0 text-accent-text" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-bold group-hover:text-accent-text">Sécurité</span>
+                <span className="block type-small text-muted">
+                  Double authentification : {mfa.enabled ? "activée" : "désactivée"}
+                </span>
+              </span>
+              <Icon name="arrow-right" size={18} className="text-muted" />
+            </Link>
+          </li>
+        </ul>
+      </section>
 
       {/* Memberships */}
       <section aria-labelledby="assos-titre" className="mt-[var(--section)]">

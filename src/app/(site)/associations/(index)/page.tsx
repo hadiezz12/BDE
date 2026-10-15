@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Association } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { ASSOCIATION_CATEGORY_LABEL, plural } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import {
   getAssociationCategoryCounts,
   getAssociations,

@@ -1,70 +1,53 @@
 import type { Metadata } from "next";
-import { getDemoProfile, getSession } from "@/lib/demo-session";
-import { getAssociationsByIds } from "@/lib/data/associations";
+import { redirect } from "next/navigation";
 import { routes } from "@/lib/routes";
+import { getAuthContext } from "@/lib/auth/context";
+import { AUTH_MESSAGES, parseAuthProblem } from "@/lib/auth/messages";
+import { safeNextPath, withNext } from "@/lib/auth/next-path";
+import { ssoProvider } from "@/lib/auth/sso";
+import { startSchoolSignIn } from "@/app/actions/auth";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NeonText } from "@/components/brand/NeonText";
 import { Sticker } from "@/components/ui/Sticker";
-import { SignInForm } from "@/components/auth/SignInForm";
-import { DemoRolePicker, type DemoChoice } from "@/components/auth/DemoRolePicker";
-import { safeNextPath } from "@/components/auth/next-path";
+import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
+import { SignInFlow } from "@/components/auth/SignInFlow";
 
 export const metadata: Metadata = {
   title: "Connexion",
-  description: "Connecte-toi avec ton adresse de l'école pour retrouver tes billets, tes soirées et tes candidatures.",
+  description: "Connecte-toi avec ton adresse e-mail de l'école pour retrouver ton espace, tes soirées et tes candidatures.",
+  robots: { index: false, follow: true },
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const listFr = new Intl.ListFormat("fr", { style: "long", type: "conjunction" });
-
+/**
+ * Sign-in. The brand side (the panther checks you in), then the way in: the
+ * school's own sign-in when it is configured, and the school e-mail with a
+ * code in every case. Already signed in? Straight to where you were going.
+ */
 export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
-  const next = safeNextPath((await searchParams).next);
-  const [session, student, officer] = await Promise.all([
-    getSession(),
-    getDemoProfile("etudiant"),
-    getDemoProfile("responsable"),
-  ]);
-  const managed = officer ? await getAssociationsByIds(officer.managedAssociationIds) : [];
+  const params = await searchParams;
+  const next = safeNextPath(params.next);
+  const ctx = await getAuthContext();
+  if (ctx.status === "authenticated") redirect(next ?? routes.account);
+  if (ctx.status === "mfa_required") redirect(withNext(routes.loginVerification, next));
 
-  // The demo accounts are named by their demo label, never as a person, and start empty.
-  const choices: DemoChoice[] = [
-    {
-      role: "visiteur",
-      label: "Visiteur",
-      icon: "eye",
-      detail: "Sans compte : les événements, les assos et la page VSS / VDH. Pas d'espace perso.",
-      redirectTo: next ?? routes.home,
-    },
-    {
-      role: "etudiant",
-      label: student?.demoLabel ?? "Compte démo — étudiant·e",
-      icon: "user",
-      detail: "Un espace étudiant vide : aucune inscription, aucune candidature, aucune notification.",
-      redirectTo: next ?? routes.account,
-    },
-    {
-      role: "responsable",
-      label: officer?.demoLabel ?? "Compte démo — responsable d'asso",
-      icon: "sliders",
-      detail: managed.length
-        ? `Le même espace vide, plus l'espace de gestion : ${listFr.format(managed.map((a) => a.name))}.`
-        : "Le même espace vide, plus l'espace de gestion d'une association.",
-      redirectTo: next ?? routes.account,
-    },
-  ];
+  const problem = parseAuthProblem(params.error);
+  const signedOut = params["signed-out"] === "1";
+  const sso = ssoProvider();
 
   return (
     <div className="wrap grid gap-12 pb-section pt-10 sm:pt-16 lg:grid-cols-12 lg:gap-8">
-      {/* Brand side: the door of the club. The panther checks you in. */}
+      {/* Brand side: the door of the club. */}
       <div className="lg:col-span-6 xl:col-span-7">
         <p className="type-label text-accent-text">Connexion · étudiant·es GEM Paris</p>
         <h1 className="mt-4 type-display">
           Montre patte <NeonText flicker>rose</NeonText>.
         </h1>
         <p className="mt-6 max-w-xl type-lead text-muted">
-          Ton adresse de l&apos;école suffit. De l&apos;autre côté : tes billets, tes soirées enregistrées, tes
-          candidatures et ta carte cotisante.
+          Ton adresse e-mail de l&apos;école suffit. De l&apos;autre côté : ton espace, tes soirées, tes candidatures et ta
+          carte cotisante. Sans compte, tout le reste du site reste ouvert.
         </p>
         <div aria-hidden className="relative mt-14 hidden w-fit lg:block">
           <BrandMark variant="panther" height={280} decorative className="-rotate-6" />
@@ -74,29 +57,48 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         </div>
       </div>
 
-      <div className="flex flex-col gap-12 lg:col-span-6 xl:col-span-5">
+      <div className="flex flex-col gap-6 lg:col-span-6 xl:col-span-5">
+        {signedOut && !problem && (
+          <p role="status" className="flex gap-3 rounded-sm border-2 border-line-strong p-4 leading-snug">
+            <Icon name="logout" size={20} className="mt-0.5 shrink-0 text-muted" />
+            <span>
+              <strong>Tu es déconnecté·e.</strong> À bientôt sur le dancefloor.
+            </span>
+          </p>
+        )}
+        {problem && (
+          <p role="alert" className="flex gap-3 rounded-sm border-2 border-danger/60 bg-danger/10 p-4 leading-snug">
+            <Icon name="alert" size={20} className="mt-0.5 shrink-0 text-danger" />
+            <span>{AUTH_MESSAGES[problem]}</span>
+          </p>
+        )}
+
         <section aria-labelledby="connexion-titre" className="rounded-md border border-line-strong bg-raised p-5 sm:p-8">
           <h2 id="connexion-titre" className="type-section">
             Se connecter
           </h2>
-          <SignInForm className="mt-6" />
+
+          {sso && (
+            <>
+              <form action={startSchoolSignIn} className="mt-6">
+                {next && <input type="hidden" name="next" value={next} />}
+                <Button type="submit" size="lg" block icon="arrow-right">
+                  Continuer avec ton compte de l&apos;école
+                </Button>
+              </form>
+              <p className="my-6 flex items-center gap-4 type-label text-subtle before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">
+                ou par e-mail
+              </p>
+            </>
+          )}
+
+          <SignInFlow next={next} className={sso ? undefined : "mt-6"} />
         </section>
 
-        <section aria-labelledby="demo-titre">
-          <div className="border-t-2 border-fg pt-3">
-            <h2 id="demo-titre" className="type-label">
-              Mode démo · Phase 1
-            </h2>
-            <p className="mt-3 text-muted">
-              En attendant les vrais comptes, choisis comment afficher le site. Les comptes démo ne sont pas de vraies
-              personnes et ne contiennent aucune donnée.{" "}
-              {next
-                ? "Tu reviendras ensuite sur la page que tu voulais ouvrir."
-                : "Tu peux en changer à tout moment depuis le pied de page."}
-            </p>
-          </div>
-          <DemoRolePicker choices={choices} current={session.role} className="mt-5" />
-        </section>
+        <p className="type-small text-muted">
+          Les comptes sont réservés aux étudiant·es de GEM Alpine Business School. Se connecter ne donne aucun droit sur
+          les associations : chaque bureau gérera les siens.
+        </p>
       </div>
     </div>
   );

@@ -26,3 +26,4 @@ Read `docs/backend/README.md` before touching the database, Supabase clients, en
 - Never assume UI hiding equals authorization.
 - Never remove constraints to make an error disappear.
 - Never use real applicant or student personal data in seeds or tests.
+- Authentication is not authorization: a signed-in user has no management right until Phase 4's scoped permissions grant one. No role in `profiles` or `user_metadata`, no "if this e-mail then admin". Sign-in, profiles and MFA: `docs/backend/authentication.md`.

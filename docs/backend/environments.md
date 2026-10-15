@@ -44,6 +44,19 @@ runs the full local stack from scratch on every push (see
 - Its legacy `anon` / `service_role` keys are still active next to the new
   publishable/secret keys. Nothing uses them: disable them in Dashboard → Settings → API Keys.
 
+### Auth settings per environment
+
+Sign-in settings (site URL, redirect URLs, the before-user-created hook, the code e-mail
+templates, MFA) live in `supabase/config.toml` for the local stack. Hosted projects need the
+same settings applied with `npx supabase config push` (after `login` and `link`) or by hand in
+the dashboard; who may sign up is data in `private.allowed_signup_domains` and
+`private.signup_email_exceptions` (default: nobody). See
+[authentication.md](authentication.md#configuration-per-environment).
+
+**verypinkclub-dev today:** migrations applied (profiles, hook function, avatars bucket), but its
+Auth settings are still the hosted defaults: the hook is not enabled and the templates send a link
+instead of a code. Push the config before testing sign-in there.
+
 ### Production
 
 - Not created yet. It is created when the platform ships, as its own project (never by
@@ -61,6 +74,7 @@ runs the full local stack from scratch on every push (see
 | `NEXT_PUBLIC_SUPABASE_URL` | public (inlined into the browser bundle) | all three clients | project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public (inlined into the browser bundle) | browser and server clients | Dashboard → Settings → API Keys → publishable (`sb_publishable_…`) |
 | `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — nothing calls it yet | API Keys → secret (`sb_secret_…`). Leave empty. |
+| `AUTH_SSO_PROVIDER` | server only, not secret | shows institutional sign-in on `/login` (`azure` or `google`) | leave empty until the school's provider is configured in Supabase |
 | `SUPABASE_ACCESS_TOKEN` | **secret**, personal | the Supabase CLI (`login`, `link`, `gen types --linked`) | your account's access tokens; `npx supabase login` stores it for you |
 | `SUPABASE_DB_PASSWORD` | **secret** | the CLI's `link` / `db push` in non-interactive use | the project's database password (Dashboard → Database) |
 

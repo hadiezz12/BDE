@@ -1,9 +1,7 @@
 import Link from "next/link";
-import type { DemoRole } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Icon } from "@/components/ui/Icon";
-import { DemoRoleSwitcher } from "./DemoRoleSwitcher";
 
 const EXPLORE = [
   { href: routes.events, label: "Les 8 événements" },
@@ -22,7 +20,11 @@ const BDE_SLUG = "very-pink-club";
  * Copy is the maquette's own footer: no address, room, hours or social
  * handle that the bureau has not given.
  */
-export function SiteFooter({ role }: { role: DemoRole }) {
+/**
+ * `managePreview` (development only) links the fictional preview of the
+ * association workspace; production has no such link.
+ */
+export function SiteFooter({ managePreview = false }: { managePreview?: boolean }) {
   const year = new Date().getFullYear();
   return (
     <footer data-surface="paper" className="grain relative overflow-hidden">
@@ -92,7 +94,13 @@ export function SiteFooter({ role }: { role: DemoRole }) {
 
       <div className="wrap">
         <div className="flex flex-col gap-6 border-t-2 border-fg py-6 lg:flex-row lg:items-end lg:justify-between">
-          <DemoRoleSwitcher current={role} />
+          {managePreview ? (
+            <Link href={routes.manage} className="type-meta text-muted underline-offset-4 hover:text-fg hover:underline">
+              Aperçu de l&apos;espace assos · développement, données fictives
+            </Link>
+          ) : (
+            <span aria-hidden />
+          )}
           <p className="type-meta text-muted">
             © {year} Very Pink Club — BDE · GEM Alpine Business School — Paris
           </p>

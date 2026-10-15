@@ -6,7 +6,7 @@ import type { EventWindow } from "@/lib/data/events";
 import { getEventCategoryCounts, getEvents } from "@/lib/data/events";
 import { getEventSeries } from "@/lib/data/event-series";
 import { getPosts } from "@/lib/data/posts";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { routes } from "@/lib/routes";
 import { EVENT_CATEGORY_LABEL, formatDayFull, formatWhen, plural } from "@/lib/format";
 import { addDaysToKey, parisDateKey, parisISO } from "@/lib/time";

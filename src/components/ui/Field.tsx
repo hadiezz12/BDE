@@ -41,7 +41,7 @@ export function Field({ label, hint, error, optional, className, children }: Fie
         </p>
       )}
       {error && (
-        <p id={errorId} className="type-small font-semibold text-danger">
+        <p id={errorId} role="alert" className="type-small font-semibold text-danger">
           {error}
         </p>
       )}

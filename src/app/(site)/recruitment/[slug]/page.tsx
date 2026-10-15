@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { ApplicationItem, CampaignItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { CAMPAIGN_STATUS_LABEL, plural } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getCampaign, getCampaigns } from "@/lib/data/recruitment";
 import { getApplicationForm } from "@/lib/data/recruitment-forms";
 import { getApplications } from "@/lib/data/users";

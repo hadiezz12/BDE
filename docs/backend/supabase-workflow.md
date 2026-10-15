@@ -32,6 +32,8 @@ shape of the database, read the migrations, or the generated `src/types/database
 | Regenerate types from the linked project | `npm run db:types:linked` | `login` + `link` |
 | Check the app reaches the configured project | `npm run db:check` | `.env.local` |
 | App checks | `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run build` | — |
+| End-to-end sign-in tests (Playwright) | `npm run test:e2e` | local stack + the app running against it (CI does this) |
+| Apply `config.toml` auth settings to the linked project | `npx supabase config push` | link; check the target first |
 | Log the CLI in to your Supabase account | `npx supabase login` | browser |
 | Link this folder to a hosted project | `npx supabase link --project-ref <ref>` | login, database password |
 | Compare local and remote migration history | `npx supabase migration list --linked` | link |
@@ -74,7 +76,9 @@ The main development PC cannot run Docker today. What still works there:
 - Types from the dev project: `npm run db:types:linked`.
 - **CI** runs `db start`, `db reset`, `test db`, `db lint` and the generated-types comparison on
   every push to `main` and every pull request. A red database job is the signal that a
-  migration does not rebuild from scratch.
+  migration does not rebuild from scratch. A third job starts the full local stack, builds the
+  app against it and runs the Playwright sign-in scenarios (e-mail code read from Mailpit, TOTP
+  computed in the test).
 
 AI agents with the Supabase MCP connected may use it against **the dev project only**. Its
 `apply_migration` records its own timestamp in the remote history, so: dry-run the SQL inside a

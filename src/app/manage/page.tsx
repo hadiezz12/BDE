@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { routes } from "@/lib/routes";
 import { plural } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getManagePreviewSession as getSession } from "@/lib/manage-preview";
 import { getManageNavCounts, getManagedAssociations } from "@/lib/data/manage";
 import { getTasks } from "@/lib/data/users";
 import { ManageMain } from "@/components/manage/ManageFrame";

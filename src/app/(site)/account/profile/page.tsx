@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
 import { formatDateLong } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
+import { getAvatarUrl, getMyProfile } from "@/lib/data/profile";
 import { getAssociations } from "@/lib/data/associations";
 import { getNotificationPreferences } from "@/lib/data/preferences";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -10,6 +11,8 @@ import { SectionHeader } from "@/components/layout/SectionHeader";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { NotificationPreferencesForm } from "@/components/account/NotificationPreferencesForm";
 import { ProfileForm } from "@/components/account/ProfileForm";
+import { AvatarField } from "@/components/account/AvatarField";
+import { accountName } from "@/components/account/identity";
 
 export const metadata: Metadata = {
   title: "Profil",
@@ -21,29 +24,31 @@ const WHERE_IT_SHOWS: Array<{ icon: IconName; what: string; where: string }> = [
   {
     icon: "user",
     what: "Ton nom et ta photo",
-    where: "Dans le menu de ton compte, et sur chaque candidature que lit le bureau qui recrute.",
+    where: "Pour l'instant, toi seul·e les vois : dans ton espace et dans le menu de ton compte.",
   },
   {
     icon: "file",
     what: "Ton programme et ton année",
-    where: "Sur tes candidatures, pour que le bureau sache qui il rencontre en entretien.",
+    where: "Visibles par toi seul·e. Plus tard, une candidature pourra les reprendre si tu le choisis.",
   },
   {
     icon: "mail",
     what: "Ton adresse de l'école",
-    where: "Pour te connecter et recevoir les mails que tu choisis plus bas. Elle n'apparaît sur aucune page publique.",
+    where: "Ton identifiant de connexion. Elle n'apparaît sur aucune page publique.",
   },
 ];
 
 /**
- * Profil: "Tes infos" (name, programme, year, read-only school email, photo
- * placeholder), then what the student wants to hear about, per kind and
- * channel. In the margin: where each piece shows up, and the card. PHASE 1:
- * both forms keep what was typed and say that nothing is stored.
+ * Profil: "Tes infos" (photo, name, studies, read-only school email), then
+ * what the student wants to hear about. Profile and photo are real and
+ * private to the student; notification preferences are still a design shell
+ * (their phase brings the sending).
  */
 export default async function AccountProfilePage() {
   const { user } = await getSession();
-  if (!user) return null;
+  const profile = await getMyProfile();
+  if (!user || !profile) return null;
+  const avatarUrl = await getAvatarUrl(profile.avatarPath);
 
   const card = user.memberCard;
   const [preferences, bde] = await Promise.all([
@@ -51,8 +56,7 @@ export default async function AccountProfilePage() {
     // Without a card, the way to the BDE's page, where the card is presented (#carte).
     card ? Promise.resolve(null) : getAssociations({ category: "bde" }).then((list) => list[0] ?? null),
   ]);
-  // Demo accounts show their label; real ones their school address. Never an empty line.
-  const who = user.demoLabel ?? user.email;
+  const who = user.email;
 
   return (
     <>
@@ -60,7 +64,7 @@ export default async function AccountProfilePage() {
         variant="document"
         kicker="Mon espace"
         title="Profil"
-        intro="Ce que les bureaux lisent quand tu candidates, et ce que tu veux recevoir : ici, par mail, ou les deux."
+        intro="Comment on t'appelle, ta photo, et ce que tu veux recevoir. Rien de plus."
         meta={
           <>
             {who && <span className="break-all">{who}</span>}
@@ -73,17 +77,19 @@ export default async function AccountProfilePage() {
         <div className="flex min-w-0 flex-col gap-16 lg:col-span-8">
           <section aria-labelledby="infos-titre">
             <SectionHeader id="infos-titre" index="01" kicker="Qui tu es" title="Tes infos" />
+            <div className="mt-8">
+              <AvatarField name={accountName(user)} url={avatarUrl} />
+            </div>
             <ProfileForm
-              user={{
-                firstName: user.firstName,
-                lastName: user.lastName,
-                demoLabel: user.demoLabel,
-                email: user.email,
-                programme: user.programme,
-                year: user.year,
-                avatar: user.avatar,
+              initial={{
+                firstName: profile.firstName ?? "",
+                lastName: profile.lastName ?? "",
+                displayName: profile.displayName,
+                program: profile.program,
+                studyYear: profile.studyYear,
               }}
-              className="mt-8"
+              email={user.email}
+              className="mt-10"
             />
           </section>
 

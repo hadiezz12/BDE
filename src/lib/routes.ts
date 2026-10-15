@@ -15,6 +15,10 @@ export const routes = {
   search: "/search",
   safety: "/vss",
   login: "/login",
+  /** Second sign-in step for students who turned on two-factor authentication. */
+  loginVerification: "/login/verification",
+  /** Where Supabase Auth sends people back (OAuth, email links). */
+  authCallback: "/auth/callback",
 
   account: "/account",
   accountEvents: "/account/events",
@@ -22,6 +26,9 @@ export const routes = {
   accountApplication: (id: string) => `/account/applications/${id}`,
   accountNotifications: "/account/notifications",
   accountProfile: "/account/profile",
+  accountSecurity: "/account/security",
+  /** First sign-in: name and study details, once. */
+  accountOnboarding: "/account/onboarding",
 
   /** Chooser / redirect to the officer's association workspace. */
   manage: "/manage",

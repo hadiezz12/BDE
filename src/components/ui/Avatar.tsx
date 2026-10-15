@@ -2,16 +2,22 @@ import Image from "next/image";
 import type { AccentKey, Photo } from "@/lib/types";
 import { cx } from "@/lib/cx";
 
-/** Person avatar: photo when there is one, otherwise initials on a tinted disc. */
+/**
+ * Person avatar: photo when there is one, otherwise initials on a tinted disc.
+ * `src` is a short-lived signed URL from the private avatars bucket: shown
+ * unoptimized (the link expires, and the image server must not cache it).
+ */
 export function Avatar({
   name,
   photo,
+  src,
   accent,
   size = 40,
   className,
 }: {
   name: string;
   photo?: Photo;
+  src?: string;
   accent?: AccentKey;
   size?: number;
   className?: string;
@@ -31,7 +37,9 @@ export function Avatar({
       )}
       style={{ width: size, height: size }}
     >
-      {photo ? (
+      {src ? (
+        <Image src={src} alt="" fill unoptimized sizes={`${size}px`} className="object-cover" />
+      ) : photo ? (
         <Image src={photo.src} alt="" fill sizes={`${size}px`} className="object-cover" />
       ) : (
         <span aria-hidden className="font-black" style={{ fontSize: size * 0.38, fontStretch: "88%" }}>

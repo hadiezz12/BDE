@@ -15,3 +15,12 @@
 --
 -- Phase 2 creates no domain tables, so there is nothing to seed yet. Each
 -- later phase adds the rows its feature needs, below this header.
+
+-- Phase 3: who may sign up on the LOCAL stack and in CI. A fictional domain
+-- (.test is reserved and never resolves), so only made-up students such as
+-- alice@student.example.test can create accounts. Production gets the real
+-- school domain by hand (docs/backend/authentication.md); hosted projects
+-- never receive this seed.
+insert into private.allowed_signup_domains (domain, note)
+values ('student.example.test', 'Fictional school domain for local development and CI')
+on conflict (domain) do nothing;

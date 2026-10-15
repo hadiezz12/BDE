@@ -133,6 +133,18 @@ JWTs, database URLs with passwords, personal access tokens and private keys: non
 committed history or the working tree. The dev project's publishable key lives only in the
 git-ignored `.env.local`.
 
+## Audit after Phase 3 (2026-10-15)
+
+Same search over the tree and the whole git history, extended to OAuth client secrets and SMTP
+passwords: nothing found. No `console.log` remains in `src`; the two log points (`[auth]` in
+`src/app/actions/auth.ts`, `[data]` in `src/lib/data/errors.ts`) record an error code and a
+category, never an address, a code, a token or a session. No `dangerouslySetInnerHTML` anywhere:
+names typed by students are rendered as text. The MFA setup key and QR code exist only in the
+Server Action response shown on the security page.
+
+Sign-in specifics (who may sign up, sessions, MFA, redirect safety) are in
+[authentication.md](authentication.md).
+
 ## Rules for AI agents and developers
 
 These rules are repeated in `AGENTS.md` so every coding agent reads them first.

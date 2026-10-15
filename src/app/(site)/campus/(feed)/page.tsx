@@ -5,7 +5,7 @@ import { cx } from "@/lib/cx";
 import { formatDayFull, plural } from "@/lib/format";
 import { getPosts } from "@/lib/data/posts";
 import { getAssociations, getAssociationsByIds, toRef } from "@/lib/data/associations";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { FilterChips, type FilterOption } from "@/components/ui/FilterChips";
 import { EmptyState } from "@/components/ui/EmptyState";

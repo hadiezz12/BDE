@@ -6,14 +6,13 @@ import { usePathname } from "next/navigation";
 import type { AssociationRef, Session } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
-import { setDemoRole } from "@/app/actions/demo-session";
+import { signOut } from "@/app/actions/auth";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { Dialog } from "@/components/ui/Dialog";
 import { AssociationLogo } from "@/components/associations/AssociationLogo";
 import { accountName, accountShortName, studyLine } from "@/components/account/identity";
 import { ACCOUNT_NAV } from "./nav";
-import { DemoRoleSwitcher } from "./DemoRoleSwitcher";
 
 interface Props {
   session: Session;
@@ -49,12 +48,14 @@ export function UserMenu({ session, managed }: Props) {
 
   const user = session.user;
   if (!user) {
+    // Signed in with the first factor only: the session is not open yet.
+    const pendingMfa = session.pending === "mfa";
     return (
       <Link
-        href={routes.login}
+        href={pendingMfa ? routes.loginVerification : routes.login}
         className="inline-flex min-h-10 items-center whitespace-nowrap rounded-sm border-2 border-line-strong px-3 type-button text-[0.78rem] hover:border-fg xl:px-4"
       >
-        Se connecter
+        {pendingMfa ? "Terminer la connexion" : "Se connecter"}
       </Link>
     );
   }
@@ -68,7 +69,7 @@ export function UserMenu({ session, managed }: Props) {
         onClick={() => setOpen((o) => !o)}
         className="flex min-h-10 items-center gap-2.5 rounded-sm py-1 pl-1 pr-2 hover:bg-fg/8"
       >
-        <Avatar name={accountName(user)} photo={user.avatar} accent="rose" size={32} />
+        <Avatar name={accountName(user)} photo={user.avatar} src={user.avatarUrl} accent="rose" size={32} />
         <span className="sr-only text-[0.9rem] font-bold min-[90rem]:not-sr-only">{accountShortName(user)}</span>
         <Icon name="chevron-down" size={16} className={cx("transition-transform", open && "rotate-180")} />
       </button>
@@ -97,7 +98,7 @@ export function MobileUserButton({ session, managed }: Props) {
         className="inline-flex size-11 items-center justify-center rounded-sm hover:bg-fg/8"
       >
         {user ? (
-          <Avatar name={accountName(user)} photo={user.avatar} accent="rose" size={30} />
+          <Avatar name={accountName(user)} photo={user.avatar} src={user.avatarUrl} accent="rose" size={30} />
         ) : (
           <Icon name="user" size={22} />
         )}
@@ -110,13 +111,19 @@ export function MobileUserButton({ session, managed }: Props) {
             <AccountLinks session={session} managed={managed} />
           ) : (
             <div className="flex flex-col gap-4 px-2 py-3">
-              <p className="type-card">Connecte-toi avec ton mail GEM</p>
-              <p className="text-muted">Pour enregistrer des soirées, suivre tes candidatures et recevoir les rappels.</p>
+              <p className="type-card">
+                {session.pending === "mfa" ? "Il te reste une étape" : "Connecte-toi avec ton mail GEM"}
+              </p>
+              <p className="text-muted">
+                {session.pending === "mfa"
+                  ? "Entre le code de ton application d'authentification pour ouvrir ton espace."
+                  : "Pour retrouver ton espace, tes soirées et tes candidatures."}
+              </p>
               <Link
-                href={routes.login}
+                href={session.pending === "mfa" ? routes.loginVerification : routes.login}
                 className="inline-flex min-h-12 items-center justify-center rounded-sm bg-accent type-button text-accent-fg"
               >
-                Se connecter
+                {session.pending === "mfa" ? "Terminer la connexion" : "Se connecter"}
               </Link>
             </div>
           )}
@@ -128,9 +135,6 @@ export function MobileUserButton({ session, managed }: Props) {
               <Icon name="shield" size={20} />
               Signaler une situation — VSS / VDH
             </Link>
-          </div>
-          <div className="mt-3 border-t border-line px-2 pt-4">
-            <DemoRoleSwitcher current={session.role} />
           </div>
         </div>
       </Dialog>
@@ -150,12 +154,12 @@ function useCloseOnNavigate(setOpen: (open: boolean) => void) {
 
 function AccountLinks({ session, managed }: Props) {
   const user = session.user!;
-  // Demo accounts say what they are; real ones show the known study details only.
-  const detail = user.demoLabel ? "Mode démo · aucune donnée perso" : studyLine(user);
+  // Only what the student filled in; nothing when they skipped it.
+  const detail = session.pending === "onboarding" ? "Profil à compléter" : studyLine(user);
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-3 px-2 py-3">
-        <Avatar name={accountName(user)} photo={user.avatar} accent="rose" size={44} />
+        <Avatar name={accountName(user)} photo={user.avatar} src={user.avatarUrl} accent="rose" size={44} />
         <div className="min-w-0">
           <p className="truncate font-bold">{accountName(user)}</p>
           {detail && <p className="truncate type-meta text-subtle">{detail}</p>}
@@ -190,9 +194,7 @@ function AccountLinks({ session, managed }: Props) {
           </ul>
         </div>
       )}
-      <form action={setDemoRole} className="border-t border-line pt-1.5">
-        <input type="hidden" name="role" value="visiteur" />
-        <input type="hidden" name="redirectTo" value={routes.home} />
+      <form action={signOut} className="border-t border-line pt-1.5">
         <button type="submit" className="flex min-h-11 w-full items-center gap-3 rounded-sm px-2 font-semibold text-muted hover:bg-fg/8 hover:text-fg">
           <Icon name="logout" size={18} />
           Se déconnecter

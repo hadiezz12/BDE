@@ -7,7 +7,7 @@ import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { EVENT_CATEGORY_LABEL, dateParts, formatDayFull, formatPrice, plural } from "@/lib/format";
 import { parisDateKey } from "@/lib/time";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getEvent, getEvents, getRelatedEvents } from "@/lib/data/events";
 import { getEventSeries, getEventSeriesById, getEventSeriesBySlug } from "@/lib/data/event-series";
 import { getAssociationById } from "@/lib/data/associations";

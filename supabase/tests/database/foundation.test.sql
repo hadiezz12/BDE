@@ -10,15 +10,22 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(13);
 
--- The private schema exists and the API roles cannot reach it.
+-- The private schema exists, visitors cannot reach it, and signed-in users
+-- can call only the helpers RLS policies need. Granting another one is a
+-- deliberate decision: add it to this list in the same migration.
 select has_schema('private', 'the private schema exists');
 select ok(
   not has_schema_privilege('anon', 'private', 'usage'),
   'anon has no usage on the private schema'
 );
-select ok(
-  not has_schema_privilege('authenticated', 'private', 'usage'),
-  'authenticated has no usage on the private schema'
+select is_empty(
+  $$ select p.oid::regprocedure::text
+       from pg_proc p
+       join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'private'
+        and has_function_privilege('authenticated', p.oid, 'execute')
+        and p.proname not in ('mfa_requirement_met') $$,
+  'authenticated can execute only the allowlisted private helpers'
 );
 
 -- The shared updated_at trigger function.

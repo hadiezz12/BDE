@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { getSession } from "@/lib/demo-session";
+import { getManagePreviewSession as getSession } from "@/lib/manage-preview";
 import type { Association, AssociationRef, DemoRole, UserProfile } from "@/lib/types";
 import { getAssociation, getAssociationsByIds, toRef } from "./associations";
 import { getEvents } from "./events";
@@ -15,8 +15,9 @@ import { getApplicants } from "./users";
  * [asso] layout shows the gate, and every section page asks again through
  * getManageContext() before reading anything.
  *
- * Phase 1: rights come from the demo session (UserProfile.managedAssociationIds).
- * Phase 2: the same shapes, backed by Supabase Auth + RLS.
+ * Until Phase 4 nobody manages anything: in development the viewer is the
+ * fictional demo officer (lib/manage-preview.ts), in production nobody.
+ * Phase 4 replaces this with scoped permissions checked by the database.
  */
 
 export interface ManageContext {

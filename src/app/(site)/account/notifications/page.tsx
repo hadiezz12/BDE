@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { routes } from "@/lib/routes";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getNotifications } from "@/lib/data/users";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";

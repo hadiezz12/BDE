@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ApplicationStatus } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { APPLICATION_STATUS_LABEL, plural } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getApplications } from "@/lib/data/users";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";

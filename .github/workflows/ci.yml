@@ -75,3 +75,43 @@ jobs:
             echo "::error file=src/types/database.types.ts::src/types/database.types.ts does not match the migrations. Run npm run db:types (or db:types:linked) and commit the result."
             exit 1
           fi
+
+  e2e:
+    name: End-to-end — sign-in, onboarding, profile, MFA (local stack)
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          # Keep in step with the "supabase" devDependency in package.json.
+          version: 2.120.0
+      - run: npm ci
+      - name: Start the local Supabase stack (auth, storage, mail catcher)
+        run: supabase start -x studio,imgproxy,logflare,vector,supavisor,realtime
+      - name: Point the app at the local stack
+        # Local-stack values only (fixed demo keys of the CLI), never a hosted project.
+        run: |
+          supabase status -o json > "$RUNNER_TEMP/status.json"
+          echo "status keys: $(jq -r 'keys | join(", ")' "$RUNNER_TEMP/status.json")"
+          API_URL=$(jq -r '.API_URL // .api_url // empty' "$RUNNER_TEMP/status.json")
+          KEY=$(jq -r '.PUBLISHABLE_KEY // .publishable_key // .ANON_KEY // .anon_key // empty' "$RUNNER_TEMP/status.json")
+          test -n "$API_URL" && test -n "$KEY"
+          printf 'NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "$API_URL" "$KEY" > .env.local
+      - run: npm run db:check
+      - run: npm run build
+      - name: Start the app
+        run: |
+          npx next start -p 3020 > "$RUNNER_TEMP/next.log" 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:3020/ > /dev/null && exit 0; sleep 1; done
+          cat "$RUNNER_TEMP/next.log"; exit 1
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - name: App log on failure
+        if: failure()
+        run: tail -n 200 "$RUNNER_TEMP/next.log" || true

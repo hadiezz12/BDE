@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ApplicationItem, CampaignItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { APPLICATION_STATUS_LABEL, formatDayMonth, plural } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getAssociationsByIds } from "@/lib/data/associations";
 import { getCampaigns } from "@/lib/data/recruitment";
 import { getApplications } from "@/lib/data/users";

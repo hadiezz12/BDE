@@ -111,3 +111,64 @@ foundational choice.
 - **Reason:** proves on every push that the repository alone recreates the backend, including
   on machines without Docker.
 - **Consequence:** deployment to dev/staging and production stays a deliberate `db push`.
+
+## D12. School e-mail + 6-digit code, no password, SSO ready but off
+
+- **Decision:** students sign in with their school address and a code sent by e-mail (Supabase
+  email OTP). Institutional sign-in (Microsoft Entra ID or Google Workspace) is implemented behind
+  `AUTH_SSO_PROVIDER` and stays off.
+- **Reason:** no institutional OAuth credentials exist yet, and inventing them is not an option.
+  A code works on any device (a link opened on another phone would not), and no new password to
+  forget or leak.
+- **Alternatives:** magic link (breaks across devices, prefetched by some mail scanners); password
+  (one more secret, plus reset flows); social logins (not a school identity).
+- **Consequence:** production needs its own SMTP sender before launch; switching SSO on is a
+  configuration step, not a rewrite.
+
+## D13. Signup eligibility in the database, enforced by Supabase Auth, default deny
+
+- **Decision:** a before-user-created hook (`private.before_user_created`) checks every new
+  identity against `private.allowed_signup_domains` and `private.signup_email_exceptions`. An
+  e-mail-change trigger keeps existing accounts on eligible addresses.
+- **Reason:** a frontend check is not a security boundary; the hook covers every signup method,
+  including OAuth. With no configuration nothing is allowed, so an unknown production domain can
+  never mean "anyone can sign up".
+- **Alternatives:** Supabase's "allowed email domains" style settings (not available as such for
+  email OTP), an Edge Function hook (more moving parts), checks in Server Actions only (bypassable).
+- **Consequence:** each environment configures its domains as data; the real school domain must
+  be confirmed before launch.
+
+## D14. Private profiles, no e-mail copy, no role
+
+- **Decision:** `public.profiles` holds only what the site shows about a person; the owner alone
+  reads and edits it; the e-mail stays in `auth.users`.
+- **Reason:** one source of truth for identity; privacy by default; authorization belongs to
+  Phase 4's scoped model, never to a profile column.
+- **Consequence:** public team pages will use a separate projection (view) with chosen columns.
+
+## D15. Avatars in a private bucket, uploaded through a Server Action
+
+- **Decision:** bucket `avatars` is private; the server checks the bytes, picks the path
+  (`{user_id}/{uuid}.ext`) and uploads with the student's session; pictures are shown through
+  short-lived signed URLs.
+- **Reason:** students' faces are personal data; the browser must not choose names or paths.
+- **Consequence:** showing avatars to others later needs a deliberate rule (a public projection or
+  a second bucket), not a flag flip.
+
+## D16. MFA enforced by the database once enrolled
+
+- **Decision:** TOTP is optional; a user who enrolled it gets nothing from their rows at aal1
+  (restrictive policies through `private.mfa_requirement_met()`), and the app routes them to the
+  second step.
+- **Reason:** UI checks can be skipped; the database cannot. This is also the foundation Phase 4
+  needs to require aal2 for governance actions.
+- **Consequence:** the first grant of the `private` schema to `authenticated` (usage + this one
+  helper); the foundation test now checks an explicit allowlist.
+
+## D17. `/manage` unavailable in production until Phase 4
+
+- **Decision:** production shows "L'espace des bureaux ouvre bientôt" on every `/manage` page for
+  everyone; `next dev` keeps the Phase 1 shell as a preview with a fictional officer.
+- **Reason:** authenticated is not authorized; no real permission model exists yet.
+- **Consequence:** Phase 4 replaces `lib/manage-preview.ts` with scoped permissions checked by the
+  database.

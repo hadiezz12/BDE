@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
-import type { DemoRole } from "@/lib/types";
 import { cx } from "@/lib/cx";
-import { DemoRoleSwitcher } from "@/components/layout/DemoRoleSwitcher";
 
 /**
  * The page region of the workspace (skip-link target #contenu).
@@ -16,13 +14,16 @@ export function ManageMain({ children, className }: { children: ReactNode; class
   );
 }
 
-/** Bottom strip: the Phase 1 demo switcher, reachable at every size. */
-export function ManageFooter({ role }: { role: DemoRole }) {
+/** Bottom strip: says plainly what this workspace is today. */
+export function ManageFooter({ preview }: { preview: boolean }) {
   return (
     <footer className="border-t border-line">
-      <div className="flex flex-col gap-5 px-[var(--gutter)] py-6 lg:flex-row lg:items-end lg:justify-between lg:px-6">
-        <DemoRoleSwitcher current={role} />
-        <p className="type-meta text-subtle">Version de démonstration · comptes démo, rien n&apos;est enregistré pour l&apos;instant</p>
+      <div className="px-[var(--gutter)] py-6 lg:px-6">
+        <p className="type-meta text-subtle">
+          {preview
+            ? "Aperçu de développement · compte démo fictif, aucune donnée réelle, aucun droit réel"
+            : "Espace assos · ouverture avec les droits des bureaux"}
+        </p>
       </div>
     </footer>
   );

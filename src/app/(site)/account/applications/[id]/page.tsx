@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { routes } from "@/lib/routes";
 import { APPLICATION_STATUS_LABEL, dateParts, formatDayFull, formatDayMonth, formatTime, formatWhen } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getApplication } from "@/lib/data/users";
 import { AssociationIdentity } from "@/components/associations/AssociationIdentity";
 import { Breadcrumbs } from "@/components/layout/PageHeader";

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { ApplicationItem, Association, CampaignItem, EventItem, PostItem as Post } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { APPLICATION_STATUS_LABEL, formatDateLong, formatDayMonth, plural } from "@/lib/format";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getAssociation } from "@/lib/data/associations";
 import { getEventSeries } from "@/lib/data/event-series";
 import { getEvents } from "@/lib/data/events";

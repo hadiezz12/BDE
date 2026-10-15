@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import type { ApplicationItem, Association, EventItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
-import { getSession } from "@/lib/demo-session";
+import { getSession } from "@/lib/session";
 import { getEvents, getEventsByIds } from "@/lib/data/events";
 import { getEventSeries } from "@/lib/data/event-series";
 import { getAssociations, getAssociationsByIds } from "@/lib/data/associations";
