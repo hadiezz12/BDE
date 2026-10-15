@@ -27,6 +27,7 @@ export type Database = {
           study_year: number | null
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           avatar_path?: string | null
           created_at?: string

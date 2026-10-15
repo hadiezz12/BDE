@@ -69,7 +69,9 @@ test("a student signs up, onboards, edits their profile, turns on MFA, and still
 
   // Avatar: own folder, private bucket, shown through a signed URL.
   await page.locator('input[type="file"]').setInputFiles({ name: "moi.png", mimeType: "image/png", buffer: PINK_PIXEL_PNG });
-  await expect(page.getByText("Photo enregistrée.")).toBeVisible();
+  // Asserting on the field's status line shows its error message if the upload fails.
+  const avatarStatus = page.getByText("JPEG, PNG ou WebP, 2 Mo maximum.").locator("xpath=../following-sibling::p[@role='status']");
+  await expect(avatarStatus).toHaveText("Photo enregistrée.");
   await expect(page.getByRole("button", { name: "Changer la photo" })).toBeVisible();
 
   // 14. Turn on two-factor authentication.

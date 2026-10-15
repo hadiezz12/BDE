@@ -67,8 +67,8 @@ export async function waitForResendWindow(since: number) {
   if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
 }
 
-/** A tiny valid PNG (1×1, pink) for the avatar upload. */
+/** A tiny valid PNG (8×8, pink, real CRCs: browsers refuse a corrupt one) for the avatar upload. */
 export const PINK_PIXEL_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP4+5/hPwAHggJ/PIcCZQAAAABJRU5ErkJggg==",
+  "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAEklEQVR4nGN4Ydj9Hx9mGBkKAPUyqMHuoWZCAAAAAElFTkSuQmCC",
   "base64",
 );
