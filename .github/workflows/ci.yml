@@ -72,7 +72,9 @@ jobs:
           cd "$RUNNER_TEMP"
           # Keep the TypeScript version in step with package-lock.json.
           if ! npx --yes -p typescript@5.9.3 tsc --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target es2022 compare.ts; then
-            echo "::error file=src/types/database.types.ts::src/types/database.types.ts does not match the migrations. Run npm run db:types (or db:types:linked) and commit the result."
+            encode() { tr -d '\015' | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}'; }
+            echo "::error file=src/types/database.types.ts::src/types/database.types.ts does not match the migrations. Run npm run db:types (or db:types:linked) and commit the result.%0A$(diff -u -w committed.ts generated.ts | head -c 30000 | encode)"
+            echo "::notice title=Expected database.types.ts::$(head -c 60000 generated.ts | encode)"
             exit 1
           fi
 

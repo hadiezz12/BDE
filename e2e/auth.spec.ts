@@ -62,7 +62,7 @@ test("a student signs up, onboards, edits their profile, turns on MFA, and still
   await expect(page.getByRole("heading", { level: 1, name: "Profil" })).toBeVisible();
   await page.getByLabel("Nom affiché").fill("Alice E.");
   await page.getByLabel("Année").selectOption("2");
-  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(page.getByText("Enregistré.")).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Nom affiché")).toHaveValue("Alice E.");
