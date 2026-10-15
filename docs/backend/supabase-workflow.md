@@ -111,7 +111,7 @@ refused, and keep fixtures inside the file. `foundation.test.sql` holds the whol
 migration → db reset (or db push to dev) → npm run db:types (or db:types:linked) → typecheck
 ```
 
-CI regenerates it from the local stack and fails if the committed file differs.
+CI regenerates it from the local stack and fails if the schema it describes differs from the committed file. It compares the types, not the text: the local generator (`db:types`) and the hosted one (`db:types:linked`) format the same schema differently, and either output is fine to commit.
 
 ## Branching
 
