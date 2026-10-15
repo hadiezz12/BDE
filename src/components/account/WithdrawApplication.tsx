@@ -48,7 +48,7 @@ export function WithdrawApplication({ associationName, draft }: { associationNam
         <p className="type-small text-muted">
           {draft
             ? "Tes réponses et tes pièces jointes seraient effacées. Tu pourrais toujours recommencer depuis la fiche de poste."
-            : `${associationName} serait prévenu·e et ta candidature passerait en « Retirée ». Tes réponses ne seraient plus lues.`}
+            : `Le bureau de ${associationName} serait prévenu et ta candidature passerait en « Retirée ». Tes réponses ne seraient plus lues.`}
         </p>
         <div className="flex flex-wrap gap-2.5">
           <Button variant="danger" size="sm" onClick={() => go("done")}>

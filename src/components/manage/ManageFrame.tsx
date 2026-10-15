@@ -22,7 +22,7 @@ export function ManageFooter({ role }: { role: DemoRole }) {
     <footer className="border-t border-line">
       <div className="flex flex-col gap-5 px-[var(--gutter)] py-6 lg:flex-row lg:items-end lg:justify-between lg:px-6">
         <DemoRoleSwitcher current={role} />
-        <p className="type-meta text-subtle">Version de démonstration · données fictives, rien n&apos;est enregistré</p>
+        <p className="type-meta text-subtle">Version de démonstration · comptes démo, rien n&apos;est enregistré pour l&apos;instant</p>
       </div>
     </footer>
   );

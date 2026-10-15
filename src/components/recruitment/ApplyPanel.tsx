@@ -67,14 +67,14 @@ export function ApplyPanel({
           aria-hidden
           className={cx(
             "mt-1 flex items-baseline gap-1 type-numeral",
-            status === "cloturee" ? "text-subtle" : urgent ? "text-warn" : "text-assoc-text",
+            status === "cloturee" ? "text-subtle" : urgent ? "text-accent-text" : "text-assoc-text",
           )}
         >
           <span className="text-[4.25rem]">{count.value}</span>
           {count.unit && <span className="text-[1.75rem]">{count.unit}</span>}
         </p>
         <div className="flex flex-col gap-0.5">
-          <p className={cx("type-meta font-bold", urgent && "text-warn")}>{count.label}</p>
+          <p className={cx("type-meta font-bold", urgent && "text-accent-text")}>{count.label}</p>
           <p className="type-meta text-muted">{exact}</p>
         </div>
         <p className="type-small text-muted">

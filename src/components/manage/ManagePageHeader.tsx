@@ -66,7 +66,7 @@ export function ManageSection({
   const id = useId();
   return (
     <section aria-labelledby={id} className={cx("flex flex-col gap-3", className)}>
-      <div className="flex min-h-9 items-end justify-between gap-4 border-b-2 border-fg pb-2">
+      <div className="flex min-h-9 flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b-2 border-fg pb-2">
         <h2 id={id} className="flex items-baseline gap-2.5 type-button text-[0.95rem]">
           {title}
           {count !== undefined && <span className="type-meta text-subtle normal-case">{count}</span>}

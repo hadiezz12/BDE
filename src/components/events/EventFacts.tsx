@@ -10,7 +10,7 @@ import { timeRange, venueLine } from "./event-facts";
  * yes. Times and prices in mono (metadata), the venue in plain text.
  *
  *  - stack  : one line each with a small glyph (rows, posters, detail aside)
- *  - inline : a single run "20h30 → 1h · Amphi A · campus" (compact lists)
+ *  - inline : a single run "20h30 → 1h · salle · campus" (compact lists)
  */
 export type EventFact = "time" | "venue" | "price";
 

@@ -78,3 +78,30 @@ export function EventPosterSkeleton({ className }: { className?: string }) {
     </div>
   );
 }
+
+/** Stand-in for a SeriesRow (the 8 events of the year on /events). */
+export function SeriesRowSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cx(
+        "grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-4 gap-y-3 border-t border-line-strong py-6",
+        "sm:grid-cols-[6rem_minmax(0,1fr)] sm:gap-x-6",
+        "lg:grid-cols-[7rem_minmax(0,5fr)_minmax(0,5fr)_minmax(0,3fr)] lg:gap-x-8 lg:py-8",
+        className,
+      )}
+    >
+      <Skeleton className="size-[4.5rem] rounded-full sm:size-24 lg:size-28" />
+      <span className="flex flex-col gap-3">
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-7 w-4/5" />
+        <SkeletonText lines={2} className="lg:hidden" />
+      </span>
+      <SkeletonText lines={3} className="hidden pt-1 lg:flex" />
+      <span className="hidden flex-col gap-2 pt-1 lg:flex">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-4 w-32" />
+      </span>
+    </div>
+  );
+}

@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 
 /**
  * The event page's only interactive bits: register / waiting list, and the
- * "Sauvegarder" toggle. They live in two places (side panel on desktop,
+ * "Enregistrer" toggle. They live in two places (side panel on desktop,
  * action bar on phones), so one provider holds the state and both stay in
  * sync. The page itself remains server-rendered; these are tiny leaves.
  *
@@ -92,7 +92,7 @@ export function RegisterButton({
 }
 
 /**
- * Toggle button (aria-pressed, constant name "Sauvegarder"). `compact` is the
+ * Toggle button (aria-pressed, constant name "Enregistrer"). `compact` is the
  * square icon-only version for the phone bar.
  */
 export function SaveToggle({ compact, className }: { compact?: boolean; className?: string }) {
@@ -104,7 +104,7 @@ export function SaveToggle({ compact, className }: { compact?: boolean; classNam
       <button
         type="button"
         aria-pressed={saved}
-        aria-label="Sauvegarder"
+        aria-label="Enregistrer"
         onClick={toggleSaved}
         className={cx(
           "inline-grid size-11 shrink-0 place-items-center rounded-sm border-2 transition-colors duration-150",
@@ -129,7 +129,7 @@ export function SaveToggle({ compact, className }: { compact?: boolean; classNam
       )}
     >
       <span className={saved ? "text-accent-text" : undefined}>{icon}</span>
-      Sauvegarder
+      Enregistrer
     </button>
   );
 }
@@ -137,7 +137,7 @@ export function SaveToggle({ compact, className }: { compact?: boolean; classNam
 const NOTICE: Record<DemoAction, string> = {
   register: "l'inscription n'est pas encore ouverte sur le site, rien n'est envoyé pour l'instant.",
   waitlist: "la liste d'attente n'est pas encore branchée, rien n'est envoyé pour l'instant.",
-  save: "rien n'est enregistré, la sauvegarde s'oublie dès que tu recharges la page.",
+  save: "rien n'est enregistré pour l'instant, ton choix s'oublie dès que tu recharges la page.",
 };
 
 /**

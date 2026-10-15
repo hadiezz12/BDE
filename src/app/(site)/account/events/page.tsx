@@ -67,8 +67,8 @@ export default async function AccountEventsPage() {
                 </ButtonLink>
               }
             >
-              Inscris-toi depuis la page d&apos;un événement : ton billet arrive ici, avec l&apos;heure, le lieu et ce
-              qu&apos;il faut prendre avec toi.
+              Les dates de chaque événement seront annoncées par le bureau. Une fois inscrit·e depuis sa page, ton
+              billet arrive ici, avec l&apos;heure, le lieu et ce qu&apos;il faut prendre avec toi.
             </EmptyState>
           )}
         </section>

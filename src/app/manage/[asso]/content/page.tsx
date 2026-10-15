@@ -134,6 +134,7 @@ export default async function ManageContentPage({ params, searchParams }: { para
         <ManageEmpty
           as="h2"
           title={`${association.shortName ?? association.name} n'a encore rien publié dans le fil`}
+          demo={CREATE_NOTICE}
           actions={
             <>
               {createButton("Écrire un premier article")}
@@ -144,8 +145,9 @@ export default async function ManageContentPage({ params, searchParams }: { para
           }
         >
           <p>
-            Le récap d&apos;une soirée, l&apos;annonce d&apos;un live, une brève sur vos horaires&nbsp;: ce que tu publies
-            ici arrive dans le fil du campus et sur la page publique de l&apos;association.
+            Le récap d&apos;une soirée, l&apos;ouverture d&apos;une billetterie, une brève pour la promo&nbsp;: les
+            articles que le bureau publie ici arrivent dans le fil du campus et sur la page publique de
+            l&apos;association.
           </p>
         </ManageEmpty>
       ) : (

@@ -98,13 +98,13 @@ export function CampaignRow({
           aria-hidden
           className={cx(
             "flex items-baseline gap-1 type-numeral",
-            closed ? "text-subtle" : urgent ? "text-warn" : "text-assoc-text",
+            closed ? "text-subtle" : urgent ? "text-accent-text" : "text-assoc-text",
           )}
         >
           <span className={closed ? "text-[2.6rem] sm:text-[3.4rem]" : "text-[3.6rem] sm:text-[5.5rem]"}>{count.value}</span>
           {count.unit && <span className="text-[1.5rem] sm:text-[2rem]">{count.unit}</span>}
         </p>
-        <p className={cx("type-meta", urgent ? "font-bold text-warn" : "text-muted")}>{count.label}</p>
+        <p className={cx("type-meta", urgent ? "font-bold text-accent-text" : "text-muted")}>{count.label}</p>
       </div>
 
       {/* Seats */}

@@ -2,7 +2,7 @@ import type { CampusEvent } from "@/lib/types";
 import { cx } from "@/lib/cx";
 
 /**
- * How full an event is, for the bureau: "141/160 · 88 %" over a thin bar in
+ * How full an event is, for the bureau: "inscrit·es/places · %" over a thin bar in
  * the association's colour. Numbers carry the meaning (the bar repeats them),
  * and a sentence says it for screen readers. Events without a counted gauge
  * say so in words instead of drawing an empty bar.

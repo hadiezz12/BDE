@@ -31,7 +31,7 @@ export default async function AccountLayout({ children }: { children: ReactNode 
   const unread = (await getNotifications(session.user.id)).filter((n) => !n.read).length;
 
   return (
-    <div data-surface="paper" className="grain pb-section">
+    <div data-surface="paper" className="grain pb-[var(--section)]">
       <AccountNav unread={unread} />
       {children}
     </div>

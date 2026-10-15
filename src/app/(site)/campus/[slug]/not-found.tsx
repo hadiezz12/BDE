@@ -21,7 +21,8 @@ export default function CampusPostNotFound() {
         </>
       }
     >
-      Le lien a peut-être une coquille, ou l&apos;asso a retiré l&apos;article. Le reste du fil est toujours là.
+      Le lien a peut-être une coquille, ou l&apos;article a été retiré. Tout ce qui est paru se trouve sur le fil du
+      campus.
     </StatePage>
   );
 }

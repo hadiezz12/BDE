@@ -27,7 +27,7 @@ export function AssociationLogo({
       data-accent={accent}
       className={cx(
         "relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full",
-        logo ? "bg-[#0c0a0e]" : "bg-assoc text-assoc-fg",
+        logo ? "bg-ink" : "bg-assoc text-assoc-fg",
         ring ? "shadow-assoc-glow ring-2 ring-assoc" : "ring-1 ring-line-strong",
         className,
       )}
@@ -47,7 +47,7 @@ export function AssociationLogo({
   );
 }
 
-/** "Ourcq FM" → "OF", "Atelier 93" → "A93", "Altitude" → "AL". */
+/** Initials: "Club Photo" → "CP", "Studio 21" → "S21", "Escalade" → "ES" (made-up examples). */
 function monogram(name: string): string {
   const cleaned = name.replace(/^(GEM|Le|La|Les)\s+/i, "");
   const words = cleaned.split(/\s+/).filter(Boolean);

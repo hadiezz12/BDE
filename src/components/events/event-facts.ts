@@ -107,11 +107,11 @@ export function eventAccent(e: Pick<EventItem, "emblem" | "association">): Accen
 
 /* ---- Registration -------------------------------------------------------- */
 
-/** Green = open, amber text = last places, cyan = not yet / waiting list, grey = closed. */
+/** Green = open, brand pink = last places (amber is kept for safety), cyan = not yet / waiting list, grey = closed. */
 export const REGISTRATION_TONE: Record<RegistrationStatus, StatusTone> = {
   libre: "ok",
   ouverte: "ok",
-  "derniere-chance": "warn",
+  "derniere-chance": "accent",
   bientot: "info",
   "liste-attente": "info",
   complet: "neutral",
@@ -246,7 +246,7 @@ export function timeRange(e: Timed, now = new Date()): TimeRange {
   return { text: `${start} → ${end}`, spoken: `de ${start} à ${end}` };
 }
 
-/** "Amphi A · campus" · "La Machine du Moulin Rouge · Paris 18e". */
+/** "Nom de la salle · campus" · "Nom du lieu · Paris" (format only). */
 export function venueLine(v: Venue): string {
   if (v.onCampus) return /campus/i.test(v.name) ? v.name : `${v.name} · campus`;
   return v.city && !v.name.includes(v.city) ? `${v.name} · ${v.city}` : v.name;

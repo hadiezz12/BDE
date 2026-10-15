@@ -1,22 +1,21 @@
-import type { DemoRole, Photo } from "@/lib/types";
+import type { DemoRole } from "@/lib/types";
 import { cx } from "@/lib/cx";
 import { setDemoRole } from "@/app/actions/demo-session";
-import { Avatar } from "@/components/ui/Avatar";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 /**
  * PHASE 1 ONLY — the login screen's "Mode démo": three large choices that
  * call the existing setDemoRole action. Each choice is its own tiny form, so
- * it works without JavaScript and can land on its own page. Removed when
- * Supabase Auth lands.
+ * it works without JavaScript and can land on its own page. The accounts
+ * are demo accounts and are named as such ("Compte démo — étudiant·e"),
+ * never as a person. Removed when Supabase Auth lands.
  */
 export interface DemoChoice {
   role: DemoRole;
+  /** "Visiteur", or the demo account's label ("Compte démo — étudiant·e"). */
   label: string;
-  /** Who the role renders as ("Inès Belkacem"); none for the visitor. */
-  person?: string;
-  photo?: Photo;
+  icon: IconName;
   detail: string;
   /** Same-site path to land on after switching. */
   redirectTo: string;
@@ -47,24 +46,17 @@ export function DemoRolePicker({
                   active ? "border-fg bg-raised" : "border-line-strong/60 hover:border-fg",
                 )}
               >
-                {c.person ? (
-                  <span aria-hidden className="shrink-0">
-                    <Avatar name={c.person} photo={c.photo} accent="rose" size={40} />
-                  </span>
-                ) : (
-                  <span
-                    aria-hidden
-                    className="grid size-10 shrink-0 place-items-center rounded-full border border-line-strong text-muted"
-                  >
-                    <Icon name="user" size={20} />
-                  </span>
-                )}
+                <span
+                  aria-hidden
+                  className="grid size-10 shrink-0 place-items-center rounded-full border border-line-strong text-muted"
+                >
+                  <Icon name={c.icon} size={20} />
+                </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="font-bold leading-snug">
                       <span className="sr-only">Continuer en tant que </span>
                       {c.label}
-                      {c.person && <span className="font-semibold text-muted"> — {c.person}</span>}
                     </span>
                     {active && <StatusBadge tone="ok">Profil actuel</StatusBadge>}
                   </span>

@@ -9,6 +9,7 @@ import { EventFacts } from "@/components/events/EventFacts";
 import { PersonalMarks } from "@/components/events/PersonalMarks";
 import { eventAccent, eventSticker } from "@/components/events/event-facts";
 import { Sticker } from "@/components/ui/Sticker";
+import { accountName } from "./identity";
 
 const nbsp = (s: string) => s.replace(/ €/g, " €");
 
@@ -29,7 +30,7 @@ export function RegisteredTicket({
   className,
 }: {
   event: EventItem;
-  holder: Pick<UserProfile, "firstName" | "lastName" | "memberCard">;
+  holder: Pick<UserProfile, "firstName" | "lastName" | "demoLabel" | "memberCard">;
   /** Show only the first N practical lines, then a link to the rest. */
   practicalLimit?: number;
   headingLevel?: 2 | 3;
@@ -99,7 +100,7 @@ export function RegisteredTicket({
 
       <footer className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-line bg-sunken px-4 py-2.5 type-meta text-muted sm:px-6">
         <span>
-          Au nom de <span className="font-bold text-fg">{`${holder.firstName} ${holder.lastName}`}</span>
+          Au nom de <span className="font-bold text-fg">{accountName(holder)}</span>
         </span>
         <span>
           {price}

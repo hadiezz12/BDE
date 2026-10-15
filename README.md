@@ -3,9 +3,22 @@
 Le hub numérique du BDE de GEM Alpine Business School, campus de Paris : agenda des soirées et événements,
 associations, recrutements, fil du campus, espace étudiant et espace de gestion des associations.
 
-> **Phase 1** — design system, architecture front et écrans représentatifs, sur données fictives.
-> Aucun backend : pas d'authentification réelle, pas d'inscription, pas d'envoi de formulaire.
+> **Phase 1** — design system, architecture front et écrans, avec **le seul contenu réel connu** : celui de
+> la maquette du BDE (le Very Pink Club, ses 8 événements de l'année, la carte cotisante, la page VSS / VDH).
+> Aucun backend : pas d'authentification réelle, pas d'inscription, pas de paiement, pas d'envoi de formulaire.
 > La direction artistique et les règles sont documentées dans [`DESIGN.md`](DESIGN.md).
+
+## Contenu réel uniquement
+
+Le site part chez de vrais étudiant·es : il n'affiche que des faits donnés par le BDE (la maquette) ou des
+informations publiques réelles (17, 112, 114, 3919, arretonslesviolences.gouv.fr). Aucune association, personne,
+date, lieu, prix, jauge, chiffre, photo ou coordonnée inventés pour « remplir ».
+
+- Les autres associations n'existent pas encore sur la plateforme : **chaque présidente ou président créera la page
+  de son asso** (présentation, bureau, réseaux, événements, recrutements, articles).
+- Les dates, lieux et tarifs de chaque édition des 8 événements seront **annoncés par le bureau**.
+- Là où il manque du contenu, la page montre un état vide dessiné qui dit qui l'ajoutera.
+- Les données de développement éventuelles doivent être manifestement fictives et ne jamais partir en production.
 
 ## Lancer le projet
 
@@ -25,9 +38,10 @@ Sur la machine de dev Windows (Node portable), utiliser `H:\tools\vpc-dev.cmd`.
 
 ## Mode démo (Phase 1)
 
-Le pied de page (et le menu compte sur mobile) propose **Mode démo** : afficher le site en tant que
-*Visiteur*, *Étudiant·e* (Inès Belkacem) ou *Responsable asso* (Yanis Haddad, qui gère le Very Pink Club
-et Ourcq FM). C'est un simple cookie lu par `src/lib/demo-session.ts` — il sera remplacé par Supabase Auth.
+Le pied de page (et la page de connexion) propose **Mode démo** : afficher le site en tant que *Visiteur*
+(par défaut), *Compte démo — étudiant·e* ou *Compte démo — responsable d'asso* (qui gère uniquement le Very
+Pink Club). Les comptes démo ne sont pas de vraies personnes et démarrent vides : aucune inscription, candidature,
+notification ni carte. C'est un simple cookie lu par `src/lib/demo-session.ts` — il sera remplacé par Supabase Auth.
 
 ## Structure
 
@@ -42,7 +56,7 @@ src/
   components/
     ui/ layout/ brand/ media/ states/ search/   primitives et coque partagées
     events/ associations/ recruitment/ campus/ account/ manage/ …   composants métier
-  data/mock/             contenu fictif (dates relatives à aujourd'hui) + photos Unsplash créditées
+  data/mock/             contenu réel de la maquette (BDE, 8 événements, carte, VSS) ; le reste est vide
   lib/
     types.ts             types du domaine (alignés sur le futur schéma Supabase)
     data/                accès aux données — la seule couche à remplacer par Supabase
@@ -61,5 +75,5 @@ les composants ne connaissent pas la source des données.
 
 ## Crédits
 
-Logos et emblèmes : Very Pink Club. Photos de démonstration : Unsplash (licence Unsplash), crédits dans
-`src/data/mock/photos.ts`. Polices : Archivo et Space Mono (Google Fonts, OFL).
+Logos, emblèmes et textes : Very Pink Club (maquette du BDE). Aucune photo de banque d'images.
+Polices : Archivo et Space Mono (Google Fonts, OFL).

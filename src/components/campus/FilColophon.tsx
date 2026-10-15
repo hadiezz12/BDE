@@ -27,7 +27,8 @@ export function FilColophon({
     >
       <h3 className="type-card">Une info pour le fil&nbsp;?</h3>
       <p className="type-small text-muted">
-        Le fil est écrit par les assos elles-mêmes. Une brève à proposer, une coquille à signaler&nbsp;: écris au bureau.
+        Le fil est écrit par le bureau et les assos elles-mêmes, depuis leur espace asso.
+        {contactEmail && <> Une brève à proposer, une coquille à signaler&nbsp;: écris au bureau.</>}
       </p>
       {contactEmail && (
         <a href={`mailto:${contactEmail}`} className="link type-meta break-all">

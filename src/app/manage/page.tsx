@@ -8,6 +8,7 @@ import { getTasks } from "@/lib/data/users";
 import { ManageMain } from "@/components/manage/ManageFrame";
 import { ManageGateState } from "@/components/manage/ManageState";
 import { ManagePageHeader } from "@/components/manage/ManagePageHeader";
+import { greeting } from "@/components/manage/viewer";
 import {
   ManagedAssociationList,
   type ManagedAssociationEntry,
@@ -45,6 +46,7 @@ export default async function ManageChooserPage() {
   if (managed.length === 1) redirect(routes.manageHome(managed[0].slug));
 
   const user = session.user;
+  const hello = greeting(user);
   const entries: ManagedAssociationEntry[] = await Promise.all(
     managed.map(async (association) => {
       const [tasks, counts] = await Promise.all([getTasks(association.id), getManageNavCounts(association.id)]);
@@ -73,7 +75,7 @@ export default async function ManageChooserPage() {
           title="Tes associations"
           description={
             <p>
-              Salut {user.firstName}, tu es au bureau de {plural(managed.length, "association")}. Chacune a sa propre
+              {hello && <>{hello} </>}Tu es au bureau de {plural(managed.length, "association")}. Chacune a sa propre
               adresse&nbsp;: tu peux les garder ouvertes côte à côte, dans plusieurs onglets.
             </p>
           }

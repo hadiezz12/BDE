@@ -40,7 +40,12 @@ export interface ApplyFormData {
   spec: ApplicationFormSpec;
   requirements: string[];
   /** Null for visitors: the dialog explains that applying needs an account. */
-  applicant: { name: string; programme: string; email: string } | null;
+  applicant: {
+    /** Full name, or the demo label on a Phase 1 demo account. */
+    name: string;
+    /** "Programme · année · mail", only the parts that are known; "" when none is. */
+    detail: string;
+  } | null;
   /** The student's own application to this campaign, if there is one. */
   existing: { id: string; positionId: string; positionTitle: string; statusLabel: string; draft: boolean } | null;
 }
@@ -340,9 +345,7 @@ function ApplicationForm({
         <div className="flex flex-col gap-1 border-y border-line py-3.5">
           <p className="type-label text-subtle">Tu candidates en tant que</p>
           <p className="font-bold leading-snug">{applicant.name}</p>
-          <p className="type-meta break-all text-muted">
-            {applicant.programme} · {applicant.email}
-          </p>
+          {applicant.detail && <p className="type-meta break-all text-muted">{applicant.detail}</p>}
         </div>
 
         {errorEntries.length > 0 && (

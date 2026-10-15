@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { EventPoster } from "@/components/events/EventPoster";
 import type { PersonalState } from "@/components/events/PersonalMarks";
 import { eventAccent, timeRange } from "@/components/events/event-facts";
-import { euros } from "./home-facts";
+import { euros, type MemberCardLink } from "./home-facts";
 
 /**
  * The featured spread, printed on paper: the event's emblem poster with its
@@ -23,7 +23,7 @@ export function FeaturedEvent({
   index,
   personal,
   memberActive,
-  memberCardHref,
+  memberCard,
   now,
 }: {
   event: EventItem;
@@ -32,7 +32,7 @@ export function FeaturedEvent({
   personal?: PersonalState;
   /** null for a visitor (no card to speak of). */
   memberActive: boolean | null;
-  memberCardHref: string;
+  memberCard: MemberCardLink;
   now: Date;
 }) {
   const days = Math.max(0, dayDiff(now, event.startsAt));
@@ -109,8 +109,8 @@ export function FeaturedEvent({
               ) : (
                 <span>
                   <strong>{euros(memberPrice)}</strong> avec la carte cotisante, {euros(price.standard)} sans.{" "}
-                  <Link href={memberCardHref} className="link font-semibold">
-                    La carte : 30&nbsp;€ l&apos;année
+                  <Link href={memberCard.href} className="link font-semibold">
+                    {memberCard.price !== null ? `La carte : ${euros(memberCard.price)} l'année` : "Prendre la carte"}
                   </Link>
                 </span>
               )}

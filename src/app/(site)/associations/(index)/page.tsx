@@ -26,13 +26,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { Icon } from "@/components/ui/Icon";
 import { Sticker } from "@/components/ui/Sticker";
-import { AssociationSearchForm } from "./_components/AssociationSearchForm";
-import { TILE_GRID, tileLayout } from "./_components/tile-layout";
+import { AssociationSearchForm } from "../_components/AssociationSearchForm";
+import { TILE_GRID, tileLayout } from "../_components/tile-layout";
 
 export const metadata: Metadata = {
   title: "Associations",
   description:
-    "Les associations du campus de Paris de GEM : le BDE, le sport, la scène, la radio, le conseil… Où les trouver, qui les tient et lesquelles recrutent.",
+    "Les associations de GEM Alpine Business School à Paris. Le Very Pink Club, le BDE, a sa page ; chaque présidente ou président d'asso créera la sienne.",
 };
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
@@ -45,20 +45,30 @@ function parseQuery(value: string | string[] | undefined): string {
 /**
  * /associations — the index. The BDE gets its own band first; every other
  * association is a poster on an asymmetric wall. Filters live in the URL
- * (?categorie=sport&q=radio): shareable, back-button friendly, no JS needed.
+ * (?categorie=…&q=…): shareable, back-button friendly, no JS needed.
+ *
+ * Only associations that exist are listed, never placeholders. While the BDE
+ * is the only one, the wall is a designed empty state saying who will add
+ * the others, and the search and category chips stay hidden (nothing to
+ * filter); they come back on their own once there are more associations.
  */
 export default async function AssociationsPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const category = parseAssociationCategory(sp.categorie);
   const q = parseQuery(sp.q);
   const session = await getSession();
-  const memberships = session.user?.memberships ?? [];
+  const user = session.user;
+  const memberships = user?.memberships ?? [];
+  // The student's associations: the ones they belong to, then the ones they run.
+  const mineIds = [
+    ...new Set([...memberships.map((m) => m.associationId), ...(user?.managedAssociationIds ?? [])]),
+  ];
 
   const [list, counts, openCampaigns, mine] = await Promise.all([
     getAssociations({ category: category ?? undefined, q: q || undefined }),
     getAssociationCategoryCounts(),
     getCampaigns({ scope: "open" }),
-    getAssociationsByIds(memberships.map((m) => m.associationId)),
+    getAssociationsByIds(mineIds),
   ]);
 
   const seatsByAssociation = new Map<string, number>();
@@ -74,24 +84,28 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
   const others = list.filter((a) => a.category !== "bde");
   const offer = bde ? await getMemberCardOffer(bde.id) : null;
   const total = Object.values(counts).reduce((n, c) => n + (c ?? 0), 0);
+  /** Associations other than the BDE, whatever the filter. */
+  const othersTotal = total - (counts.bde ?? 0);
   const filtered = Boolean(category || q);
-  const roleOf = (id: string) => memberships.find((m) => m.associationId === id)?.role;
+  const roleOf = (id: string) =>
+    memberships.find((m) => m.associationId === id)?.role ??
+    (user?.managedAssociationIds.includes(id) ? "Tu gères sa page" : undefined);
+
+  // Filters only when there is something to filter: a chip per non-empty category, beyond "Toutes".
+  const categoryOptions = associationCategoryOptions(counts);
+  const showSearch = total > 1;
+  const showChips = categoryOptions.length > 2;
 
   let index = 0;
   const nextIndex = () => String(++index).padStart(2, "0");
 
   const othersTitle = category ? ASSOCIATION_CATEGORY_LABEL[category] : filtered ? "Résultats" : "Toutes les assos";
-  const othersKicker = [
-    plural(others.length, "asso"),
-    q ? `« ${q} »` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const othersKicker = [plural(others.length, "asso"), q ? `« ${q} »` : null].filter(Boolean).join(" · ");
 
   return (
     <>
       <PageHeader
-        kicker="Associations · campus de Paris"
+        kicker="Associations · GEM Alpine Business School, Paris"
         title={
           <>
             Trouve ta bande<span className="text-accent-text">.</span>
@@ -104,25 +118,33 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
             </Sticker>
           ) : undefined
         }
-        intro={`${total} assos, du BDE qui fait la nuit à l'atelier vélo du jeudi. Chacune dit où la trouver, qui la tient et quand elle recrute.`}
+        intro={
+          othersTotal > 0
+            ? `${plural(total, "asso")} sur la plateforme. Chacune tient sa page : présentation, rendez-vous et recrutements.`
+            : "Le Very Pink Club, le BDE, ouvre la marche. Les autres associations arrivent : chaque présidente ou président créera la page de son asso."
+        }
       >
-        <div className="flex flex-col gap-5">
-          <AssociationSearchForm query={q} category={category} className="max-w-xl" />
-          <FilterChips
-            label="Filtrer par catégorie"
-            param="categorie"
-            options={associationCategoryOptions(counts)}
-            current={category}
-            basePath={routes.associations}
-            params={{ q: q || undefined }}
-          />
-        </div>
+        {(showSearch || showChips) && (
+          <div className="flex flex-col gap-5">
+            {showSearch && <AssociationSearchForm query={q} category={category} className="max-w-xl" />}
+            {showChips && (
+              <FilterChips
+                label="Filtrer par catégorie"
+                param="categorie"
+                options={categoryOptions}
+                current={category}
+                basePath={routes.associations}
+                params={{ q: q || undefined }}
+              />
+            )}
+          </div>
+        )}
       </PageHeader>
 
       {/* Personal line: the student's associations and role, or how to get there. */}
       <div className="wrap">
         <div className="flex flex-col gap-4 border-y border-line py-4">
-          {session.user ? (
+          {user ? (
             mine.length > 0 ? (
               <>
                 <p id="tes-assos" className="type-label text-muted">
@@ -148,10 +170,7 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
             ) : (
               <p className="flex items-start gap-3">
                 <Icon name="users" size={20} className="mt-0.5 shrink-0 text-muted" />
-                <span>
-                  Tu ne fais partie d&apos;aucune asso pour l&apos;instant. Celles qui cherchent du monde portent
-                  l&apos;autocollant vert « Recrute ».
-                </span>
+                <span>Tu ne fais partie d&apos;aucune asso sur la plateforme pour l&apos;instant.</span>
               </p>
             )
           ) : (
@@ -200,13 +219,14 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
                   </ButtonLink>
                 )}
                 <ButtonLink href={routes.associations} icon="arrow-right">
-                  Voir les {total} assos
+                  {total > 1 ? `Voir les ${total} assos` : "Voir les associations"}
                 </ButtonLink>
               </>
             }
           >
-            Essaie un mot plus court ou une activité (« ski », « radio », « vin ») : la recherche lit le nom, la
-            présentation et l&apos;accroche de chaque asso.
+            {q
+              ? "Essaie un mot plus court : la recherche lit le nom, la présentation et l'accroche de chaque asso."
+              : "Les associations arrivent au fur et à mesure : chaque présidente ou président crée la page de son asso."}
           </EmptyState>
         </div>
       )}
@@ -264,6 +284,16 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
               );
             })}
           </ul>
+        </section>
+      )}
+
+      {/* No other association yet: say so, and who will add them. */}
+      {!filtered && othersTotal === 0 && (
+        <section aria-label="Les autres associations" className="wrap pt-16 sm:pt-20">
+          <EmptyState mark={<Icon name="users" size={44} />} title="Les autres associations arrivent">
+            Chaque présidente ou président d&apos;asso créera la page de son asso : présentation, rendez-vous et
+            recrutements. Elles s&apos;afficheront ici au fur et à mesure.
+          </EmptyState>
         </section>
       )}
 

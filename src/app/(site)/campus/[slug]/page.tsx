@@ -131,7 +131,7 @@ export default async function CampusPostPage({ params }: { params: Params }) {
                       <Link href={routes.login} className="link text-fg">
                         Connecte-toi
                       </Link>{" "}
-                      pour retrouver tes billets et tes favoris.
+                      pour retrouver tes billets et tes événements enregistrés.
                     </p>
                   )}
                 </section>

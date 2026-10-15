@@ -87,10 +87,28 @@ Domain components (events, recruitment, campus, account, manage) live in `src/co
 - No icon + title + paragraph card grids. No centred hero. No gradient text. No fake stats.
 - Images go through `MediaFrame` with a `slot` from `src/lib/media-slots.ts`; every slot has a designed
   fallback so the site never depends on generated art.
-- Copy is French, tutoiement, concrete (rooms, prices, seats), with the maquette's humour.
+- Copy is French, tutoiement, with the maquette's humour — and concrete only about what is actually known
+  (see *Real content only*). A room, price or seat count appears when the BDE or an association has given it.
+
+## Real content only
+
+The site ships to real students, so it states only facts the BDE has given (its maquette: the club, its
+8 events of the year, the carte cotisante, the VSS / VDH commitments) or real public information (17, 112,
+114, 3919, arretonslesviolences.gouv.fr). No invented association, person, date, venue, address, price,
+capacity, line-up, statistic, quote, contact detail or event photo — not even to make a page look fuller.
+
+- Missing content gets a **designed empty state** that says who will add it ("Chaque présidente ou président
+  créera la page de son asso.", "Les dates de cette édition seront annoncées par le bureau."), or the block is
+  left out when an empty one would only add noise (an empty gallery). A page never looks broken.
+- Generic copy about how the platform works is fine; so are form placeholders clearly marked "Ex : …".
+- Components built for content that does not exist yet (dated editions, campaigns, articles, applications)
+  stay in the codebase and simply receive no data.
+- Phase 1 demo accounts are labelled as demo ("Compte démo — étudiant·e"), never a realistic person, and start
+  empty. Any dev seed data must be obviously fictitious and never reach production.
 
 ## Data
 
-Typed entities in `src/lib/types.ts`; mock content in `src/data/mock/` (dates relative to today);
-data access in `src/lib/data/*` (async, server-only) — the only layer to swap for Supabase.
-`src/lib/demo-session.ts` fakes the three session states for Phase 1 review only.
+Typed entities in `src/lib/types.ts`; the real content above in `src/data/mock/` (every other collection is an
+empty array); data access in `src/lib/data/*` (async, server-only) — the only layer to swap for Supabase.
+Pages and components never import `src/data/mock` directly. `src/lib/demo-session.ts` fakes the three session
+states (visitor by default) for Phase 1 review only.

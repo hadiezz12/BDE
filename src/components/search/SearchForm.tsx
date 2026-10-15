@@ -29,7 +29,7 @@ export function SearchForm({ query, className }: { query: string; className?: st
           name="q"
           type="search"
           defaultValue={query}
-          placeholder="Asso, soirée, poste…"
+          placeholder="Événement, asso, page…"
           autoComplete="off"
           enterKeyHint="search"
           spellCheck={false}

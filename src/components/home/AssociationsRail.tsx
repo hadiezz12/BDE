@@ -6,9 +6,11 @@ import { AssociationTile } from "@/components/associations/AssociationTile";
 import { recruitingSticker } from "@/components/associations/association-facts";
 
 /**
- * Every association as a rail of flyers on the paper surface (BDE first, as
+ * The associations as a rail of flyers on the paper surface (BDE first, as
  * the index orders them). A tile only wears a sticker for a fact the page
- * already knows: it recruits right now, with how many places.
+ * already knows: it recruits right now, with how many places. The caller
+ * only renders it once associations other than the BDE have their page:
+ * a rail of one would be noise (the BDE has its own section).
  */
 export function AssociationsRail({
   associations,
@@ -31,7 +33,7 @@ export function AssociationsRail({
           kicker={plural(associations.length, "association")}
           title="Trouve ta bande"
           action={{ href: routes.associations, label: "Toutes les assos" }}
-          description="Du five entre potes à la chambre noire, de la Junior-Entreprise à la radio du B-14 : chaque asso dit qui elle est, quand elle se réunit et comment la rejoindre."
+          description="Chaque asso dit qui elle est, quand elle se réunit et comment la rejoindre."
         />
         <ul className="rail mt-10 py-2">
           {associations.map((a) => {

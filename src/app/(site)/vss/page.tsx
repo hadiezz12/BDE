@@ -1,34 +1,43 @@
 import type { Metadata } from "next";
+import type { SafetyContact } from "@/lib/types";
 import { getSafetyDirectory } from "@/lib/data/safety";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { Icon } from "@/components/ui/Icon";
-import { Armband } from "@/components/safety/Armband";
 import { CampusContact } from "@/components/safety/CampusContact";
+import { CommitmentList } from "@/components/safety/CommitmentList";
 import { HotlineRow } from "@/components/safety/HotlineRow";
 import { ReportForm } from "@/components/safety/ReportForm";
 import { StepList, type SafetyStep } from "@/components/safety/StepList";
 
 export const metadata: Metadata = {
-  title: "VSS / VDH : trouver de l'aide",
+  title: "VSS / VDH",
   description:
-    "Victime ou témoin de violences sexistes et sexuelles, de harcèlement ou de discrimination : numéros d'urgence, référent·es en soirée, cellules d'écoute et alerte anonyme.",
+    "Violences sexistes et sexuelles, harcèlement, discriminations : les engagements du Very Pink Club, un canal d'alerte confidentiel et les numéros d'urgence.",
 };
 
 const ON_THIS_PAGE = [
+  { href: "#engagements", label: "Nos engagements" },
   { href: "#tout-de-suite", label: "Tout de suite" },
-  { href: "#en-soiree", label: "En soirée" },
   { href: "#a-qui-parler", label: "À qui parler" },
-  { href: "#alerte", label: "Signaler anonymement" },
+  { href: "#alerte", label: "Déposer une alerte" },
 ];
+
+/*
+ * Copy rule for this page: the BDE's own words (title, intro, the six
+ * commitments, the alert form) and real public resources only. No name,
+ * room, e-mail, phone or opening hours that the BDE or the school has not
+ * given. The steps below are general safety advice, and only mention what
+ * the commitments promise (référent·es, security staff).
+ */
 
 const IF_ITS_YOU: SafetyStep[] = [
   {
     title: "Mets-toi à l'abri",
-    body: "Éloigne-toi, rejoins quelqu'un de confiance, la safe zone ou un·e référent·e au brassard rose. En danger : 17 ou 112, ou le 114 par SMS si tu ne peux pas parler.",
+    body: "Éloigne-toi, rejoins quelqu'un de confiance ou un·e référent·e du bureau. En danger : 17 ou 112, ou le 114 par SMS si tu ne peux pas parler.",
   },
   {
     title: "Tu n'as rien à prouver",
-    body: "Il n'y a pas de bonne façon de réagir, et pas de délai pour en parler : ce soir, demain ou dans six mois.",
+    body: "Il n'y a pas de bonne façon de réagir. Tu choisis quoi dire, à qui, et quand.",
   },
   {
     title: "Garde des traces, si tu peux",
@@ -43,11 +52,11 @@ const IF_ITS_YOU: SafetyStep[] = [
 const IF_YOU_SAW: SafetyStep[] = [
   {
     title: "Crée une diversion",
-    body: "Une question banale, un prétexte pour emmener la personne ailleurs (« tu viens au vestiaire ? ») : souvent, ça suffit à casser la situation.",
+    body: "Une question banale, un prétexte pour emmener la personne ailleurs : souvent, ça suffit à casser la situation.",
   },
   {
     title: "Ne reste pas seul·e",
-    body: "Préviens un·e référent·e au brassard rose, le staff ou la sécurité de la salle. Si c'est grave : 17 ou 112.",
+    body: "Préviens un·e référent·e du bureau ou le staff de sécurité. Si c'est grave : 17 ou 112.",
   },
   {
     title: "Va voir la personne après",
@@ -59,34 +68,59 @@ const IF_YOU_SAW: SafetyStep[] = [
   },
 ];
 
+/**
+ * Who to talk to at GEM while no campus contact has been confirmed: only what
+ * the BDE's commitments say (02 to 05). The school's VSS cell exists, but its
+ * details are not known: it gets a "Coordonnées à venir" tag, never a fake one.
+ */
+const AT_GEM: { contact: SafetyContact; pending?: string }[] = [
+  {
+    contact: {
+      id: "referent-es-bureau",
+      runBy: "Very Pink Club · le BDE",
+      name: "Les référent·es du bureau",
+      summary:
+        "Des membres du bureau formé·es à l'accueil des victimes, identifiables sur chaque événement. Toute l'année, le canal d'alerte ci-dessous : chaque alerte est lue par le bureau, avec une réponse au contact indiqué dans les 48 h.",
+    },
+  },
+  {
+    contact: {
+      id: "cellule-vss-ecole",
+      runBy: "GEM Alpine Business School",
+      name: "La cellule VSS de l'école",
+      summary:
+        "L'école a sa cellule VSS. Le bureau t'oriente vers elle, vers les associations spécialisées et, si tu le souhaites, t'accompagne au dépôt de plainte.",
+    },
+    pending: "Coordonnées à venir",
+  },
+];
+
 const HOW_IT_WILL_WORK = [
-  "Pas de compte, pas de nom : tu peux rester anonyme.",
-  "Pour toi ou pour quelqu'un d'autre, même si tu n'es pas sûr·e.",
-  "Lue par la cellule VSS & VDH du BDE, pas par le bureau.",
-  "Une alerte n'est pas une plainte : la plainte se dépose au commissariat ou à la gendarmerie.",
+  "Aucun compte à créer, aucun nom obligatoire.",
+  "Lieu, date, catégorie, et un moyen de te joindre : c'est tout ce qu'on te demande.",
+  "Chaque alerte est lue par le bureau, et une réponse est apportée au contact indiqué dans les 48 h.",
 ];
 
 export default async function SafetyPage() {
-  const { emergency, listening, contacts, practices } = await getSafetyDirectory();
+  const { emergency, listening, contacts, commitments, alertKinds } = await getSafetyDirectory();
   const phoneLines = [...emergency, ...listening].filter((h) => /^\d+$/.test(h.number));
+  const atGem = contacts.length > 0 ? contacts.map((contact) => ({ contact, pending: undefined })) : AT_GEM;
 
   return (
     <>
-      {/* Opening: who this is for, then the emergency numbers before anything else. */}
+      {/* Opening: what this page is about, then the emergency numbers before anything else. */}
       <header className="wrap grid gap-10 pb-12 pt-10 sm:pt-16 lg:grid-cols-12 lg:gap-8 lg:pb-16">
         <div className="lg:col-span-7">
           <p className="flex items-center gap-2 type-label text-warn">
             <Icon name="shield" size={16} />
             Sécurité · VSS / VDH
           </p>
-          <h1 className="mt-4 max-w-3xl type-title">Tu es victime ou témoin ? Voilà ce que tu peux faire.</h1>
-          <div className="mt-6 flex max-w-2xl flex-col gap-4 type-lead text-muted">
-            <p>
-              Violences sexistes et sexuelles, harcèlement, discriminations : à une soirée, en cours, en ligne ou en
-              coloc. Ce n&apos;est jamais ta faute.
-            </p>
-            <p>Tu n&apos;as pas besoin d&apos;être sûr·e de toi pour en parler. Tu choisis quoi dire, à qui, et quand.</p>
-          </div>
+          <h1 className="mt-4 max-w-3xl type-title">Violences sexistes et sexuelles, harcèlement, discriminations</h1>
+          <p className="mt-6 max-w-2xl type-lead text-muted">
+            Le Very Pink Club prend ses responsabilités : ce que nous nous engageons à faire, sur chaque événement et
+            toute l&apos;année. Et juste en dessous, un canal d&apos;alerte confidentiel pour les victimes, à GEM comme
+            sur nos événements.
+          </p>
           <nav aria-label="Sur cette page" className="mt-8">
             <ul className="flex flex-wrap gap-2">
               {ON_THIS_PAGE.map((l) => (
@@ -113,7 +147,7 @@ export default async function SafetyPage() {
               Danger immédiat
             </h2>
           </div>
-          <p className="mt-2 type-small text-muted">Appels gratuits, 24 h/24.</p>
+          <p className="mt-2 type-small text-muted">Gratuits, 24 h/24.</p>
           <ul className="mt-1 divide-y divide-line">
             {emergency.map((h) => (
               <li key={h.id}>
@@ -124,37 +158,17 @@ export default async function SafetyPage() {
         </aside>
       </header>
 
+      {/* The BDE's six commitments, in its own words. */}
+      <section id="engagements" aria-labelledby="engagements-titre" className="wrap pb-section">
+        <SectionHeader id="engagements-titre" index="01" kicker="Nos engagements" title="Ce à quoi nous nous tenons" />
+        <CommitmentList commitments={commitments} className="mt-8" />
+      </section>
+
       <section id="tout-de-suite" aria-labelledby="tout-de-suite-titre" className="wrap pb-section">
-        <SectionHeader id="tout-de-suite-titre" index="01" kicker="Tout de suite" title="Ce que tu peux faire maintenant" />
+        <SectionHeader id="tout-de-suite-titre" index="02" kicker="Tout de suite" title="Ce que tu peux faire maintenant" />
         <div className="mt-10 grid gap-14 lg:grid-cols-2 lg:gap-16">
           <StepList id="si-cest-toi" title="Si c'est toi" steps={IF_ITS_YOU} />
           <StepList id="si-tu-es-temoin" title="Si tu es témoin" steps={IF_YOU_SAW} />
-        </div>
-      </section>
-
-      <section id="en-soiree" aria-labelledby="en-soiree-titre" className="wrap pb-section">
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
-          <div className="lg:col-span-5">
-            <SectionHeader
-              id="en-soiree-titre"
-              index="02"
-              kicker="Pendant nos soirées"
-              title="Cherche le brassard rose"
-              description="À chaque événement du Very Pink Club, des référent·es VSS & VDH formé·es tournent toute la nuit. Va vers elles et eux pour toi, pour un·e ami·e, ou juste pour souffler."
-            />
-            <Armband className="mt-6 lg:mt-10" />
-          </div>
-          <dl className="border-b border-line lg:col-span-7 lg:pt-14">
-            {practices.map((p) => (
-              <div
-                key={p.label}
-                className="grid gap-1.5 border-t border-line py-4 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-6 sm:py-5"
-              >
-                <dt className="type-label text-fg sm:pt-1">{p.label}</dt>
-                <dd className="text-muted">{p.detail}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
       </section>
 
@@ -166,13 +180,13 @@ export default async function SafetyPage() {
             index="03"
             kicker="Quand tu veux"
             title="À qui parler"
-            description="Ce soir, demain ou dans six mois. Tu peux venir seul·e ou accompagné·e, et t'arrêter quand tu veux."
+            description="Pour toi ou pour quelqu'un d'autre. Tu peux t'arrêter quand tu veux."
           />
           <div className="mt-10 grid gap-14 lg:grid-cols-12 lg:gap-8">
             <div className="lg:col-span-7">
-              <h3 className="mb-4 type-label text-muted">Sur le campus</h3>
-              {contacts.map((c) => (
-                <CampusContact key={c.id} contact={c} />
+              <h3 className="mb-4 type-label text-muted">À GEM</h3>
+              {atGem.map(({ contact, pending }) => (
+                <CampusContact key={contact.id} contact={contact} pending={pending} />
               ))}
             </div>
             <div className="lg:col-span-5 lg:pl-4">
@@ -194,9 +208,9 @@ export default async function SafetyPage() {
               <SectionHeader
                 id="alerte-titre"
                 index="04"
-                kicker="Signaler"
-                title="Déposer une alerte anonyme"
-                description="Pour que la cellule sache ce qui se passe, même si tu ne veux pas aller plus loin."
+                kicker="Canal d'alerte confidentiel"
+                title="Confidentiel, en deux minutes"
+                description="Tu peux déposer une alerte pour une victime de VSS ou de VDH à GEM ou sur un événement de GEM. Ton nom n'est pas obligatoire : il nous faut juste un moyen de te joindre pour te répondre."
               />
               <h3 className="mt-8 type-label text-muted">Comment ça marchera</h3>
               <ul className="mt-3 flex flex-col gap-3">
@@ -209,7 +223,7 @@ export default async function SafetyPage() {
               </ul>
             </div>
             <div className="lg:col-span-7 lg:col-start-6">
-              <ReportForm helplines={phoneLines.map(({ number, href }) => ({ number, href }))} />
+              <ReportForm helplines={phoneLines.map(({ number, href }) => ({ number, href }))} kinds={alertKinds} />
             </div>
           </div>
         </section>

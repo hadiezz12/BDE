@@ -18,7 +18,7 @@ export function EventTicket({
   className,
 }: {
   event: Pick<CampusEvent, "title" | "startsAt" | "endsAt" | "venue">;
-  holder: Pick<UserProfile, "firstName" | "lastName" | "memberCard">;
+  holder: Pick<UserProfile, "firstName" | "lastName" | "demoLabel" | "memberCard">;
   now?: Date;
   className?: string;
 }) {
@@ -38,7 +38,7 @@ export function EventTicket({
           <div className="flex flex-col gap-0.5">
             <dt className="type-label text-muted">Au nom de</dt>
             <dd className="font-bold leading-snug">
-              {holder.firstName} {holder.lastName}
+              {holder.demoLabel ?? `${holder.firstName} ${holder.lastName}`}
             </dd>
           </div>
           {holder.memberCard && (

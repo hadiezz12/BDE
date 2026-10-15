@@ -66,22 +66,25 @@ export default async function ManageTeamPage({ params }: { params: Params }) {
         }
       />
 
-      <StatGroup label={`L'équipe de ${association.name} en chiffres`} columns={association.memberCount !== undefined ? 3 : 2}>
-        <StatTile label="Au bureau" value={association.team.length} comparison="Avec accès à cet espace" />
-        <StatTile label="Membres actifs" value={members.length} comparison="Sans accès à cet espace" />
-        {association.memberCount !== undefined && (
-          <StatTile
-            label="Adhérent·es"
-            value={association.memberCount}
-            comparison="Cette année, bureau compris"
-          />
-        )}
-      </StatGroup>
+      {/* Two zeros say nothing the empty states below don't already say. */}
+      {(association.team.length > 0 || members.length > 0 || association.memberCount !== undefined) && (
+        <StatGroup label={`L'équipe de ${association.name} en chiffres`} columns={association.memberCount !== undefined ? 3 : 2}>
+          <StatTile label="Au bureau" value={association.team.length} comparison="Avec accès à cet espace" />
+          <StatTile label="Membres actifs" value={members.length} comparison="Sans accès à cet espace" />
+          {association.memberCount !== undefined && (
+            <StatTile
+              label="Adhérent·es"
+              value={association.memberCount}
+              comparison="Cette année, bureau compris"
+            />
+          )}
+        </StatGroup>
+      )}
 
       <ManageSection
         title="Bureau"
         count={association.team.length}
-        description="Dans l'ordre de la page publique : la première ligne préside, c'est elle qu'on contacte pour être ajouté·e."
+        description="Dans l'ordre de la page publique, présidence en tête. Chaque membre du bureau a accès à cet espace."
       >
         <DataTable
           caption={`Bureau de ${association.name}`}
@@ -89,8 +92,15 @@ export default async function ManageTeamPage({ params }: { params: Params }) {
           rows={association.team}
           rowKey={(m) => m.id}
           empty={
-            <ManageEmpty icon="users" title="Le bureau n'est pas encore renseigné">
-              <p>Invite les membres du bureau ci-dessous&nbsp;: ils apparaîtront ici et sur la page publique.</p>
+            <ManageEmpty
+              icon="users"
+              title="Le bureau n'est pas encore renseigné"
+              demo="les invitations ne partent pas encore, personne n'est ajouté."
+            >
+              <p>
+                La présidence invite chaque membre du bureau ci-dessous, avec son rôle&nbsp;: nom, rôle et promo
+                apparaîtront ici et sur la page publique de {association.name}.
+              </p>
             </ManageEmpty>
           }
         />

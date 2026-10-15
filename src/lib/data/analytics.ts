@@ -145,7 +145,10 @@ export async function getAssociationAnalytics(associationId: string, now = new D
     getPosts({ associationId, includeUnpublished: true }),
     getCampaigns({ associationId, scope: "all" }),
   ]);
-  const applicants = campaigns.length ? await getApplicants({ campaignIds: campaigns.map((c) => c.id) }) : [];
+  // Unsent applications never reach the bureau, so they are not counted.
+  const applicants = campaigns.length
+    ? (await getApplicants({ campaignIds: campaigns.map((c) => c.id) })).filter((a) => a.status !== "brouillon")
+    : [];
 
   /* Events: registrations against capacity, chronological. */
   const seasonEvents = [...past, ...upcoming]

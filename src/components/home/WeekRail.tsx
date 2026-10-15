@@ -58,15 +58,14 @@ export function WeekRail({
       ) : (
         <EmptyState
           className="mt-8"
-          title="Rien de prévu pour l'instant"
+          title="Pas encore de date annoncée"
           actions={
-            <ButtonLink href={routes.recruitment} variant="secondary" icon="arrow-right">
-              Voir qui recrute
+            <ButtonLink href={routes.events} variant="secondary" icon="arrow-right">
+              Les 8 événements de l&apos;année
             </ButtonLink>
           }
         >
-          Pas d&apos;événement publié dans les semaines qui viennent. Les assos recrutent en attendant : c&apos;est
-          souvent comme ça qu&apos;on se retrouve à organiser la suivante.
+          Les dates sont annoncées par le bureau au fil de l&apos;année.
         </EmptyState>
       )}
     </section>

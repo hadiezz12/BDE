@@ -1,13 +1,21 @@
-import type { SafetyContact, SafetyHotline, SafetyPractice } from "@/lib/types";
+import type {
+  SafetyAlertKind,
+  SafetyCommitment,
+  SafetyContact,
+  SafetyHotline,
+  SafetyPractice,
+} from "@/lib/types";
 
 /**
  * VSS / VDH page content.
- *  - National numbers and the government site are REAL: keep them exact.
- *  - Campus contacts (names, rooms, hours, addresses) are Phase 1
- *    PLACEHOLDERS on the gem.exemple.fr domains; the BDE and the school must
- *    confirm each one before launch. The page labels them as such.
- *  - Event practices follow what the VPC already says in its own copy
- *    (association profile, event pages, WEI recap).
+ *  - National numbers and the government site are REAL public resources:
+ *    keep them exact.
+ *  - The BDE's commitments and the alert categories are the BDE's own words
+ *    (source: the client's maquette).
+ *  - Campus contacts: none listed. The school's VSS cell exists (commitment
+ *    05) but its contact details are not known; never invent a name, room,
+ *    email, phone or opening hours. Added once whoever runs it confirms them.
+ *  - Event practices: none beyond what the commitments already say.
  */
 
 export const safetyHotlines: SafetyHotline[] = [
@@ -60,56 +68,53 @@ export const safetyHotlines: SafetyHotline[] = [
   },
 ];
 
-export const safetyContacts: SafetyContact[] = [
+export const safetyContacts: SafetyContact[] = [];
+
+export const safetyPractices: SafetyPractice[] = [];
+
+/** "Ce à quoi nous nous tenons", in the BDE's order. */
+export const safetyCommitments: SafetyCommitment[] = [
   {
-    id: "c-bde-cellule",
-    name: "Cellule VSS & VDH du BDE",
-    runBy: "Very Pink Club, le BDE",
-    summary:
-      "Deux référentes formées lisent les messages et tiennent la permanence. Rien ne sort de la cellule sans ton accord, y compris vis-à-vis du bureau.",
-    people: "Aïcha Traoré, référente principale, et une seconde référente",
-    hours: "Mardi et jeudi, 13h–14h, sans rendez-vous",
-    place: "Salle A-012, porte fermée",
-    email: "cellule-vss@asso.gem.exemple.fr",
-    toConfirmBy: "BDE",
+    number: "01",
+    title: "Tolérance zéro",
+    detail:
+      "Aucun comportement sexiste, sexuel, raciste, homophobe ou harcelant n'a sa place dans nos événements — ni avant, ni pendant, ni après.",
   },
   {
-    id: "c-ecole-ecoute",
-    name: "Cellule d'écoute de l'école",
-    runBy: "GEM, campus de Paris",
-    summary:
-      "Indépendante du BDE et des associations. Elle t'écoute, t'oriente vers un·e psychologue, un·e juriste ou une association spécialisée, et t'accompagne si tu veux saisir l'école.",
-    hours: "Du lundi au vendredi, 9h–17h",
-    place: "Pôle vie étudiante, rez-de-chaussée",
-    email: "ecoute@gem.exemple.fr",
-    toConfirmBy: "école",
+    number: "02",
+    title: "Des référent·es formé·es",
+    detail:
+      "Des membres du bureau formé·es à l'accueil des victimes sont identifiables sur chaque événement, avec un briefing des équipes en début de soirée.",
+  },
+  {
+    number: "03",
+    title: "Un canal d'alerte confidentiel",
+    detail:
+      "Le dépôt d'alerte est ouvert toute l'année. Lieu, date, catégorie, et un moyen de te joindre : aucun compte à créer, aucun nom obligatoire.",
+  },
+  {
+    number: "04",
+    title: "Une réponse sous 48 h",
+    detail: "Chaque alerte est lue par le bureau, et une réponse est apportée au contact indiqué dans les 48 h.",
+  },
+  {
+    number: "05",
+    title: "Accompagnement vers les bonnes personnes",
+    detail:
+      "Orientation vers la cellule VSS de l'école, les associations spécialisées et, si tu le souhaites, accompagnement au dépôt de plainte.",
+  },
+  {
+    number: "06",
+    title: "De la sécurité sur place",
+    detail:
+      "Staff de sécurité, point d'eau, vestiaire et équipes briefées sur toutes nos soirées : on préfère prévenir que réparer.",
   },
 ];
 
-export const safetyPractices: SafetyPractice[] = [
-  {
-    label: "Brassard rose",
-    detail: "Les référent·es VSS & VDH le portent toute la nuit. Va vers elles et eux, ou demande au bar où en trouver un·e.",
-  },
-  {
-    label: "En binôme, sobres",
-    detail: "Ils et elles tournent à deux dans la salle et ne boivent pas de la soirée. C'est non négociable.",
-  },
-  {
-    label: "Formé·es avant",
-    detail: "Trois heures de formation obligatoire avant chaque événement. Sans elle, pas de brassard.",
-  },
-  {
-    label: "Safe zone",
-    detail: "À côté du vestiaire, jusqu'à la fermeture : de l'eau, des bouchons d'oreille, une chaise et quelqu'un pour t'écouter.",
-  },
-  {
-    label: "Rentrer",
-    detail: "Un·e référent·e t'aide à trouver quelqu'un avec qui rentrer, ou t'accompagne jusqu'aux taxis.",
-  },
-  {
-    label: "Confidentiel",
-    detail:
-      "Ce que tu leur dis reste dans la cellule. Ils et elles font le lien avec la sécurité de la salle et les secours seulement si c'est nécessaire.",
-  },
+/** "Nature de l'alerte" choices of the confidential alert form, in order. */
+export const safetyAlertKinds: SafetyAlertKind[] = [
+  { value: "violence-sexiste", label: "Violence sexiste" },
+  { value: "violence-sexuelle", label: "Violence sexuelle" },
+  { value: "harcelement", label: "Harcèlement" },
+  { value: "discrimination", label: "Discrimination" },
 ];

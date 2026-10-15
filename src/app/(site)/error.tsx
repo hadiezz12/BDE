@@ -28,7 +28,8 @@ export default function SiteError({ error, reset }: { error: Error & { digest?: 
         </>
       }
     >
-      Ce n&apos;est pas toi. Réessaie dans un instant ; si ça continue, préviens le bureau en permanence au local B-12.
+      Ce n&apos;est pas toi. Réessaie dans un instant ; si ça continue, préviens le bureau à sa permanence sur le
+      campus.
     </StatePage>
   );
 }

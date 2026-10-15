@@ -9,28 +9,15 @@ import { cx } from "@/lib/cx";
 import { Dialog } from "@/components/ui/Dialog";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { SEARCH_KIND_ICON as KIND_ICON } from "./kinds";
+import { matchPages, SEARCH_SHORTCUTS } from "./pages";
 
 /**
- * Universal quick search (⌘K / Ctrl+K, or "/"). Searches the local index of
- * associations, events, recruitments and posts; keyboard-first combobox,
- * full screen on phones. The /search page is the no-JS equivalent.
+ * Universal quick search (⌘K / Ctrl+K, or "/"). Searches the local index
+ * (associations, the BDE's events, recruitments, posts) and the site's own
+ * pages (carte, VSS / VDH…); keyboard-first combobox, full screen on phones.
+ * Before anything is typed it offers shortcuts to pages that exist. The
+ * /search page is the no-JS equivalent.
  */
-
-interface Shortcut {
-  id: string;
-  title: string;
-  context: string;
-  href: string;
-  icon: IconName;
-}
-
-const SHORTCUTS: Shortcut[] = [
-  { id: "s-tonight", title: "Ce soir sur le campus", context: "Agenda filtré sur aujourd'hui", href: `${routes.events}?quand=aujourdhui`, icon: "calendar" },
-  { id: "s-recruit", title: "Recrutements ouverts", context: "Postes à pourvoir dans les assos", href: routes.recruitment, icon: "megaphone" },
-  { id: "s-assos", title: "Toutes les associations", context: "Sport, arts, pro, solidaire…", href: routes.associations, icon: "users" },
-  { id: "s-vss", title: "Signaler une situation (VSS / VDH)", context: "Confidentiel, sans compte", href: routes.safety, icon: "shield" },
-];
-
 export function CommandSearch({ index }: { index: SearchEntry[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -40,12 +27,14 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
   const listId = useId();
 
   const results = useMemo(() => searchEntries(index, query), [index, query]);
+  const pages = useMemo(() => matchPages(query), [query]);
+  // One flat list for the keyboard: data results first, then pages.
   const options = useMemo(
     () =>
       query.trim()
-        ? results.map((r) => ({ id: r.id, href: r.href, kind: r.kind as SearchKind | null }))
-        : SHORTCUTS.map((s) => ({ id: s.id, href: s.href, kind: null })),
-    [query, results],
+        ? [...results.map((r) => ({ id: r.id, href: r.href })), ...pages.map((p) => ({ id: p.id, href: p.href }))]
+        : SEARCH_SHORTCUTS.map((s) => ({ id: s.id, href: s.href })),
+    [query, results, pages],
   );
 
   const close = useCallback(() => {
@@ -111,11 +100,11 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-keyshortcuts="Control+K Meta+K /"
-        className="group inline-flex size-11 items-center justify-center rounded-sm text-fg hover:bg-fg/8 lg:h-10 lg:w-56 lg:justify-start lg:gap-2.5 lg:border lg:border-line-strong/60 lg:px-3 lg:text-muted lg:hover:border-fg lg:hover:bg-transparent lg:hover:text-fg xl:w-64"
+        className="group inline-flex size-11 items-center justify-center rounded-sm text-fg hover:bg-fg/8 xl:h-10 xl:w-auto xl:justify-start xl:gap-2.5 xl:border xl:border-line-strong/60 xl:px-3 xl:text-muted xl:hover:border-fg xl:hover:bg-transparent xl:hover:text-fg min-[90rem]:w-64"
       >
-        <Icon name="search" size={20} className="lg:size-[18px]" />
-        <span className="sr-only lg:not-sr-only lg:text-[0.9rem]">Rechercher</span>
-        <kbd className="ml-auto hidden rounded-xs border border-line px-1.5 py-0.5 font-mono text-[0.7rem] text-subtle lg:inline">
+        <Icon name="search" size={20} className="xl:size-[18px]" />
+        <span className="sr-only xl:not-sr-only xl:text-[0.9rem]">Rechercher</span>
+        <kbd className="ml-auto hidden rounded-xs border border-line px-1.5 py-0.5 font-mono text-[0.7rem] text-subtle min-[90rem]:inline">
           Ctrl K
         </kbd>
       </button>
@@ -143,7 +132,7 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
               setActive(0);
             }}
             onKeyDown={onInputKey}
-            placeholder="Asso, soirée, poste…"
+            placeholder="Événement, asso, page…"
             className="h-16 min-w-0 flex-1 bg-transparent text-[1.15rem] font-semibold text-fg placeholder:font-normal placeholder:text-subtle focus:outline-none"
           />
           <button
@@ -158,7 +147,7 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
         <div className="max-h-[min(60vh,32rem)] flex-1 overflow-y-auto overscroll-contain px-2 py-3 sm:max-h-[60vh]">
           <ul id={listId} role="listbox" aria-label={query ? "Résultats" : "Raccourcis"} className="flex flex-col">
             {!query.trim() &&
-              SHORTCUTS.map((s, i) => (
+              SEARCH_SHORTCUTS.map((s, i) => (
                 <Option
                   key={s.id}
                   id={optionId(s.id)}
@@ -168,7 +157,7 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
                   icon={s.icon}
                   title={s.title}
                   context={s.context}
-                  tone={s.icon === "shield" ? "warn" : undefined}
+                  tone={s.tone}
                 />
               ))}
 
@@ -195,13 +184,39 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
                   </ul>
                 </li>
               ))}
+
+            {query.trim() && pages.length > 0 && (
+              <li role="presentation" className="mt-2 first:mt-0">
+                <p className="px-3 pb-1.5 pt-2 type-label text-subtle" aria-hidden>
+                  Pages
+                </p>
+                <ul role="group" aria-label="Pages">
+                  {pages.map((p, j) => {
+                    const i = results.length + j;
+                    return (
+                      <Option
+                        key={p.id}
+                        id={optionId(p.id)}
+                        active={active === i}
+                        onHover={() => setActive(i)}
+                        onPick={() => go(p.href)}
+                        icon={p.icon}
+                        title={p.title}
+                        context={p.context}
+                        tone={p.tone}
+                      />
+                    );
+                  })}
+                </ul>
+              </li>
+            )}
           </ul>
 
-          {query.trim() && results.length === 0 && (
+          {query.trim() && options.length === 0 && (
             <div className="px-3 py-8">
               <p className="type-card">Rien pour « {query.trim()} ».</p>
               <p className="mt-2 text-muted">
-                Essaie un nom d&apos;asso (« Altitude »), un type de soirée (« Halloween ») ou un poste (« trésorier »).
+                Essaie le nom d&apos;un événement (« WEI », « Boo Party »), « carte » ou « VSS ».
               </p>
             </div>
           )}

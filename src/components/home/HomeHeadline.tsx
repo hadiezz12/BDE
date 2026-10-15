@@ -18,7 +18,9 @@ export function HomeHeadline({
   className?: string;
 }) {
   return (
-    <h1 id={id} className={cx("type-hero break-words", className)}>
+    // From lg the headline shares the row with the panther (7 of 12 columns),
+    // so the full-width 8.2vw size would split "VERSION" mid-word.
+    <h1 id={id} className={cx("type-hero break-words lg:text-[length:clamp(3rem,1rem+4.6vw,7.5rem)]", className)}>
       Paris by night,
       <br />
       {state === "off" ? (

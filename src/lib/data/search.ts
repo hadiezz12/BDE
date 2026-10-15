@@ -1,23 +1,26 @@
 import "server-only";
 import { routes } from "@/lib/routes";
-import { formatDayShort } from "@/lib/format";
 import type { SearchEntry } from "@/lib/types";
 import { getAssociations } from "./associations";
-import { getEvents } from "./events";
+import { getEventSeries } from "./event-series";
 import { getPosts } from "./posts";
 import { getCampaigns } from "./recruitment";
 
 /**
  * Phase 1 search runs on a small local index shipped to the client.
  * Later this becomes a Postgres full-text query behind the same shape.
+ *
+ * Events are indexed as the BDE's eight recurring events (one page each), not
+ * as dated editions: no edition date is known yet.
  */
 export async function getSearchIndex(): Promise<SearchEntry[]> {
-  const [associations, events, campaigns, posts] = await Promise.all([
+  const [associations, series, campaigns, posts] = await Promise.all([
     getAssociations(),
-    getEvents({ when: "upcoming" }),
+    getEventSeries(),
     getCampaigns({ scope: "all" }),
     getPosts({ limit: 30 }),
   ]);
+  const producers = new Map(associations.map((a) => [a.id, a.name]));
 
   return [
     ...associations.map<SearchEntry>((a) => ({
@@ -29,14 +32,14 @@ export async function getSearchIndex(): Promise<SearchEntry[]> {
       accent: a.accent,
       keywords: [a.shortName, a.tagline, a.category].filter(Boolean).join(" "),
     })),
-    ...events.map<SearchEntry>((e) => ({
+    ...series.map<SearchEntry>((s) => ({
       kind: "evenement",
-      id: e.id,
-      title: e.title,
-      context: `${formatDayShort(e.startsAt)} · ${e.association.shortName ?? e.association.name}`,
-      href: routes.event(e.slug),
-      accent: e.association.accent,
-      keywords: [e.subtitle, e.venue.name, e.category, e.association.name].filter(Boolean).join(" "),
+      id: s.id,
+      title: s.name,
+      context: `${s.subtitle} · ${s.period}`,
+      href: routes.event(s.slug),
+      accent: s.accent,
+      keywords: [s.description, producers.get(s.associationId)].filter(Boolean).join(" "),
     })),
     ...campaigns
       .filter((c) => c.status !== "cloturee")

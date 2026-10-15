@@ -7,17 +7,21 @@ import { APPLICATION_STATUS_LABEL, formatDayMonth, formatTime, plural, relativeD
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Sticker } from "@/components/ui/Sticker";
 import { EventRow } from "@/components/events/EventRow";
+import { euros, type MemberCardLink } from "./home-facts";
 
 const listFr = new Intl.ListFormat("fr", { style: "long", type: "conjunction" });
 
 /**
  * The light personal line under the ticker.
  *  - visitor : one sentence and a sign-in button, nothing personal
- *  - student : next outing, member card, applications in progress
- *  - officer : the same, with their associations' workspace instead of
- *              applications when they have none going
- * It points to the student space; it never tries to be it.
+ *  - student : their next registered date, their carte cotisante
+ *  - officer : the same, plus their associations' workspace
+ * Applications only show once the student has some going. Demo accounts
+ * (Phase 1) are named by their demo label, never by a made-up person, and
+ * start empty: every cell says so plainly. It points to the student space;
+ * it never tries to be it.
  */
 export function PersonalStrip({
   user,
@@ -26,7 +30,7 @@ export function PersonalStrip({
   memberActive,
   applications,
   managed,
-  memberCardHref,
+  memberCard,
   now,
 }: {
   user: UserProfile | null;
@@ -38,8 +42,8 @@ export function PersonalStrip({
   /** Active applications (draft, sent, being read, interview). */
   applications: ApplicationItem[];
   managed: Pick<Association, "id" | "name">[];
-  /** Where the member card is sold (the BDE page). */
-  memberCardHref: string;
+  /** Where the member card is presented, its price and discount. */
+  memberCard: MemberCardLink;
   now: Date;
 }) {
   if (!user) {
@@ -51,8 +55,7 @@ export function PersonalStrip({
             <span>
               <strong>Tout se lit sans compte.</strong>{" "}
               <span className="text-muted">
-                Connecte-toi pour garder tes soirées, suivre tes candidatures et sortir ta carte cotisante à
-                l&apos;entrée.
+                Connecte-toi avec ton adresse de l&apos;école pour retrouver ta carte cotisante et tes inscriptions.
               </span>
             </span>
           </p>
@@ -71,22 +74,30 @@ export function PersonalStrip({
   }
 
   const highlight = applications.find((a) => a.nextStep?.date) ?? applications[0] ?? null;
-  const showApplications = applications.length > 0 || managed.length === 0;
 
   return (
-    <section aria-labelledby="ton-programme" className="wrap pt-8 sm:pt-10">
+    <section aria-labelledby="ton-espace" className="wrap pt-8 sm:pt-10">
       <div className="border-t-2 border-fg pt-3">
-        <h2 id="ton-programme" className="type-label text-accent-text">
-          Ton programme, {user.firstName}
-        </h2>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h2 id="ton-espace" className="type-label text-accent-text">
+            {user.demoLabel ? "Ton espace" : `Ton espace, ${user.firstName}`}
+          </h2>
+          {user.demoLabel && (
+            <Sticker tone="cream" size="sm" tilt={-2}>
+              {user.demoLabel}
+            </Sticker>
+          )}
+        </div>
         <div className="mt-4 grid gap-x-10 gap-y-7 sm:grid-cols-2 lg:flex">
-          <Cell title="Ta prochaine sortie" lead className="sm:col-span-2">
+          <Cell title="Tes inscriptions" lead className="sm:col-span-2">
             {nextOuting ? (
               <div className="self-stretch border-b border-line">
                 <EventRow event={nextOuting} variant="compact" headingLevel={4} personal={{ registered: true }} now={now} />
               </div>
             ) : (
-              <p className="text-muted">Tu n&apos;es inscrit·e à rien pour le moment. Ce soir, peut-être ?</p>
+              <p className="text-muted">
+                Tu n&apos;es inscrit·e à rien pour l&apos;instant. Les dates arrivent au fil des annonces du bureau.
+              </p>
             )}
             <CellLink href={routes.accountEvents}>
               Mes événements
@@ -102,18 +113,20 @@ export function PersonalStrip({
                 <StatusBadge tone="ok">Active</StatusBadge>
                 <p className="type-meta">{user.memberCard.number}</p>
                 <p className="type-small text-muted">
-                  Saison {user.memberCard.season}, jusqu&apos;au {formatDayMonth(user.memberCard.validUntil)} : tarif
-                  adhérent sur les soirées du VPC.
+                  Année {user.memberCard.season}, valable jusqu&apos;au {formatDayMonth(user.memberCard.validUntil)}.
                 </p>
                 <CellLink href={routes.account}>Sortir ma carte</CellLink>
               </>
             ) : (
               <>
                 <StatusBadge tone="neutral">Pas encore prise</StatusBadge>
-                <p className="type-small text-muted">
-                  30&nbsp;€ l&apos;année, et les soirées du VPC passent au tarif adhérent.
-                </p>
-                <CellLink href={memberCardHref}>Prendre la carte</CellLink>
+                {memberCard.price !== null && (
+                  <p className="type-small text-muted">
+                    {euros(memberCard.price)} l&apos;année universitaire
+                    {memberCard.discount ? `, et ${memberCard.discount} sur nos événements.` : "."}
+                  </p>
+                )}
+                <CellLink href={memberCard.href}>La carte cotisante</CellLink>
               </>
             )}
           </Cell>
@@ -126,29 +139,20 @@ export function PersonalStrip({
             </Cell>
           )}
 
-          {showApplications && (
+          {highlight && (
             <Cell title="Candidatures">
-              {highlight ? (
-                <>
-                  <StatusBadge tone="info">{plural(applications.length, "en cours", "en cours")}</StatusBadge>
-                  <p className="type-small">
-                    <span className="font-bold">{highlight.campaign.association.name}</span>
-                    <span className="text-muted">
-                      {" "}
-                      ·{" "}
-                      {highlight.nextStep?.date
-                        ? `${highlight.nextStep.label}, ${relativeDay(highlight.nextStep.date, now).toLowerCase()} à ${formatTime(highlight.nextStep.date)}`
-                        : APPLICATION_STATUS_LABEL[highlight.status]}
-                    </span>
-                  </p>
-                  <CellLink href={routes.accountApplications}>Mes candidatures</CellLink>
-                </>
-              ) : (
-                <>
-                  <p className="type-small text-muted">Aucune candidature en cours.</p>
-                  <CellLink href={routes.recruitment}>Voir qui recrute</CellLink>
-                </>
-              )}
+              <StatusBadge tone="info">{plural(applications.length, "en cours", "en cours")}</StatusBadge>
+              <p className="type-small">
+                <span className="font-bold">{highlight.campaign.association.name}</span>
+                <span className="text-muted">
+                  {" "}
+                  ·{" "}
+                  {highlight.nextStep?.date
+                    ? `${highlight.nextStep.label}, ${relativeDay(highlight.nextStep.date, now).toLowerCase()} à ${formatTime(highlight.nextStep.date)}`
+                    : APPLICATION_STATUS_LABEL[highlight.status]}
+                </span>
+              </p>
+              <CellLink href={routes.accountApplications}>Mes candidatures</CellLink>
             </Cell>
           )}
         </div>
@@ -157,7 +161,7 @@ export function PersonalStrip({
   );
 }
 
-/** One fact of the strip. The lead cell (next outing) is wider and has no left rule. */
+/** One fact of the strip. The lead cell (registrations) is wider and has no left rule. */
 function Cell({
   title,
   lead,

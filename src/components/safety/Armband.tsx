@@ -2,9 +2,11 @@ import { cx } from "@/lib/cx";
 import { Icon } from "@/components/ui/Icon";
 
 /**
- * The pink armband référent·es wear at every VPC event, drawn as a sticker
- * band (wordmark keyline on night, ink outline on paper) so students know
- * exactly what to look for. Decorative: the heading next to it says it.
+ * A pink "Référent·e VSS & VDH" armband, drawn as a sticker band (wordmark
+ * keyline on night, ink outline on paper). NOT USED in Phase 1: the BDE says
+ * its référent·es are identifiable on every event, not how. Only show this
+ * once the bureau confirms they wear an armband like it. Decorative: the
+ * heading next to it must say it.
  */
 export function Armband({ className }: { className?: string }) {
   return (

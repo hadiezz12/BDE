@@ -40,7 +40,7 @@ export const NOTIFICATION_KIND_DETAIL: Record<NotificationKind, string> = {
   evenement: "Rappels avant tes soirées, places qui se libèrent sur ce que tu as enregistré.",
   candidature: "Chaque changement de statut, les entretiens calés, les réponses des bureaux.",
   association: "Les nouvelles des assos dont tu es membre : recrutements, permanences, réunions.",
-  bde: "Les annonces du Very Pink Club : billetteries, local B-12, grandes dates de l'année.",
+  bde: "Les annonces du Very Pink Club : dates des événements, campagne des listes, carte cotisante.",
 };
 
 export const NOTIFICATION_KINDS: NotificationKind[] = ["evenement", "candidature", "association", "bde"];

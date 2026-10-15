@@ -38,7 +38,7 @@ export function AssociationSearchForm({
           name="q"
           type="search"
           defaultValue={query}
-          placeholder="Escalade, radio, conseil…"
+          placeholder="Ex : sport, musique, conseil…"
           autoComplete="off"
           enterKeyHint="search"
           spellCheck={false}

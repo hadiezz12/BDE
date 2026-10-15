@@ -3,6 +3,7 @@ import Link from "next/link";
 import { routes } from "@/lib/routes";
 import { formatDateLong } from "@/lib/format";
 import { getSession } from "@/lib/demo-session";
+import { getAssociations } from "@/lib/data/associations";
 import { getNotificationPreferences } from "@/lib/data/preferences";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
@@ -44,8 +45,14 @@ export default async function AccountProfilePage() {
   const { user } = await getSession();
   if (!user) return null;
 
-  const preferences = await getNotificationPreferences(user.id);
   const card = user.memberCard;
+  const [preferences, bde] = await Promise.all([
+    getNotificationPreferences(user.id),
+    // Without a card, the way to the BDE's page, where the card is presented (#carte).
+    card ? Promise.resolve(null) : getAssociations({ category: "bde" }).then((list) => list[0] ?? null),
+  ]);
+  // Demo accounts show their label; real ones their school address. Never an empty line.
+  const who = user.demoLabel ?? user.email;
 
   return (
     <>
@@ -56,7 +63,7 @@ export default async function AccountProfilePage() {
         intro="Ce que les bureaux lisent quand tu candidates, et ce que tu veux recevoir : ici, par mail, ou les deux."
         meta={
           <>
-            <span className="break-all">{user.email}</span>
+            {who && <span className="break-all">{who}</span>}
             <span>{card ? `Carte n° ${card.number}` : "Pas encore cotisant·e"}</span>
           </>
         }
@@ -66,7 +73,18 @@ export default async function AccountProfilePage() {
         <div className="flex min-w-0 flex-col gap-16 lg:col-span-8">
           <section aria-labelledby="infos-titre">
             <SectionHeader id="infos-titre" index="01" kicker="Qui tu es" title="Tes infos" />
-            <ProfileForm user={user} className="mt-8" />
+            <ProfileForm
+              user={{
+                firstName: user.firstName,
+                lastName: user.lastName,
+                demoLabel: user.demoLabel,
+                email: user.email,
+                programme: user.programme,
+                year: user.year,
+                avatar: user.avatar,
+              }}
+              className="mt-8"
+            />
           </section>
 
           <section aria-labelledby="recus-titre">
@@ -91,10 +109,12 @@ export default async function AccountProfilePage() {
             </h2>
             <dl className="mt-2">
               {WHERE_IT_SHOWS.map((row) => (
-                <div key={row.what} className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 border-b border-line py-4">
-                  <Icon name={row.icon} size={18} className="mt-0.5 text-accent-text" />
-                  <dt className="font-bold leading-snug">{row.what}</dt>
-                  <dd className="col-start-2 mt-1 type-small text-muted">{row.where}</dd>
+                <div key={row.what} className="border-b border-line py-4">
+                  <dt className="flex items-start gap-3 font-bold leading-snug">
+                    <Icon name={row.icon} size={18} className="mt-0.5 shrink-0 text-accent-text" />
+                    {row.what}
+                  </dt>
+                  <dd className="mt-1 pl-[1.875rem] type-small text-muted">{row.where}</dd>
                 </div>
               ))}
             </dl>
@@ -108,20 +128,20 @@ export default async function AccountProfilePage() {
               <p className="mt-3 type-small">
                 <span className="block font-mono text-[0.9375rem] font-bold">N° {card.number}</span>
                 <span className="text-muted">
-                  Saison {card.season}, valable jusqu&apos;au {formatDateLong(card.validUntil)}. À montrer à
-                  l&apos;entrée des soirées du BDE, avec une pièce d&apos;identité.
+                  Saison {card.season}, valable jusqu&apos;au {formatDateLong(card.validUntil)}.
                 </span>
               </p>
             ) : (
               <p className="mt-3 type-small text-muted">
-                Pas encore cotisant·e. La carte se prend auprès du BDE et s&apos;affiche ensuite dans ton espace.
+                Pas encore cotisant·e. La carte à 30&nbsp;€ vaut pour l&apos;année universitaire ; une fois validée
+                par le bureau, elle s&apos;affiche dans ton espace.
               </p>
             )}
             <Link
-              href={routes.account}
+              href={card || !bde ? routes.account : `${routes.association(bde.slug)}#carte`}
               className="mt-4 inline-flex items-center gap-1.5 type-small font-bold hover:text-accent-text"
             >
-              {card ? "Voir ma carte" : "Retour à mon espace"}
+              {card ? "Voir ma carte" : bde ? "Voir la carte cotisante" : "Retour à mon espace"}
               <Icon name="arrow-right" size={16} />
             </Link>
           </section>

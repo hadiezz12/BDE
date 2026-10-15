@@ -7,7 +7,7 @@ import { registrationFacts } from "./event-facts";
  * Where registration stands, in words: "Inscriptions ouvertes · 19 places
  * restantes", "Billetterie bientôt · Ouverture le 24 oct. à 12h", "Complet ·
  * Les 24 places sont prises", "Terminé · 380 inscrit·es". The label always
- * says it; colour only repeats it (green open, amber text for the last
+ * says it; colour only repeats it (green open, pink text for the last
  * places, cyan not yet / waiting list, grey closed).
  *
  *  - badge : the status alone (dense tables, side lists)
@@ -50,7 +50,7 @@ export function RegistrationState({
     <div className={cx("flex min-w-0 flex-col gap-1.5", className)}>
       {badge}
       {f.detail && (
-        <span className={cx("type-small", f.tone === "warn" ? "font-bold text-warn" : "text-muted")}>{f.detail}</span>
+        <span className={cx("type-small", f.tone === "accent" ? "font-bold text-accent-text" : "text-muted")}>{f.detail}</span>
       )}
       {meter && pct !== null && f.fill && (
         <span className="mt-1 flex items-center gap-2.5">

@@ -8,14 +8,20 @@ import type { DemoRole, Session, UserProfile } from "@/lib/types";
  * A cookie picks which of the three UX states to render (logged out, student,
  * association officer) so the shells can be reviewed. Supabase Auth replaces
  * this module in Phase 2; pages only ever call getSession().
+ *
+ * The two accounts are labelled as demo (UserProfile.demoLabel: "Compte démo
+ * — étudiant·e", "Compte démo — responsable d'asso") and start empty: no
+ * registrations, applications, notifications or card. The officer account
+ * manages the Very Pink Club only.
  */
 export const DEMO_ROLE_COOKIE = "vpc-demo-role";
 export const DEMO_ROLES: DemoRole[] = ["visiteur", "etudiant", "responsable"];
-const DEFAULT_ROLE: DemoRole = "etudiant";
+/** A first visit (no demo cookie) is a visitor: nobody is shown as signed in until they pick a demo account. */
+const DEFAULT_ROLE: DemoRole = "visiteur";
 
 const USER_FOR_ROLE: Record<Exclude<DemoRole, "visiteur">, string> = {
-  etudiant: "u-ines",
-  responsable: "u-yanis",
+  etudiant: "u-demo-etudiant",
+  responsable: "u-demo-responsable",
 };
 
 export function parseDemoRole(value: string | undefined | null): DemoRole | null {

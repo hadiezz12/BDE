@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { CampusEvent, EventItem } from "@/lib/types";
+import type { CampusEvent, EventItem, EventSeries, UserProfile } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { EVENT_CATEGORY_LABEL, dateParts, formatDayFull, formatPrice, plural } from "@/lib/format";
 import { parisDateKey } from "@/lib/time";
 import { getSession } from "@/lib/demo-session";
-import { getEvent, getRelatedEvents } from "@/lib/data/events";
+import { getEvent, getEvents, getRelatedEvents } from "@/lib/data/events";
+import { getEventSeries, getEventSeriesById, getEventSeriesBySlug } from "@/lib/data/event-series";
 import { getAssociationById } from "@/lib/data/associations";
+import { getMemberCardOffer } from "@/lib/data/member-card";
 import { getPosts } from "@/lib/data/posts";
 import { AssociationIdentity } from "@/components/associations/AssociationIdentity";
 import { PostBrief } from "@/components/campus/PostBrief";
@@ -29,39 +31,95 @@ import type { PersonalState } from "@/components/events/PersonalMarks";
 import { agendaHref } from "@/components/events/agenda-filters";
 import { eventAction } from "@/components/events/event-action";
 import { eventAccent, eventPhase, eventSticker, isMultiDay, timeRange } from "@/components/events/event-facts";
+import { seriesNumbers } from "@/components/events/series-facts";
+import { SeriesView } from "./_components/SeriesView";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEvent(slug);
-  if (!event) return { title: "Événement introuvable" };
-  return { title: event.title, description: event.summary };
+  if (event) return { title: event.title, description: event.summary };
+  const series = await getEventSeriesBySlug(slug);
+  if (series) return { title: `${series.name} · ${series.subtitle}`, description: series.description };
+  return { title: "Événement introuvable" };
 }
 
 /**
- * The event page, as a gig poster with its ticket: the lit emblem (BDE
+ * /events/[slug] serves two things, a dated edition first:
+ *  - a dated edition (CampusEvent) → EditionPage, the gig poster below
+ *  - one of the BDE's 8 events of the year (EventSeries) → SeriesView
+ * Any other slug is a 404.
+ */
+export default async function EventRoute({ params }: Props) {
+  const { slug } = await params;
+  const event = await getEvent(slug);
+  if (event) return <EditionPage event={event} />;
+
+  const series = await getEventSeriesBySlug(slug);
+  if (!series) notFound();
+  return <SeriesPage series={series} />;
+}
+
+/** One of the 8 events of the year, with its upcoming dated editions (none until the bureau publishes them). */
+async function SeriesPage({ series }: { series: EventSeries }) {
+  const now = new Date();
+  const [session, all, organiser, offer, upcoming] = await Promise.all([
+    getSession(),
+    getEventSeries({ associationId: series.associationId }),
+    getAssociationById(series.associationId),
+    getMemberCardOffer(series.associationId),
+    getEvents({ when: "upcoming", associationId: series.associationId }),
+  ]);
+  const user = session.user;
+  const numbers = seriesNumbers(all);
+
+  return (
+    <SeriesView
+      series={series}
+      number={numbers.get(series.id) ?? "01"}
+      total={all.length}
+      organiser={organiser}
+      editions={upcoming.filter((e) => e.seriesId === series.id)}
+      others={all.filter((s) => s.id !== series.id)}
+      numbers={numbers}
+      offer={offer}
+      manages={Boolean(user?.managedAssociationIds.includes(series.associationId))}
+      personalFor={personalMarks(user)}
+      now={now}
+    />
+  );
+}
+
+/** Registered / saved marks for a signed-in student; nothing for a visitor. */
+function personalMarks(user: UserProfile | null) {
+  return (e: EventItem): PersonalState | undefined =>
+    user ? { registered: user.registeredEventIds.includes(e.id), saved: user.savedEventIds.includes(e.id) } : undefined;
+}
+
+/**
+ * A dated edition, as a gig poster with its ticket: the lit emblem (BDE
  * signature events) or the cover photo, the title set big, then a ticket
  * strip with the date stub and when / where / how much. Below, the programme,
  * the practical lines and who organises; beside it (desktop) or under the
  * hero (phone) the registration panel. Phones get a sticky action bar above
- * the tab bar. PHASE 1: registering and saving only show a demo notice.
+ * the tab bar. PHASE 1: registering and saving only show a demo notice, and
+ * no edition is published yet.
  */
-export default async function EventPage({ params }: Props) {
-  const { slug } = await params;
-  const event = await getEvent(slug);
-  if (!event) notFound();
-
+async function EditionPage({ event }: { event: EventItem }) {
   const now = new Date();
-  const [session, association, related, posts] = await Promise.all([
+  const [session, association, related, posts, series] = await Promise.all([
     getSession(),
     getAssociationById(event.associationId),
     getRelatedEvents(event, 3),
     getPosts(),
+    event.seriesId ? getEventSeriesById(event.seriesId) : Promise.resolve(null),
   ]);
 
   const user = session.user;
   const registered = Boolean(user?.registeredEventIds.includes(event.id));
+  /** Officer of the organising association: a way to its management space. */
+  const manages = Boolean(user?.managedAssociationIds.includes(event.associationId));
   const action = eventAction(event, { registered }, now);
   const phase = eventPhase(event, now);
   const past = phase === "past";
@@ -73,8 +131,7 @@ export default async function EventPage({ params }: Props) {
   const sticker = eventSticker(event, now);
   const loginHref = `${routes.login}?next=${encodeURIComponent(routes.event(event.slug))}`;
   const assoName = event.association.shortName ?? event.association.name;
-  const personalFor = (e: EventItem): PersonalState | undefined =>
-    user ? { registered: user.registeredEventIds.includes(e.id), saved: user.savedEventIds.includes(e.id) } : undefined;
+  const personalFor = personalMarks(user);
 
   const panelProps = {
     event,
@@ -97,6 +154,7 @@ export default async function EventPage({ params }: Props) {
           <Breadcrumbs
             items={[
               { href: routes.events, label: "Agenda" },
+              ...(series ? [{ href: routes.event(series.slug), label: series.name }] : []),
               { href: routes.event(event.slug), label: event.title },
             ]}
           />
@@ -113,6 +171,15 @@ export default async function EventPage({ params }: Props) {
               >
                 {EVENT_CATEGORY_LABEL[event.category]}
               </Link>
+              {manages && (
+                <Link
+                  href={routes.manageEvents(event.association.slug)}
+                  className="inline-flex items-center gap-1.5 type-label text-assoc-text underline-offset-4 hover:underline"
+                >
+                  <Icon name="edit" size={14} />
+                  Gérer l&apos;événement
+                </Link>
+              )}
             </div>
             <div className="flex flex-col gap-4">
               <h1 id="evenement-titre" className={cx("type-poster break-words hyphens-auto", past && "text-muted")}>
@@ -278,7 +345,6 @@ function fullDay(iso: string, now: Date): string {
 function whenText(event: Pick<CampusEvent, "startsAt" | "endsAt">, now: Date): string {
   if (!event.endsAt || !isMultiDay(event)) return fullDay(event.startsAt, now);
   const start = dateParts(event.startsAt);
-  const end = dateParts(event.endsAt);
   const sameMonth = parisDateKey(event.startsAt).slice(0, 7) === parisDateKey(event.endsAt).slice(0, 7);
   const from = sameMonth ? `${start.weekdayLong} ${start.day}` : fullDay(event.startsAt, now).toLowerCase();
   return `Du ${from} au ${fullDay(event.endsAt, now).toLowerCase()}`;

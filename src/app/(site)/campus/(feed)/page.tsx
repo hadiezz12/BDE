@@ -10,6 +10,7 @@ import { SectionHeader } from "@/components/layout/SectionHeader";
 import { FilterChips, type FilterOption } from "@/components/ui/FilterChips";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ButtonLink } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { FeedHeader } from "@/components/campus/FeedHeader";
 import { PostLead } from "@/components/campus/PostLead";
 import { PostItem } from "@/components/campus/PostItem";
@@ -28,7 +29,7 @@ import {
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const DESCRIPTION =
-  "Récaps de soirées, interviews, annonces et brèves des associations du campus de Paris de GEM Alpine Business School.";
+  "Les annonces, récaps, interviews et brèves du Very Pink Club et des associations de GEM Alpine Business School — Paris.";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const kind = parsePostKind((await searchParams).kind);
@@ -42,7 +43,9 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
  * /campus — the campus news feed, laid out like a student weekly printed on
  * the night surface: the lead story big, brèves in a side column, three
  * column stories, the édito on paper, then back issues grouped by week.
- * A rubrique filter (?kind=) narrows it to one kind of story.
+ * A rubrique filter (?kind=) narrows it to one kind of story. Until the
+ * first article is published, the filter is hidden and the page says who
+ * will write here.
  */
 export default async function CampusFeedPage({ searchParams }: { searchParams: SearchParams }) {
   const kind = parsePostKind((await searchParams).kind);
@@ -66,10 +69,14 @@ export default async function CampusFeedPage({ searchParams }: { searchParams: S
   return (
     <>
       <FeedHeader>
-        <FilterChips label="Filtrer par rubrique" param="kind" options={options} current={kind} basePath={routes.campus} />
+        {all.length > 0 && (
+          <FilterChips label="Filtrer par rubrique" param="kind" options={options} current={kind} basePath={routes.campus} />
+        )}
       </FeedHeader>
 
-      {posts.length === 0 ? (
+      {all.length === 0 ? (
+        <FirstIssue managed={managed} />
+      ) : posts.length === 0 ? (
         <EmptyFeed kind={kind} />
       ) : kind === "breve" ? (
         <BriefsOnly posts={posts} />
@@ -135,7 +142,7 @@ function FrontPage({
                 ))}
               </ul>
             ) : (
-              <p className="mt-4 text-muted">Pas de brève en ce moment : le local est calme.</p>
+              <p className="mt-4 text-muted">Pas de brève en ce moment.</p>
             )}
           </div>
           <FilColophon contactEmail={contactEmail} managed={managed} className="mx-1" />
@@ -230,35 +237,57 @@ function WeekList({ posts, className }: { posts: Post[]; className?: string }) {
   );
 }
 
+/** Articles exist, but none in this rubrique. */
 function EmptyFeed({ kind }: { kind: PostKind | null }) {
   return (
     <section aria-labelledby="fil-vide" className="wrap pb-section">
       <h2 id="fil-vide" className="sr-only">
         {kind ? POST_KIND_PLURAL[kind] : "Articles"}
       </h2>
-      {kind ? (
-        <EmptyState
-          title={`${POST_KIND_NONE[kind]} pour l'instant`}
-          actions={
-            <ButtonLink href={routes.campus} variant="secondary" icon="arrow-right">
-              Tout le fil
+      <EmptyState
+        title={kind ? `${POST_KIND_NONE[kind]} pour l'instant` : "Rien ici pour l'instant"}
+        actions={
+          <ButtonLink href={routes.campus} variant="secondary" icon="arrow-right">
+            Tout le fil
+          </ButtonLink>
+        }
+      >
+        Rien n&apos;est encore paru dans cette rubrique. Le reste du fil est à un clic.
+      </EmptyState>
+    </section>
+  );
+}
+
+/**
+ * Nothing published yet, anywhere: say who writes here. Officers get the
+ * way to their association's content desk; everyone else, the BDE's events.
+ */
+function FirstIssue({ managed }: { managed: AssociationRef[] }) {
+  return (
+    <section aria-labelledby="fil-a-venir" className="wrap pb-section">
+      <h2 id="fil-a-venir" className="sr-only">
+        Articles
+      </h2>
+      <EmptyState
+        mark={<Icon name="file" size={44} />}
+        title="Les premiers articles arrivent"
+        actions={
+          managed.length > 0 ? (
+            managed.map((a) => (
+              <ButtonLink key={a.id} href={routes.manageContent(a.slug)} icon="arrow-right">
+                Écrire pour {a.shortName ?? a.name}
+              </ButtonLink>
+            ))
+          ) : (
+            <ButtonLink href={routes.events} variant="secondary" icon="arrow-right">
+              Les événements de l&apos;année
             </ButtonLink>
-          }
-        >
-          Les assos n&apos;ont rien publié dans cette rubrique cette année. Le reste du fil, lui, bouge.
-        </EmptyState>
-      ) : (
-        <EmptyState
-          title="Le fil est vide pour l'instant"
-          actions={
-            <ButtonLink href={routes.events} icon="arrow-right">
-              Voir l&apos;agenda
-            </ButtonLink>
-          }
-        >
-          Aucune asso n&apos;a encore publié. Les premiers récaps tombent en général le lendemain des soirées.
-        </EmptyState>
-      )}
+          )
+        }
+      >
+        Aucun article n&apos;est encore paru. Le bureau et les associations publieront ici leurs annonces, leurs
+        récaps et leurs brèves, depuis leur espace asso.
+      </EmptyState>
     </section>
   );
 }

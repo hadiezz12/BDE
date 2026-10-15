@@ -21,11 +21,11 @@ export const metadata: Metadata = {
 /** The path an application usually takes, explained once, in the margin. */
 const PATH: Array<{ status: ApplicationStatus; detail: string }> = [
   { status: "brouillon", detail: "Enregistrée chez toi, pas encore envoyée." },
-  { status: "envoyee", detail: "Le bureau l'a reçue. Un accusé de réception part sur ta boîte mail." },
+  { status: "envoyee", detail: "Le bureau de l'asso l'a reçue." },
   { status: "en-revue", detail: "Le bureau lit les candidatures. Pas de nouvelles, pas de mauvaises nouvelles." },
   { status: "entretien", detail: "La date et le lieu sont dans ta candidature, et dans tes notifications." },
-  { status: "acceptee", detail: "Bienvenue dans l'équipe. La suite arrive par mail." },
-  { status: "refusee", detail: "Pas pour cette fois. Le bureau te dit souvent pourquoi, lis son mot." },
+  { status: "acceptee", detail: "Bienvenue dans l'équipe. Le bureau te dit la suite." },
+  { status: "refusee", detail: "Pas pour cette fois. Si le bureau a laissé un mot, il est dans ta candidature." },
 ];
 
 /**
@@ -70,8 +70,8 @@ export default async function AccountApplicationsPage() {
                 </ButtonLink>
               }
             >
-              Bureau d&apos;asso, staff de soirée, antenne radio : les assos recrutent toute l&apos;année. Quand tu
-              envoies une candidature, tu la suis ici, étape par étape.
+              Les assos publieront leurs recrutements sur la page Recrutements. Quand tu envoies une candidature, tu la
+              suis ici, étape par étape.
             </EmptyState>
           ) : (
             <>
@@ -90,11 +90,12 @@ export default async function AccountApplicationsPage() {
                     title="Plus rien en cours."
                     actions={
                       <ButtonLink href={routes.recruitment} variant="secondary" icon="arrow-right">
-                        Les recrutements ouverts
+                        Voir les recrutements
                       </ButtonLink>
                     }
                   >
-                    Toutes tes candidatures ont reçu une réponse. D&apos;autres assos recrutent en ce moment.
+                    Toutes tes candidatures ont reçu une réponse. Les nouveaux recrutements s&apos;affichent sur la page
+                    Recrutements.
                   </EmptyState>
                 )}
               </section>

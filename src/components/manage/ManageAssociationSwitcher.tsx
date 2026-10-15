@@ -12,8 +12,8 @@ import { activeSection, MANAGE_SECTIONS } from "./sections";
 
 /**
  * The association being managed, in its own accent. When the officer runs
- * several associations (Yanis: Very Pink Club + Ourcq FM) it becomes a
- * disclosure that jumps to the same section of the other association.
+ * several associations it becomes a disclosure that jumps to the same
+ * section of the other association.
  */
 export function ManageAssociationSwitcher({
   current,

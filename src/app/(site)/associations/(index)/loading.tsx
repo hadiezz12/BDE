@@ -1,6 +1,6 @@
 import { AssociationTileSkeleton } from "@/components/associations/AssociationTile";
 import { LoadingAnnouncement, Skeleton, SkeletonText } from "@/components/ui/Skeleton";
-import { TILE_GRID, tileLayout } from "./_components/tile-layout";
+import { TILE_GRID, tileLayout } from "../_components/tile-layout";
 
 /** Associations index while it loads: poster header, filters, the BDE band, then the poster wall. */
 export default function AssociationsLoading() {

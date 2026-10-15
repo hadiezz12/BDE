@@ -1,26 +1,11 @@
 import Link from "next/link";
-import type { EventItem, RegistrationStatus } from "@/lib/types";
+import type { EventItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { REGISTRATION_LABEL, dateParts, formatDayMonth, formatPrice, formatWhen, plural } from "@/lib/format";
-import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
+import { REGISTRATION_TONE, isOver, seatsLeft } from "@/components/events/event-facts";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Sticker } from "@/components/ui/Sticker";
-
-/** Green only when you can actually get in; pink when it's nearly gone. */
-const REGISTRATION_TONE: Record<RegistrationStatus, StatusTone> = {
-  libre: "ok",
-  ouverte: "ok",
-  "derniere-chance": "accent",
-  bientot: "info",
-  "liste-attente": "info",
-  complet: "neutral",
-  fermee: "neutral",
-};
-
-/** Over once it has ended (or started, when it has no end) — same rule as the agenda. */
-function isOver(event: EventItem, now = new Date()): boolean {
-  return Date.parse(event.endsAt ?? event.startsAt) < now.getTime();
-}
 
 /** The viewer's own relation to the event (students only). */
 export type EventAttendance = "inscrit" | "favori" | null;
@@ -46,10 +31,7 @@ export function RelatedEventTicket({
   const over = isOver(event);
   const d = dateParts(event.startsAt);
   const reg = event.registration;
-  const seatsLeft =
-    (reg.status === "ouverte" || reg.status === "derniere-chance") && reg.capacity !== undefined && reg.taken !== undefined
-      ? Math.max(0, reg.capacity - reg.taken)
-      : null;
+  const left = reg.status === "ouverte" || reg.status === "derniere-chance" ? seatsLeft(reg) : null;
 
   return (
     <article
@@ -75,7 +57,7 @@ export function RelatedEventTicket({
             tilt={3}
             className="absolute -top-3 right-3"
           >
-            {attendance === "inscrit" ? "Tu y vas" : "Dans tes favoris"}
+            {attendance === "inscrit" ? "Tu y vas" : "Enregistré"}
           </Sticker>
         )}
         <H className="type-card text-[1.2rem] break-words">
@@ -96,7 +78,7 @@ export function RelatedEventTicket({
             <StatusBadge tone={REGISTRATION_TONE[reg.status]}>{REGISTRATION_LABEL[reg.status]}</StatusBadge>
             <p className="type-meta">
               {formatPrice(event.price)}
-              {seatsLeft !== null && ` · ${plural(seatsLeft, "place restante", "places restantes")}`}
+              {left !== null && ` · ${plural(left, "place restante", "places restantes")}`}
             </p>
           </div>
         )}

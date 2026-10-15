@@ -34,7 +34,7 @@ export function ApplyBar({
     >
       <div className="flex items-center justify-between gap-4 px-[var(--gutter)] py-3">
         <p className="flex min-w-0 flex-col gap-0.5">
-          <span className={cx("type-meta font-bold", urgent && "text-warn")}>
+          <span className={cx("type-meta font-bold", urgent && "text-accent-text")}>
             {deadlineLabel(campaign.closesAt, now)}
           </span>
           <span className="type-caption">

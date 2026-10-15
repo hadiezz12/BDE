@@ -9,6 +9,11 @@ import { BrandMark } from "./BrandMark";
  * pointer with a glare that follows it. Pure CSS transforms driven by two
  * custom properties; no tilt for touch-only devices or reduced motion.
  * Without a holder it is the offer card ("30 €"); with one, the member's card.
+ *
+ * It prints only what it is given: no invented year, name or number. Without
+ * a season it reads "Année universitaire". On a Phase 1 demo account, pass
+ * the account's demo label as `holder` ("Compte démo — étudiant·e"), never a
+ * made-up name.
  */
 export function MemberCard({
   season,
@@ -18,7 +23,9 @@ export function MemberCard({
   price = 30,
   className,
 }: {
-  season: string;
+  /** Academic year, e.g. "2026–2027" (account-facts academicSeason). */
+  season?: string;
+  /** The holder's name, or the demo label on a demo account. */
   holder?: string;
   number?: string;
   validUntilLabel?: string;
@@ -69,8 +76,8 @@ export function MemberCard({
         <div className="relative flex h-full flex-col justify-between [transform:translateZ(30px)]">
           <div className="flex items-start justify-between gap-4">
             <BrandMark variant="panther" height={44} decorative />
-            <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.14em] text-[#12d8f0]">
-              Année {season}
+            <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.14em] text-triangle">
+              {season ? `Année ${season}` : "Année universitaire"}
             </p>
           </div>
           <div>
@@ -88,7 +95,7 @@ export function MemberCard({
               </p>
               {holder && <p className="mt-1 truncate text-[1.05rem] font-bold">{holder}</p>}
             </div>
-            <p className="shrink-0 font-mono text-[0.95rem] font-bold text-[#12d8f0]">
+            <p className="shrink-0 font-mono text-[0.95rem] font-bold text-triangle">
               {number ?? `${price} €`}
             </p>
           </div>

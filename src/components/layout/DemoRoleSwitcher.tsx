@@ -7,12 +7,13 @@ import { cx } from "@/lib/cx";
 
 const ROLES: { role: DemoRole; label: string }[] = [
   { role: "visiteur", label: "Visiteur" },
-  { role: "etudiant", label: "Étudiant·e" },
-  { role: "responsable", label: "Responsable asso" },
+  { role: "etudiant", label: "Compte démo étudiant·e" },
+  { role: "responsable", label: "Compte démo responsable d'asso" },
 ];
 
 /**
- * PHASE 1 ONLY. Lets reviewers flip between the three UX states.
+ * PHASE 1 ONLY. Lets reviewers flip between the three UX states. The two
+ * accounts are demo accounts (empty, no real person) and say so.
  * Removed when Supabase Auth lands.
  */
 export function DemoRoleSwitcher({ current, className }: { current: DemoRole; className?: string }) {

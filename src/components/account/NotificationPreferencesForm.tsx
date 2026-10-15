@@ -24,7 +24,7 @@ export function NotificationPreferencesForm({
   className,
 }: {
   preferences: NotificationPreferences;
-  /** Where the mails go. */
+  /** Where the mails go; "" when unknown (demo accounts), worded generically then. */
   email: string;
   className?: string;
 }) {
@@ -36,7 +36,12 @@ export function NotificationPreferencesForm({
     >
       <p className="type-small text-muted">
         « Dans mon espace » : la page Notifications. « Par mail » : un message sur{" "}
-        <span className="font-mono text-[0.8125rem] text-fg">{email}</span>.
+        {email ? (
+          <span className="font-mono text-[0.8125rem] text-fg">{email}</span>
+        ) : (
+          "ton adresse de l'école"
+        )}
+        .
       </p>
       <div className="mt-4 border-b border-line">
         {NOTIFICATION_KINDS.map((kind) => (

@@ -78,6 +78,41 @@ export interface Association {
   team: TeamMember[];
   /** Up to three things the association wants students to know first. */
   highlights?: string[];
+  /**
+   * The same highlights with their explanation, when the association wrote
+   * one (the BDE's three pillars). `highlights` keeps the short titles.
+   */
+  pillars?: AssociationPillar[];
+}
+
+export interface AssociationPillar {
+  title: string;
+  detail: string;
+}
+
+/**
+ * A recurring event of the BDE's year ("Les 8 événements de l'année"): the
+ * WEI, the Boo Party, the barathons… Not a dated occurrence: it says what the
+ * event is and roughly when it comes back. Each dated edition (CampusEvent)
+ * can point to its series through `seriesId`.
+ */
+export interface EventSeries {
+  id: string;
+  /** Also its page: routes.event(slug). */
+  slug: string;
+  /** "Le WEI", "Boo Party". */
+  name: string;
+  /** "Week-end d'intégration", "La Sat' Halloween". */
+  subtitle: string;
+  description: string;
+  /** When in the year, in words: "Septembre · rentrée". Never a date. */
+  period: string;
+  /** Neon emblem artwork, public path ("/brand/events/wei.png"), 154 × 154. */
+  emblem: string;
+  /** The colour the emblem wears. */
+  accent: AccentKey;
+  /** The association that produces it (the BDE). */
+  associationId: string;
 }
 
 export type EventCategory =
@@ -115,6 +150,8 @@ export interface CampusEvent {
   title: string;
   subtitle?: string;
   associationId: string;
+  /** The recurring event this is an edition of (EventSeries.id), if any. */
+  seriesId?: string;
   category: EventCategory;
   startsAt: string;
   endsAt?: string;
@@ -278,8 +315,16 @@ export interface UserProfile {
   id: string;
   firstName: string;
   lastName: string;
+  /**
+   * Set on Phase 1 demo accounts only: the label to show instead of a person
+   * ("Compte démo — étudiant·e"). Absent on real accounts.
+   */
+  demoLabel?: string;
+  /** Empty string when unknown (the demo accounts): hide it, never print "". */
   email: string;
+  /** "Programme Grande École"… Empty string when unknown (the demo accounts). */
   programme: string;
+  /** "2A"… Empty string when unknown (the demo accounts). */
   year: string;
   avatar?: Photo;
   memberships: Membership[];
@@ -429,7 +474,10 @@ export interface SafetyHotline {
   kind: "urgence" | "ecoute";
 }
 
-/** A campus contact: the BDE's VSS & VDH cell, the school's listening cell. */
+/**
+ * A campus contact (a cell, a permanence). Only listed once its details are
+ * confirmed by whoever runs it: none are known in Phase 1.
+ */
 export interface SafetyContact {
   id: string;
   name: string;
@@ -450,26 +498,61 @@ export interface SafetyPractice {
   detail: string;
 }
 
+/** One of the BDE's VSS / VDH commitments ("Ce à quoi nous nous tenons"). */
+export interface SafetyCommitment {
+  /** "01" … "06", in the BDE's order. */
+  number: string;
+  title: string;
+  detail: string;
+}
+
+/** A choice of "Nature de l'alerte" in the confidential alert form. */
+export interface SafetyAlertKind {
+  value: "violence-sexiste" | "violence-sexuelle" | "harcelement" | "discrimination";
+  label: string;
+}
+
 /* ---- Carte cotisante (BDE membership card) ------------------------------- */
 
-/** The card as the BDE sells it this season. Event prices carry the member rate. */
+/** One step of "how it works", in order. */
+export interface MemberCardStep {
+  title: string;
+  detail?: string;
+}
+
+/**
+ * The card as the BDE sells it. Only what the BDE has said: price, benefits,
+ * validity, how it works. Per-event prices are not known yet, so nothing here
+ * computes savings.
+ */
 export interface MemberCardOffer {
   /** The association that sells it (the BDE). */
   associationId: string;
-  /** Euros, once a season. */
+  /** Euros, once per academic year. */
   price: number;
-  /** "2026–2027". */
+  /** Current academic year, September → August, Paris time: "2026–2027". */
   season: string;
-  /** Last valid day of the season (ISO). */
-  validUntil: string;
-  /** What the card gives, one fact per line. */
+  /** How long it lasts, in words: "Année universitaire". */
+  validity: string;
+  /** What the card gives, one fact per line, in the BDE's words. */
   perks: string[];
-  /** Where and when to get it. */
-  where: string;
-  /** How to pay for it. */
-  payment: string;
-  /** What happens without it. */
+  /** The summary table, row by row ("Prix" → "30 €"). */
+  summary: { label: string; value: string }[];
+  /** How it works, in order. */
+  steps: MemberCardStep[];
+  /**
+   * False until online payment ships (later phase): the UI shows a demo
+   * notice, never a pay button that looks like it works.
+   */
+  paymentLive: boolean;
+  /** Last valid day (ISO), once the BDE fixes it. Unknown in Phase 1. */
+  validUntil?: string;
+  /** Where and when to get it in person, once the BDE says. Unknown in Phase 1. */
+  where?: string;
+  /** How to pay, once payment is live. Unknown in Phase 1. */
+  payment?: string;
+  /** What happens without it, once the BDE says. Unknown in Phase 1. */
   note?: string;
-  /** Campus post explaining the price, when there is one. */
+  /** Campus post explaining the price, when there is one. None in Phase 1. */
   storySlug?: string;
 }

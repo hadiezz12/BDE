@@ -16,7 +16,7 @@ const STEPS = [
   },
   {
     title: "Tu candidates ici",
-    text: "Le poste, quelques lignes, parfois un CV ou une démo audio. Ça se remplit depuis ton téléphone.",
+    text: "Le poste, quelques lignes, parfois un CV : l'asso dit sur sa fiche ce qu'elle demande. Ça se remplit depuis ton téléphone.",
   },
   {
     title: "Tu rencontres l'équipe",

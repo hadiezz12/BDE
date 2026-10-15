@@ -52,7 +52,7 @@ export function HomeRecruitment({
           href: campaigns.length > 0 ? `${routes.recruitment}?scope=open` : routes.recruitment,
           label: more > 0 ? `Les ${campaigns.length} recrutements` : "Tous les recrutements",
         }}
-        description="Bureau, staff de soirée, antenne radio : sur chaque fiche, les missions, les heures par semaine et la date limite. Pas de surprise après."
+        description="Sur chaque fiche : les missions, le temps demandé et la date limite. Pas de surprise après."
       />
       {shown.length > 0 ? (
         <div className="mt-6 border-b border-line-strong">
@@ -66,11 +66,11 @@ export function HomeRecruitment({
           title="Aucun recrutement ouvert aujourd'hui"
           actions={
             <ButtonLink href={routes.recruitment} variant="secondary" icon="arrow-right">
-              Voir les prochains
+              Les recrutements
             </ButtonLink>
           }
         >
-          Les fiches à venir sont déjà lisibles : tu sauras ce que chaque poste demande avant l&apos;ouverture.
+          Chaque asso publiera ici ses recrutements, avec les missions de chaque poste et la date limite.
         </EmptyState>
       )}
     </section>

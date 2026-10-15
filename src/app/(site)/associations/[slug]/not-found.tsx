@@ -20,8 +20,8 @@ export default function AssociationNotFound() {
         </>
       }
     >
-      Le lien a peut-être changé, ou l&apos;asso a pris un autre nom. Toutes celles du campus de Paris sont sur la
-      page Associations.
+      Le lien a peut-être changé, ou l&apos;asso a pris un autre nom. Celles qui ont déjà leur page sont sur la page
+      Associations.
     </StatePage>
   );
 }

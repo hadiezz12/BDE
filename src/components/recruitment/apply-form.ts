@@ -1,6 +1,7 @@
 import type { ApplicationFormSpec, ApplicationItem, CampaignItem, Session } from "@/lib/types";
 import { APPLICATION_STATUS_LABEL, formatDayMonth, formatDayShort, formatTime } from "@/lib/format";
 import type { ApplyFormData } from "./ApplyDialog";
+import { accountName, studyLine } from "@/components/account/identity";
 import { isPositionOpen } from "./campaign-facts";
 
 /**
@@ -43,7 +44,11 @@ export function toApplyForm({
     spec,
     requirements: campaign.requirements,
     applicant: user
-      ? { name: `${user.firstName} ${user.lastName}`, programme: `${user.programme} · ${user.year}`, email: user.email }
+      ? {
+          name: accountName(user),
+          // Only what the profile knows: demo accounts have no programme, year or email.
+          detail: [studyLine(user), user.email].filter(Boolean).join(" · "),
+        }
       : null,
     existing: mine
       ? {

@@ -11,6 +11,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { Dialog } from "@/components/ui/Dialog";
 import { AssociationLogo } from "@/components/associations/AssociationLogo";
+import { accountName, accountShortName, studyLine } from "@/components/account/identity";
 import { ACCOUNT_NAV } from "./nav";
 import { DemoRoleSwitcher } from "./DemoRoleSwitcher";
 
@@ -51,7 +52,7 @@ export function UserMenu({ session, managed }: Props) {
     return (
       <Link
         href={routes.login}
-        className="inline-flex min-h-10 items-center rounded-sm border-2 border-line-strong px-4 type-button text-[0.78rem] hover:border-fg"
+        className="inline-flex min-h-10 items-center whitespace-nowrap rounded-sm border-2 border-line-strong px-3 type-button text-[0.78rem] hover:border-fg xl:px-4"
       >
         Se connecter
       </Link>
@@ -67,8 +68,8 @@ export function UserMenu({ session, managed }: Props) {
         onClick={() => setOpen((o) => !o)}
         className="flex min-h-10 items-center gap-2.5 rounded-sm py-1 pl-1 pr-2 hover:bg-fg/8"
       >
-        <Avatar name={`${user.firstName} ${user.lastName}`} photo={user.avatar} accent="rose" size={32} />
-        <span className="text-[0.9rem] font-bold">{user.firstName}</span>
+        <Avatar name={accountName(user)} photo={user.avatar} accent="rose" size={32} />
+        <span className="sr-only text-[0.9rem] font-bold min-[90rem]:not-sr-only">{accountShortName(user)}</span>
         <Icon name="chevron-down" size={16} className={cx("transition-transform", open && "rotate-180")} />
       </button>
       <div
@@ -96,7 +97,7 @@ export function MobileUserButton({ session, managed }: Props) {
         className="inline-flex size-11 items-center justify-center rounded-sm hover:bg-fg/8"
       >
         {user ? (
-          <Avatar name={`${user.firstName} ${user.lastName}`} photo={user.avatar} accent="rose" size={30} />
+          <Avatar name={accountName(user)} photo={user.avatar} accent="rose" size={30} />
         ) : (
           <Icon name="user" size={22} />
         )}
@@ -110,7 +111,7 @@ export function MobileUserButton({ session, managed }: Props) {
           ) : (
             <div className="flex flex-col gap-4 px-2 py-3">
               <p className="type-card">Connecte-toi avec ton mail GEM</p>
-              <p className="text-muted">Pour sauvegarder des soirées, suivre tes candidatures et recevoir les rappels.</p>
+              <p className="text-muted">Pour enregistrer des soirées, suivre tes candidatures et recevoir les rappels.</p>
               <Link
                 href={routes.login}
                 className="inline-flex min-h-12 items-center justify-center rounded-sm bg-accent type-button text-accent-fg"
@@ -149,17 +150,15 @@ function useCloseOnNavigate(setOpen: (open: boolean) => void) {
 
 function AccountLinks({ session, managed }: Props) {
   const user = session.user!;
+  // Demo accounts say what they are; real ones show the known study details only.
+  const detail = user.demoLabel ? "Mode démo · aucune donnée perso" : studyLine(user);
   return (
     <div className="flex flex-col">
       <div className="flex items-center gap-3 px-2 py-3">
-        <Avatar name={`${user.firstName} ${user.lastName}`} photo={user.avatar} accent="rose" size={44} />
+        <Avatar name={accountName(user)} photo={user.avatar} accent="rose" size={44} />
         <div className="min-w-0">
-          <p className="truncate font-bold">
-            {user.firstName} {user.lastName}
-          </p>
-          <p className="truncate type-meta text-subtle">
-            {user.programme} · {user.year}
-          </p>
+          <p className="truncate font-bold">{accountName(user)}</p>
+          {detail && <p className="truncate type-meta text-subtle">{detail}</p>}
         </div>
       </div>
       <ul className="border-t border-line py-1.5">

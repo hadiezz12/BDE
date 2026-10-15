@@ -16,7 +16,7 @@ export const MEDIA_SLOTS = {
     where: "Accueil — grand bandeau éditorial / campagne",
     ratio: "21/9",
     minSize: "2400×1030",
-    brief: "Annonce majeure du BDE (gala, carte, élections). Laisser le tiers gauche calme pour le titre.",
+    brief: "Annonce majeure du BDE (la carte cotisante, la campagne des listes…). Laisser le tiers gauche calme pour le titre.",
   },
   "event-cover": {
     where: "Carte et page événement",

@@ -57,7 +57,7 @@ export function EventActionBar({
             ) : (
               <span className="truncate type-meta font-bold">{priceText}</span>
             )}
-            <span className={cx("truncate type-caption", facts.tone === "warn" && "font-bold text-warn")}>
+            <span className={cx("truncate type-caption", facts.tone === "accent" && "font-bold text-accent-text")}>
               {cta && !signedIn ? "Connecte-toi pour t'inscrire" : (facts.detail ?? facts.label)}
             </span>
           </p>

@@ -1,28 +1,22 @@
 import { StatePage } from "@/components/states/StatePage";
 import { ButtonLink } from "@/components/ui/Button";
 import { routes } from "@/lib/routes";
-import { agendaHref } from "@/components/events/agenda-filters";
 
-/** Unknown event slug: the shell stays, and the way on is the agenda (or its archive). */
+/** Unknown event slug: the shell stays, and the way on is the agenda and its 8 events of the year. */
 export default function EventNotFound() {
   return (
     <StatePage
       code="404"
       kicker="Événement introuvable"
-      title="Cette soirée n'existe pas, ou elle a changé d'adresse."
+      title="Cet événement n'existe pas, ou il a changé d'adresse."
       actions={
-        <>
-          <ButtonLink href={routes.events} icon="arrow-right">
-            Voir l&apos;agenda
-          </ButtonLink>
-          <ButtonLink href={agendaHref({ when: "past" })} variant="secondary">
-            Les événements passés
-          </ButtonLink>
-        </>
+        <ButtonLink href={routes.events} icon="arrow-right">
+          Voir les 8 événements
+        </ButtonLink>
       }
     >
-      L&apos;asso a peut-être retiré l&apos;événement, ou le lien a été coupé en route. Tout ce qui est programmé est dans
-      l&apos;agenda, et ce qui est passé dans ses archives.
+      Le lien est peut-être incomplet, ou la page a été retirée. Les 8 événements de l&apos;année et les dates annoncées
+      par le bureau sont dans l&apos;agenda.
     </StatePage>
   );
 }

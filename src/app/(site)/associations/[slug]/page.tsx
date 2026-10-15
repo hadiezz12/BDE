@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ApplicationItem, CampaignItem, EventItem, PostItem as Post } from "@/lib/types";
+import type { ApplicationItem, Association, CampaignItem, EventItem, PostItem as Post } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { APPLICATION_STATUS_LABEL, formatDateLong, formatDayMonth, plural } from "@/lib/format";
 import { getSession } from "@/lib/demo-session";
 import { getAssociation } from "@/lib/data/associations";
+import { getEventSeries } from "@/lib/data/event-series";
 import { getEvents } from "@/lib/data/events";
 import { getMemberCardOffer } from "@/lib/data/member-card";
-import { getPost, getPosts } from "@/lib/data/posts";
+import { getPosts } from "@/lib/data/posts";
 import { getCampaigns } from "@/lib/data/recruitment";
 import { getApplications } from "@/lib/data/users";
 import { AssociationLogo } from "@/components/associations/AssociationLogo";
@@ -29,6 +30,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { Sticker } from "@/components/ui/Sticker";
 import { AssociationGallery } from "../_components/AssociationGallery";
+import { EventSeriesList } from "../_components/EventSeriesList";
 import { MemberCardSection } from "../_components/MemberCardSection";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -36,13 +38,16 @@ type Props = { params: Promise<{ slug: string }> };
 /** Events shown here: the next one as a poster, then up to four lines. */
 const EVENT_LIMIT = 5;
 
+/** "30 €", with a non-breaking space so the sign never wraps alone. */
+const eur = (n: number) => `${n.toLocaleString("fr-FR")} €`;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const association = await getAssociation(slug);
   if (!association) return { title: "Association introuvable" };
   return {
     title: association.name,
-    description: `${association.kind} du campus de Paris de GEM. ${association.tagline}`,
+    description: `${association.kind} · GEM Alpine Business School, Paris. ${association.tagline}`,
     openGraph: {
       title: association.name,
       description: association.tagline,
@@ -51,12 +56,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+/** Who adds what is missing, in the page's words: the BDE's bureau, or the association. */
+function authorOf(association: Association): string {
+  return association.category === "bde" ? "le bureau" : "l'asso";
+}
+
 /**
- * /associations/[slug] — an association's page. Night chrome, the cover with
- * the mark stuck across its edge, then who they are, where to find them,
- * what's coming, who's recruiting (on paper, like the fiches de poste), the
- * bureau, what they wrote and their photos. The BDE adds its carte cotisante
- * (#carte). Members see their role; officers get the way to their workspace.
+ * /associations/[slug] — an association's page, built only from what the
+ * association has published. Night chrome, the cover (or its designed poster)
+ * with the mark stuck across its edge, then who they are and where to find
+ * them, the events of their year, the BDE's carte cotisante (#carte), dated
+ * events, recruitment, the bureau, posts and photos. A section with nothing
+ * to show is left out; where an absence matters (the team, the socials), one
+ * honest line says who will add it. Members see their role; officers get the
+ * way to their workspace.
  */
 export default async function AssociationPage({ params }: Props) {
   const { slug } = await params;
@@ -66,16 +79,17 @@ export default async function AssociationPage({ params }: Props) {
   const now = new Date();
   const session = await getSession();
   const user = session.user;
-  const [events, campaigns, posts, offer, applications] = await Promise.all([
+  const [events, series, campaigns, posts, offer, applications] = await Promise.all([
     getEvents({ associationId: association.id }),
+    getEventSeries({ associationId: association.id }),
     getCampaigns({ associationId: association.id }),
     getPosts({ associationId: association.id, limit: 4 }),
     getMemberCardOffer(association.id),
     user ? getApplications(user.id) : Promise.resolve<ApplicationItem[]>([]),
   ]);
-  const story = offer?.storySlug ? await getPost(offer.storySlug) : null;
 
   const { accent } = association;
+  const author = authorOf(association);
   const membership = user?.memberships.find((m) => m.associationId === association.id);
   const manages = Boolean(user?.managedAssociationIds.includes(association.id));
 
@@ -99,15 +113,26 @@ export default async function AssociationPage({ params }: Props) {
 
   const [leadPost, ...morePosts] = posts;
   const kicker = categoryKicker(association.category);
+  const hasSocials = association.socials.length > 0 || Boolean(association.contactEmail);
 
   let index = 0;
   const nextIndex = () => String(++index).padStart(2, "0");
 
+  // Only facts the association has given; nothing is shown as "0".
   const facts = [
     association.foundedYear ? { label: "Créée en", value: String(association.foundedYear) } : null,
     association.memberCount ? { label: "Membres", value: association.memberCount.toLocaleString("fr-FR") } : null,
-    { label: "À l'agenda", value: String(events.length) },
-  ].filter((f): f is { label: string; value: string } => Boolean(f));
+    series.length > 0 ? { label: "Événements de l'année", value: String(series.length) } : null,
+    events.length > 0 ? { label: "À l'agenda", value: String(events.length) } : null,
+    offer ? { label: "La carte", value: eur(offer.price) } : null,
+  ]
+    .filter((f): f is { label: string; value: string } => Boolean(f))
+    .slice(0, 3);
+
+  // Sections, numbered in reading order (the carte, when there is one, sits after the events of the year).
+  const presentationIndex = nextIndex();
+  const seriesIndex = series.length > 0 ? nextIndex() : "";
+  const carteIndex = offer ? nextIndex() : "";
 
   return (
     <div data-accent={accent}>
@@ -160,14 +185,19 @@ export default async function AssociationPage({ params }: Props) {
           </div>
 
           <div className="flex min-w-0 flex-col gap-7 lg:col-span-4 lg:col-start-9 lg:pt-6">
-            <dl className="grid grid-cols-3 border-t-2 border-fg">
-              {facts.map((f) => (
-                <div key={f.label} className="flex flex-col gap-1.5 border-l border-line px-3 pt-3 first:border-l-0 first:pl-0">
-                  <dt className="type-label text-muted">{f.label}</dt>
-                  <dd className="type-numeral text-[2.25rem] sm:text-[2.6rem]">{f.value}</dd>
-                </div>
-              ))}
-            </dl>
+            {facts.length > 0 && (
+              <dl className={`grid border-t-2 border-fg ${facts.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                {facts.map((f) => (
+                  <div
+                    key={f.label}
+                    className="flex flex-col gap-1.5 border-l border-line px-3 pt-3 first:border-l-0 first:pl-0"
+                  >
+                    <dt className="type-label text-muted">{f.label}</dt>
+                    <dd className="type-numeral text-[2.25rem] sm:text-[2.6rem]">{f.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
 
             {membership && (
               <p className="flex items-start gap-3 rounded-sm border border-line-strong bg-raised px-4 py-3">
@@ -183,7 +213,7 @@ export default async function AssociationPage({ params }: Props) {
               <div className="flex flex-wrap gap-3">
                 {offer && (
                   <ButtonLink href="#carte" icon="arrow-right">
-                    La carte · {offer.price}&nbsp;€
+                    La carte · {eur(offer.price)}
                   </ButtonLink>
                 )}
                 {open.length > 0 && (
@@ -207,9 +237,9 @@ export default async function AssociationPage({ params }: Props) {
       </header>
 
       {/* ---- Who they are | where to find them ---- */}
-      <div className="wrap grid gap-x-12 gap-y-14 pt-section lg:grid-cols-12">
+      <div className="wrap grid gap-x-12 gap-y-14 pt-[var(--section)] lg:grid-cols-12">
         <section aria-labelledby="presentation" className="flex min-w-0 flex-col gap-8 lg:col-span-7">
-          <SectionHeader id="presentation" index={nextIndex()} kicker="Présentation" title="Qui on est" />
+          <SectionHeader id="presentation" index={presentationIndex} kicker="Présentation" title="Qui on est" />
           <div className="flex max-w-[65ch] flex-col gap-4">
             {association.description.map((p, i) => (
               <p key={i} className={i === 0 ? "type-lead" : "text-muted"}>
@@ -217,64 +247,126 @@ export default async function AssociationPage({ params }: Props) {
               </p>
             ))}
           </div>
-          {association.highlights && association.highlights.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <h3 className="type-label text-muted">À savoir d&apos;abord</h3>
-              <ol className="border-b border-line">
-                {association.highlights.map((h, i) => (
-                  <li
-                    key={h}
-                    className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-3 border-t border-line py-3.5"
-                  >
-                    <span aria-hidden className="type-numeral text-[1.9rem] text-assoc-text">
-                      {i + 1}
-                    </span>
-                    <span className="font-semibold">{h}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
+          {association.pillars && association.pillars.length > 0 ? (
+            <ol
+              aria-label={`${association.name} en ${plural(association.pillars.length, "point")}`}
+              className="border-b border-line"
+            >
+              {association.pillars.map((pillar, i) => (
+                <li
+                  key={pillar.title}
+                  className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-3 border-t border-line py-4"
+                >
+                  <span aria-hidden className="type-numeral text-[1.9rem] text-assoc-text">
+                    {i + 1}
+                  </span>
+                  <span className="flex flex-col gap-1">
+                    <span className="font-bold leading-snug">{pillar.title}</span>
+                    <span className="text-muted">{pillar.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            association.highlights &&
+            association.highlights.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h3 className="type-label text-muted">À savoir d&apos;abord</h3>
+                <ol className="border-b border-line">
+                  {association.highlights.map((h, i) => (
+                    <li
+                      key={h}
+                      className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-3 border-t border-line py-3.5"
+                    >
+                      <span aria-hidden className="type-numeral text-[1.9rem] text-assoc-text">
+                        {i + 1}
+                      </span>
+                      <span className="font-semibold">{h}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )
           )}
         </section>
 
-        {(association.meetingInfo || association.socials.length > 0 || association.contactEmail) && (
-          <aside aria-label="Infos pratiques" className="flex min-w-0 flex-col gap-10 lg:col-span-4 lg:col-start-9">
-            {association.meetingInfo && (
-              <section aria-labelledby="ou-nous-trouver" className="flex flex-col gap-3">
-                <h2 id="ou-nous-trouver" className="border-t-2 border-fg pt-3 type-label text-muted">
-                  Où nous trouver
-                </h2>
-                <p className="flex items-start gap-3">
-                  <Icon name="pin" size={20} className="mt-0.5 shrink-0 text-assoc-text" />
-                  <span>{association.meetingInfo}</span>
-                </p>
-              </section>
+        <aside aria-label="Infos pratiques" className="flex min-w-0 flex-col gap-10 lg:col-span-4 lg:col-start-9">
+          {association.meetingInfo && (
+            <section aria-labelledby="ou-nous-trouver" className="flex flex-col gap-3">
+              <h2 id="ou-nous-trouver" className="border-t-2 border-fg pt-3 type-label text-muted">
+                Où nous trouver
+              </h2>
+              <p className="flex items-start gap-3">
+                <Icon name="pin" size={20} className="mt-0.5 shrink-0 text-assoc-text" />
+                <span>{association.meetingInfo}</span>
+              </p>
+            </section>
+          )}
+          <section aria-labelledby="reseaux" className="flex flex-col gap-3">
+            <h2 id="reseaux" className="border-t-2 border-fg pt-3 type-label text-muted">
+              Réseaux et contact
+            </h2>
+            {hasSocials ? (
+              <SocialLinks socials={association.socials} email={association.contactEmail} />
+            ) : (
+              <p className="type-small text-muted">
+                Les réseaux et le contact arrivent : {author} les ajoutera ici.
+              </p>
             )}
-            {(association.socials.length > 0 || association.contactEmail) && (
-              <section aria-labelledby="reseaux" className="flex flex-col gap-3">
-                <h2 id="reseaux" className="border-t-2 border-fg pt-3 type-label text-muted">
-                  Réseaux et contact
-                </h2>
-                <SocialLinks socials={association.socials} email={association.contactEmail} />
-              </section>
-            )}
-          </aside>
-        )}
+          </section>
+          {association.team.length > 0 ? (
+            <p>
+              <a href="#bureau" className="group inline-flex min-h-10 items-center gap-1.5 type-label hover:text-assoc-text">
+                Le bureau · {plural(association.team.length, "personne")}
+                <Icon name="arrow-right" size={14} className="transition-transform group-hover:translate-x-0.5" />
+              </a>
+            </p>
+          ) : (
+            <section aria-labelledby="equipe" className="flex flex-col gap-3">
+              <h2 id="equipe" className="border-t-2 border-fg pt-3 type-label text-muted">
+                L&apos;équipe
+              </h2>
+              <p className="type-small text-muted">
+                {association.category === "bde"
+                  ? "Le bureau présentera son équipe ici."
+                  : `${association.name} présentera son bureau ici.`}
+              </p>
+            </section>
+          )}
+        </aside>
       </div>
 
-      {/* ---- BDE only: the carte cotisante ---- */}
-      {offer && <MemberCardSection offer={offer} events={events} user={user} story={story} index={nextIndex()} />}
+      {/* ---- The events of their year (the BDE's 8), each with its own page ---- */}
+      {series.length > 0 && (
+        <section id="evenements" aria-labelledby="evenements-titre" className="wrap pt-[var(--section)]">
+          <SectionHeader
+            id="evenements-titre"
+            index={seriesIndex}
+            kicker="Chaque événement a sa page dédiée"
+            title={`Les ${series.length} événements de l'année`}
+            description={
+              events.length === 0
+                ? `Les dates de chaque édition seront annoncées par ${author}.`
+                : undefined
+            }
+          />
+          <EventSeriesList series={series} className="mt-8" />
+        </section>
+      )}
 
-      {/* ---- What's coming ---- */}
-      <section id="agenda" aria-labelledby="rendez-vous" className="wrap pt-section">
-        <SectionHeader
-          id="rendez-vous"
-          index={nextIndex()}
-          kicker={events.length > 0 ? plural(events.length, "date à venir", "dates à venir") : "Agenda"}
-          title="Prochains rendez-vous"
-          action={events.length > EVENT_LIMIT ? { href: routes.events, label: "Tout l'agenda" } : undefined}
-        />
-        {nextEvent ? (
+      {/* ---- BDE only: the carte cotisante ---- */}
+      {offer && <MemberCardSection offer={offer} user={user} index={carteIndex} />}
+
+      {/* ---- Dated events ---- */}
+      {nextEvent ? (
+        <section id="agenda" aria-labelledby="rendez-vous" className="wrap pt-[var(--section)]">
+          <SectionHeader
+            id="rendez-vous"
+            index={nextIndex()}
+            kicker={plural(events.length, "date à venir", "dates à venir")}
+            title="Prochains rendez-vous"
+            action={events.length > EVENT_LIMIT ? { href: routes.events, label: "Tout l'agenda" } : undefined}
+          />
           <div className="mt-8 grid gap-x-12 gap-y-10 lg:grid-cols-12">
             <EventPoster
               event={nextEvent}
@@ -319,21 +411,25 @@ export default async function AssociationPage({ params }: Props) {
               )}
             </div>
           </div>
-        ) : (
-          <EmptyState
-            className="mt-8"
-            title="Rien d'annoncé pour l'instant"
-            actions={
-              <ButtonLink href={routes.events} variant="secondary" icon="arrow-right">
-                L&apos;agenda du campus
-              </ButtonLink>
-            }
-          >
-            {association.name} n&apos;a pas de date à venir sur l&apos;agenda. Les prochaines s&apos;afficheront ici ;
-            en attendant, d&apos;autres assos sortent ce soir.
-          </EmptyState>
-        )}
-      </section>
+        </section>
+      ) : (
+        series.length === 0 && (
+          <section id="agenda" aria-labelledby="rendez-vous" className="wrap pt-[var(--section)]">
+            <SectionHeader id="rendez-vous" index={nextIndex()} kicker="Agenda" title="Prochains rendez-vous" />
+            <EmptyState
+              className="mt-8"
+              title="Rien d'annoncé pour l'instant"
+              actions={
+                <ButtonLink href={routes.events} variant="secondary" icon="arrow-right">
+                  L&apos;agenda
+                </ButtonLink>
+              }
+            >
+              Les dates de {association.name} s&apos;afficheront ici dès que {author} les publiera.
+            </EmptyState>
+          </section>
+        )
+      )}
 
       {/* ---- Recruitment, on paper like the fiches de poste ---- */}
       {recruiting.length > 0 && (
@@ -341,7 +437,7 @@ export default async function AssociationPage({ params }: Props) {
           id="recrutement"
           aria-labelledby="recrute"
           data-surface="paper"
-          className="grain mt-section py-section"
+          className="grain mt-[var(--section)] py-section"
         >
           <div className="wrap">
             <SectionHeader
@@ -355,8 +451,8 @@ export default async function AssociationPage({ params }: Props) {
               title={open.length > 0 ? `${association.name} recrute` : "Recrutement à venir"}
               description={
                 open.length > 0
-                  ? "Chaque fiche dit ce que tu feras vraiment, combien d'heures ça prend et jusqu'à quand candidater."
-                  : "La fiche est déjà lisible : missions, temps par semaine, étapes. Tu pourras candidater dès l'ouverture."
+                  ? "Chaque fiche dit ce que tu feras, combien de temps ça prend et jusqu'à quand candidater."
+                  : "La fiche est déjà lisible. Tu pourras candidater dès l'ouverture."
               }
             />
             <div className="mt-6 border-b border-line-strong">
@@ -370,13 +466,16 @@ export default async function AssociationPage({ params }: Props) {
 
       {/* ---- The bureau ---- */}
       {association.team.length > 0 && (
-        <section aria-labelledby="bureau" className="wrap grid gap-x-12 gap-y-8 pt-section lg:grid-cols-12">
+        <section
+          id="bureau"
+          aria-labelledby="bureau-titre"
+          className="wrap grid gap-x-12 gap-y-8 pt-[var(--section)] lg:grid-cols-12"
+        >
           <SectionHeader
-            id="bureau"
+            id="bureau-titre"
             index={nextIndex()}
             kicker={plural(association.team.length, "personne")}
             title="Le bureau"
-            description="Les noms à connaître si tu veux t'investir ou poser une question."
             className="lg:col-span-4 lg:self-start"
           />
           <TeamList team={association.team} accent={accent} className="lg:col-span-8" />
@@ -385,7 +484,7 @@ export default async function AssociationPage({ params }: Props) {
 
       {/* ---- What they wrote ---- */}
       {leadPost && (
-        <section aria-labelledby="fil" className="wrap pt-section">
+        <section aria-labelledby="fil" className="wrap pt-[var(--section)]">
           <SectionHeader
             id="fil"
             index={nextIndex()}
@@ -402,7 +501,7 @@ export default async function AssociationPage({ params }: Props) {
 
       {/* ---- Photos ---- */}
       {association.gallery.length > 0 && (
-        <section aria-labelledby="en-images" className="wrap pt-section">
+        <section aria-labelledby="en-images" className="wrap pt-[var(--section)]">
           <SectionHeader
             id="en-images"
             index={nextIndex()}

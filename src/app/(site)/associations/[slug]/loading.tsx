@@ -37,7 +37,7 @@ export default function AssociationLoading() {
           </div>
         </div>
 
-        <div className="wrap grid gap-x-12 gap-y-14 pt-section lg:grid-cols-12">
+        <div className="wrap grid gap-x-12 gap-y-14 pt-[var(--section)] lg:grid-cols-12">
           <div className="flex flex-col gap-6 lg:col-span-7">
             <Skeleton className="h-0.5 w-full" />
             <Skeleton className="h-7 w-52" />
@@ -54,7 +54,7 @@ export default function AssociationLoading() {
           </div>
         </div>
 
-        <div className="wrap pt-section">
+        <div className="wrap pt-[var(--section)]">
           <Skeleton className="h-0.5 w-full" />
           <Skeleton className="mt-4 h-7 w-72" />
           <div className="mt-8 grid gap-x-12 gap-y-10 lg:grid-cols-12">

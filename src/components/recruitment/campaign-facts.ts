@@ -9,10 +9,10 @@ import { dayDiff } from "@/lib/time";
  * beyond what lib/format provides.
  */
 
-/** Green = open, amber text = last 48 h, cyan = not yet, grey = closed. */
+/** Green = open, brand pink = last 48 h (amber is kept for safety), cyan = not yet, grey = closed. */
 export const STATUS_TONE: Record<CampaignStatus, StatusTone> = {
   ouverte: "ok",
-  "derniere-chance": "warn",
+  "derniere-chance": "accent",
   "a-venir": "info",
   cloturee: "neutral",
 };

@@ -18,7 +18,10 @@ export const SEARCH_SECTIONS: {
   title: string;
   /** Link under a result group, e.g. "Tout l'agenda". */
   more: string;
-  /** Describes how many entries the index holds, e.g. "18 événements à venir". */
+  /**
+   * What the index holds right now, in words ("8 événements de l'année"),
+   * and who will fill it when it is empty. Never a promise of content.
+   */
   describe: (n: number) => string;
 }[] = [
   {
@@ -26,27 +29,41 @@ export const SEARCH_SECTIONS: {
     href: routes.events,
     title: "L'agenda",
     more: "Tout l'agenda",
-    describe: (n) => `${plural(n, "événement")} à venir, des soirées aux masterclass`,
+    describe: (n) =>
+      n > 0
+        ? `${plural(n, "événement")} de l'année, chacun avec sa page`
+        : "Les événements de l'année seront présentés ici par le bureau.",
   },
   {
     kind: "association",
     href: routes.associations,
     title: "Les associations",
     more: "Toutes les associations",
-    describe: (n) => `${plural(n, "association")} : sport, arts, pro, solidaire…`,
+    describe: (n) =>
+      n > 1
+        ? `${plural(n, "association")} du campus`
+        : n === 1
+          ? "Une seule pour l'instant : chaque présidente ou président créera la page de son asso."
+          : "Les associations arrivent : chaque présidente ou président créera la page de son asso.",
   },
   {
     kind: "recrutement",
     href: routes.recruitment,
     title: "Recrutements",
     more: "Tous les recrutements",
-    describe: (n) => `${plural(n, "campagne ouverte ou à venir", "campagnes ouvertes ou à venir")}`,
+    describe: (n) =>
+      n > 0
+        ? plural(n, "campagne ouverte ou à venir", "campagnes ouvertes ou à venir")
+        : "Pas encore de campagne : chaque asso publiera ses recrutements ici.",
   },
   {
     kind: "article",
     href: routes.campus,
     title: "Campus, le fil",
     more: "Tout le fil",
-    describe: (n) => `${plural(n, "article récent", "articles récents")} : annonces, récaps, interviews`,
+    describe: (n) =>
+      n > 0
+        ? plural(n, "article récent", "articles récents")
+        : "Pas encore d'article : le bureau et les assos publieront ici.",
   },
 ];

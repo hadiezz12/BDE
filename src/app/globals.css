@@ -454,6 +454,19 @@
   padding-block: var(--section);
 }
 
+/* One-sided section spacing (pages use these when a paper band or a rule closes one side). */
+@utility pt-section {
+  padding-top: var(--section);
+}
+
+@utility pb-section {
+  padding-bottom: var(--section);
+}
+
+@utility mt-section {
+  margin-top: var(--section);
+}
+
 /* Horizontal scroller that bleeds to the screen edge on small screens. */
 @utility rail {
   display: flex;

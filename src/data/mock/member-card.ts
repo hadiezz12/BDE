@@ -1,30 +1,43 @@
 import type { MemberCardOffer } from "@/lib/types";
-import { parisDateKey, parisISO } from "@/lib/time";
+import { parisDateKey } from "@/lib/time";
 
 /**
- * The BDE's carte cotisante. The season follows the school year (September
- * to June) so the demo stays current; the member/standard prices themselves
- * live on each event (src/data/mock/events.ts).
+ * The BDE's carte cotisante, exactly as the BDE presents it (source: the
+ * client's maquette): price, benefits, validity, how it works. Nothing else
+ * is known yet — no per-event prices (so no savings maths), no last valid
+ * day, no place or hours to get it — and online payment is a later phase.
  */
-function currentSeason(): { label: string; endYear: number } {
+
+/** The academic year in progress, September → August, Paris time: "2026–2027". */
+function currentAcademicYear(): string {
   const [year, month] = parisDateKey(new Date()).split("-").map(Number);
-  const start = month >= 8 ? year : year - 1;
-  return { label: `${start}–${start + 1}`, endYear: start + 1 };
+  const start = month >= 9 ? year : year - 1;
+  return `${start}–${start + 1}`;
 }
 
-const season = currentSeason();
+const NB = " ";
 
 export const memberCardOffer: MemberCardOffer = {
   associationId: "a-very-pink-club",
   price: 30,
-  season: season.label,
-  validUntil: parisISO(`${season.endYear}-06-30`, "23:59"),
+  season: currentAcademicYear(),
+  validity: "Année universitaire",
   perks: [
-    "Le tarif adhérent sur chaque billet du BDE, du barathon de rentrée à la Soirée de Désintégration.",
-    "Une seule carte pour toute l'année, nominative : tu la montres à l'entrée avec ta carte étudiante.",
+    `De -20${NB}% à -40${NB}% sur tous nos événements, toute l'année`,
+    "Tu participes à la campagne des listes et tu peux lister",
+    "Les finalistes ont la priorité et la quasi-exclusivité sur le WELL",
   ],
-  where: "Au local B-12, du lundi au jeudi de 12h30 à 14h.",
-  payment: "Carte bancaire ou espèces. Prévois ta carte étudiante, elle est faite sur place.",
-  note: "Sans carte, tu entres quand même : le tarif standard existe pour que personne ne reste dehors.",
-  storySlug: "pourquoi-la-carte-reste-a-30-euros",
+  summary: [
+    { label: "Réductions sur les 8 événements", value: `-20${NB}% à -40${NB}%` },
+    { label: "Campagne des listes", value: "Incluse" },
+    { label: "Priorité sur le WELL", value: "Finalistes" },
+    { label: "Validité", value: "Année universitaire" },
+    { label: "Prix", value: `30${NB}€` },
+  ],
+  steps: [
+    { title: `Tu paies 30${NB}€ en ligne`, detail: "Paiement par carte bancaire : nom, mail, téléphone." },
+    { title: "On valide ta carte", detail: "Tu rejoins la liste des adhérents pour l'année." },
+    { title: "Tu listes et tu profites" },
+  ],
+  paymentLive: false,
 };

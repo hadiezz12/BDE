@@ -42,7 +42,7 @@ export function SearchSections({ counts }: { counts: Record<SearchKind, number> 
           <span className="flex min-w-0 flex-col gap-1.5">
             <span className="type-headline text-warn">VSS / VDH</span>
             <span className="type-small text-muted">
-              Victime ou témoin : numéros utiles, référent·es en soirée, alerte anonyme.
+              Nos engagements, le canal d&apos;alerte confidentiel et les numéros utiles.
             </span>
           </span>
           <Icon

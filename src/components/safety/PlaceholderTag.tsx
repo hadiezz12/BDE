@@ -3,9 +3,9 @@ import { cx } from "@/lib/cx";
 import { Icon } from "@/components/ui/Icon";
 
 /**
- * Marks content that is a Phase 1 placeholder (names, rooms, hours,
- * addresses) until the BDE or the school confirms it. Dashed, quiet, in
- * words — it must never be mistaken for a real contact.
+ * Marks a detail that is not known yet ("Coordonnées à venir") instead of
+ * printing a made-up name, room, hour or address. Dashed, quiet, in words —
+ * it must never be mistaken for a real contact.
  */
 export function PlaceholderTag({ children, className }: { children: ReactNode; className?: string }) {
   return (

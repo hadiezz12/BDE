@@ -35,7 +35,7 @@ export function PracticalList({ items, className }: { items: string[]; className
           href={routes.safety}
           className="inline-flex items-center gap-1.5 self-start type-small font-bold text-warn hover:underline"
         >
-          Qui sont les référent·es VSS et VDH, et comment les joindre
+          Nos engagements VSS / VDH et le canal d&apos;alerte
           <Icon name="arrow-right" size={15} className="shrink-0" />
         </Link>
       )}

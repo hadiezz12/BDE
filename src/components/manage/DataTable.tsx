@@ -33,7 +33,7 @@ export function DataTable<T>({
   empty,
   className,
 }: {
-  /** Accessible name of the table/list ("Candidatures staff BOO Party"). */
+  /** Accessible name of the table/list ("Campagnes de recrutement de …"). */
   caption: string;
   columns: DataColumn<T>[];
   rows: T[];
@@ -52,8 +52,8 @@ export function DataTable<T>({
 
   return (
     <div className={className}>
-      {/* md and up: table */}
-      <div className="hidden overflow-x-auto rounded-md border border-line bg-raised md:block">
+      {/* md and up: table. `relative` keeps the cells' sr-only text inside the scroll box, so it can't widen the page. */}
+      <div className="relative hidden overflow-x-auto rounded-md border border-line bg-raised md:block">
         <table className="w-full border-collapse text-left type-small">
           <caption className="sr-only">{caption}</caption>
           <thead>

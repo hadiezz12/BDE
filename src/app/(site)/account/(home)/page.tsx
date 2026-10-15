@@ -13,6 +13,7 @@ import { eventPhase, isTonight } from "@/components/events/event-facts";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApplicationRow } from "@/components/account/ApplicationRow";
 import { NotificationItem } from "@/components/account/NotificationItem";
@@ -26,6 +27,7 @@ import {
   shortEventName,
   splitMyEvents,
 } from "@/components/account/account-facts";
+import { accountName, greetingName, studyLine } from "@/components/account/identity";
 
 export const metadata: Metadata = {
   title: "Mon espace",
@@ -34,7 +36,7 @@ export const metadata: Metadata = {
 
 /** The one sentence under the hello: what's next, said like a friend would. */
 function nextOutLine(next: EventItem | undefined, now: Date): string {
-  if (!next) return "Rien de prévu pour l'instant. L'agenda, lui, est plein.";
+  if (!next) return "Rien de prévu pour l'instant : quand le bureau annonce une date et que tu t'inscris, elle s'affiche ici.";
   const name = shortEventName(next.title);
   if (isTonight(next, now)) return `Ce soir, c'est ${name}. Le reste peut attendre demain.`;
   if (eventPhase(next, now) === "live") return `${name} est en cours. Le reste peut attendre.`;
@@ -55,7 +57,7 @@ export default async function AccountHomePage() {
     getEventsByIds([...user.registeredEventIds, ...user.savedEventIds]),
     getApplications(user.id),
     getNotifications(user.id),
-    getAssociationsByIds(user.memberships.map((m) => m.associationId)),
+    getAssociationsByIds([...new Set([...user.memberships.map((m) => m.associationId), ...user.managedAssociationIds])]),
   ]);
 
   const { tickets, saved } = splitMyEvents(user, events, now);
@@ -64,9 +66,13 @@ export default async function AccountHomePage() {
   const ongoing = applications.filter(isOngoing);
   const unread = notifications.filter((n) => !n.read);
   const byId = new Map(associations.map((a) => [a.id, a]));
+  // Officers: the way to their bureau's workspace, next to the memberships.
+  const managed = associations.filter((a) => user.managedAssociationIds.includes(a.id));
   const card = user.memberCard;
-  // Without a card, point to the BDE page, where the card is sold.
+  // Without a card, point to the BDE page, where the card is presented (#carte).
   const bde = card ? null : (await getAssociations({ category: "bde" }))[0];
+  // Demo accounts are greeted without a name: they are not a person.
+  const name = greetingName(user);
 
   return (
     <div className="wrap pt-8 sm:pt-12">
@@ -74,17 +80,21 @@ export default async function AccountHomePage() {
         {/* Hello */}
         <header className="flex flex-col gap-5 lg:col-span-7 lg:row-start-1">
           <p className="type-label text-accent-text">
-            {formatDayFull(now.toISOString())} · {user.programme} {user.year}
+            {[formatDayFull(now.toISOString()), user.demoLabel ?? studyLine(user)].filter(Boolean).join(" · ")}
           </p>
           <h1 className="type-title">
-            {greeting(now)} {user.firstName}.
+            {greeting(now)}
+            {name ? ` ${name}` : ""}.
           </h1>
           <p className="max-w-2xl type-lead text-muted">{nextOutLine(next, now)}</p>
-          <p className="flex flex-wrap gap-x-5 gap-y-1 type-meta text-muted">
-            <span>{plural(tickets.length, "billet à venir", "billets à venir")}</span>
-            <span>{plural(ongoing.length, "candidature en cours", "candidatures en cours")}</span>
-            <span>{plural(unread.length, "non lue", "non lues")}</span>
-          </p>
+          {/* Counts only once there is something to count: a fresh space doesn't need a row of zeros. */}
+          {tickets.length + ongoing.length + unread.length > 0 && (
+            <p className="flex flex-wrap gap-x-5 gap-y-1 type-meta text-muted">
+              <span>{plural(tickets.length, "billet à venir", "billets à venir")}</span>
+              <span>{plural(ongoing.length, "candidature en cours", "candidatures en cours")}</span>
+              <span>{plural(unread.length, "non lue", "non lues")}</span>
+            </p>
+          )}
         </header>
 
         {/* Next ticket */}
@@ -139,7 +149,7 @@ export default async function AccountHomePage() {
             {card ? (
               <MemberCard
                 season={card.season}
-                holder={`${user.firstName} ${user.lastName}`}
+                holder={accountName(user)}
                 number={card.number}
                 validUntilLabel={`Valable jusqu'au ${formatDateLong(card.validUntil)}`}
               />
@@ -149,15 +159,13 @@ export default async function AccountHomePage() {
           </div>
           <p className="mt-5 max-w-[28rem] type-small text-muted">
             {card ? (
-              <>
-                À montrer à l&apos;entrée avec une pièce d&apos;identité. C&apos;est elle qui te donne le tarif cotisant
-                sur les billetteries du BDE.
-              </>
+              <>C&apos;est elle qui te donne le tarif cotisant sur les événements du BDE, toute l&apos;année.</>
             ) : (
               <>
-                Pas encore cotisant·e : la carte te donne le tarif réduit sur les soirées du BDE.{" "}
+                Pas encore cotisant·e : la carte à 30&nbsp;€ ouvre de -20&nbsp;% à -40&nbsp;% sur tous les événements
+                du BDE, toute l&apos;année.{" "}
                 {bde && (
-                  <Link href={routes.association(bde.slug)} className="link font-bold text-fg">
+                  <Link href={`${routes.association(bde.slug)}#carte`} className="link font-bold text-fg">
                     Comment l&apos;avoir
                   </Link>
                 )}
@@ -199,7 +207,7 @@ export default async function AccountHomePage() {
             >
               {applications.length
                 ? "Pas d'entretien à venir ni de réponse cette semaine : les bureaux lisent, ça viendra."
-                : "Les assos recrutent toute l'année : bureau, staff de soirée, antenne radio. Tu suivras tes candidatures ici."}
+                : "Quand une asso ouvre un recrutement et que tu candidates, tu suis ta candidature ici, étape par étape."}
             </EmptyState>
           )}
         </section>
@@ -237,7 +245,7 @@ export default async function AccountHomePage() {
       <section aria-labelledby="assos-titre" className="mt-[var(--section)]">
         <SectionHeader
           id="assos-titre"
-          kicker={plural(user.memberships.length, "asso", "assos")}
+          kicker={user.memberships.length > 0 ? plural(user.memberships.length, "asso", "assos") : undefined}
           title="Tes assos"
           action={{ href: routes.associations, label: "Toutes les assos" }}
         />
@@ -259,7 +267,23 @@ export default async function AccountHomePage() {
               );
             })}
           </ul>
-        ) : (
+        ) : null}
+        {managed.length > 0 && (
+          <p className="mt-5 flex flex-wrap items-baseline gap-x-5 gap-y-2 type-small text-muted">
+            <span>Côté bureau :</span>
+            {managed.map((a) => (
+              <Link
+                key={a.id}
+                href={routes.manageHome(a.slug)}
+                className="link inline-flex items-center gap-1.5 font-bold text-fg"
+              >
+                Gérer {a.shortName ?? a.name}
+                <Icon name="arrow-right" size={16} className="self-center" />
+              </Link>
+            ))}
+          </p>
+        )}
+        {user.memberships.length === 0 && managed.length === 0 && (
           <EmptyState
             tone="quiet"
             className="mt-6"
@@ -270,7 +294,8 @@ export default async function AccountHomePage() {
               </ButtonLink>
             }
           >
-            Sport, radio, finance, solidarité : il y a une asso pour chaque soir de la semaine.
+            Quand tu rejoins une asso, elle s&apos;affiche ici. Les pages des assos arrivent : chaque présidente ou
+            président créera la sienne.
           </EmptyState>
         )}
       </section>

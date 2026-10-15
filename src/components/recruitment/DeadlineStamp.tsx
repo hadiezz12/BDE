@@ -5,13 +5,13 @@ import { deadlineLabel, formatDayMonth, formatDayShort, formatTime } from "@/lib
 
 /**
  * The deadline as a rubber stamp on the fiche: tilted, double-ruled, condensed
- * caps, worn ink. Colour follows urgency (green open, amber text in the last
+ * caps, worn ink. Colour follows urgency (green open, pink text in the last
  * 48 h, cyan before opening, grey once closed) and the plain-language label is
  * always there for screen readers — the stamp itself is decorative.
  */
 const TONE: Record<CampaignStatus, string> = {
   ouverte: "text-ok",
-  "derniere-chance": "text-warn",
+  "derniere-chance": "text-accent-text",
   "a-venir": "text-info",
   cloturee: "text-subtle",
 };

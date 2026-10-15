@@ -54,7 +54,7 @@ export function CampaignCard({
           <StatusBadge tone={STATUS_TONE[campaign.status]} pulse={urgent}>
             {CAMPAIGN_STATUS_LABEL[campaign.status]}
           </StatusBadge>
-          <p className={cx("type-small", urgent ? "font-bold text-warn" : "text-fg")}>{shortDeadline(campaign)}</p>
+          <p className={cx("type-small", urgent ? "font-bold text-accent-text" : "text-fg")}>{shortDeadline(campaign)}</p>
         </div>
         <Icon
           name="arrow-right"

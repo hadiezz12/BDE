@@ -13,7 +13,6 @@ export default function AccountApplicationNotFound() {
       kicker="Candidature introuvable"
       title="Cette candidature n'est pas dans ton espace."
       intro="Le lien est peut-être incomplet, ou il mène à la candidature de quelqu'un d'autre. Toutes les tiennes sont listées dans Mes candidatures."
-      className="pb-section"
     >
       <div className="mt-3 flex flex-wrap gap-3">
         <ButtonLink href={routes.accountApplications} icon="arrow-right">

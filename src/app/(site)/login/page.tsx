@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import type { UserProfile } from "@/lib/types";
 import { getDemoProfile, getSession } from "@/lib/demo-session";
 import { getAssociationsByIds } from "@/lib/data/associations";
 import { routes } from "@/lib/routes";
-import { plural } from "@/lib/format";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NeonText } from "@/components/brand/NeonText";
 import { Sticker } from "@/components/ui/Sticker";
@@ -19,7 +17,6 @@ export const metadata: Metadata = {
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const listFr = new Intl.ListFormat("fr", { style: "long", type: "conjunction" });
-const fullName = (u: UserProfile) => `${u.firstName} ${u.lastName}`;
 
 export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
   const next = safeNextPath((await searchParams).next);
@@ -30,31 +27,29 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   ]);
   const managed = officer ? await getAssociationsByIds(officer.managedAssociationIds) : [];
 
+  // The demo accounts are named by their demo label, never as a person, and start empty.
   const choices: DemoChoice[] = [
     {
       role: "visiteur",
       label: "Visiteur",
-      detail: "Sans compte : l'agenda, les assos, les recrutements. Pas d'espace perso.",
+      icon: "eye",
+      detail: "Sans compte : les événements, les assos et la page VSS / VDH. Pas d'espace perso.",
       redirectTo: next ?? routes.home,
     },
     {
       role: "etudiant",
-      label: "Étudiant·e",
-      person: student ? fullName(student) : undefined,
-      photo: student?.avatar,
-      detail: student
-        ? `${student.programme} · ${student.year} · ${plural(student.registeredEventIds.length, "inscription")}, ${plural(student.savedEventIds.length, "événement sauvegardé", "événements sauvegardés")}`
-        : "Espace étudiant : billets, soirées sauvegardées, candidatures.",
+      label: student?.demoLabel ?? "Compte démo — étudiant·e",
+      icon: "user",
+      detail: "Un espace étudiant vide : aucune inscription, aucune candidature, aucune notification.",
       redirectTo: next ?? routes.account,
     },
     {
       role: "responsable",
-      label: "Responsable asso",
-      person: officer ? fullName(officer) : undefined,
-      photo: officer?.avatar,
+      label: officer?.demoLabel ?? "Compte démo — responsable d'asso",
+      icon: "sliders",
       detail: managed.length
-        ? `Gère ${listFr.format(managed.map((a) => a.name))}`
-        : "Espace étudiant et gestion d'une association.",
+        ? `Le même espace vide, plus l'espace de gestion : ${listFr.format(managed.map((a) => a.name))}.`
+        : "Le même espace vide, plus l'espace de gestion d'une association.",
       redirectTo: next ?? routes.account,
     },
   ];
@@ -68,13 +63,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           Montre patte <NeonText flicker>rose</NeonText>.
         </h1>
         <p className="mt-6 max-w-xl type-lead text-muted">
-          Ton adresse de l&apos;école suffit. De l&apos;autre côté : tes billets, tes soirées sauvegardées, tes
+          Ton adresse de l&apos;école suffit. De l&apos;autre côté : tes billets, tes soirées enregistrées, tes
           candidatures et ta carte cotisante.
         </p>
         <div aria-hidden className="relative mt-14 hidden w-fit lg:block">
           <BrandMark variant="panther" height={280} decorative className="-rotate-6" />
           <Sticker tone="cream" tilt={-5} className="absolute -right-6 bottom-6">
-            @gem.exemple.fr uniquement
+            Avec ton mail GEM
           </Sticker>
         </div>
       </div>
@@ -93,7 +88,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
               Mode démo · Phase 1
             </h2>
             <p className="mt-3 text-muted">
-              En attendant les vrais comptes, choisis comment afficher le site.{" "}
+              En attendant les vrais comptes, choisis comment afficher le site. Les comptes démo ne sont pas de vraies
+              personnes et ne contiennent aucune donnée.{" "}
               {next
                 ? "Tu reviendras ensuite sur la page que tu voulais ouvrir."
                 : "Tu peux en changer à tout moment depuis le pied de page."}

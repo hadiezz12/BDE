@@ -85,7 +85,16 @@ export function hasActiveMemberCard(user: UserProfile | null, now: Date): boolea
   return Boolean(user?.memberCard && Date.parse(user.memberCard.validUntil) > now.getTime());
 }
 
-/** "18 €": French grouping and a non-breaking space before the euro sign. */
-export function euros(n: number): string {
-  return `${n.toLocaleString("fr-FR")} €`;
+/**
+ * Where the BDE's carte cotisante is presented (its page, #carte), its
+ * price and the discount it gives on events, as the BDE wrote them. Price and
+ * discount are null when no card is on sale.
+ */
+export interface MemberCardLink {
+  href: string;
+  price: number | null;
+  /** "-20 % à -40 %", from the card's summary table. */
+  discount: string | null;
 }
+
+export { euros } from "@/components/events/series-facts";

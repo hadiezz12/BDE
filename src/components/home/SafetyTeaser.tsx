@@ -5,39 +5,37 @@ import { Icon } from "@/components/ui/Icon";
 
 /**
  * The safety note, in amber — the one colour the site keeps for VSS / VDH.
- * Who to look for at a party, where to get help, and the emergency numbers
- * as real tel:/sms: links, so the home page is never more than one tap away
- * from them.
+ * What the BDE commits to, in its own words, the way to its confidential
+ * alert channel, and the national emergency numbers as real tel:/sms:
+ * links, so the home page is never more than one tap away from them.
  */
 export function SafetyTeaser({ emergency }: { emergency: SafetyHotline[] }) {
   return (
-    <section aria-labelledby="pas-seul" className="wrap py-section">
+    <section aria-labelledby="vss-vdh" className="wrap py-section">
       <div className="grid gap-8 rounded-md border-2 border-warn p-5 sm:p-8 lg:grid-cols-12 lg:items-start lg:gap-10 lg:p-10">
         <div className="flex flex-col items-start gap-4 lg:col-span-7">
           <p className="flex items-center gap-2 type-label text-warn">
             <Icon name="shield" size={16} />
             Sécurité · VSS / VDH
           </p>
-          <h2 id="pas-seul" className="type-section">
-            En soirée ou ailleurs, tu n&apos;es pas seul·e.
+          <h2 id="vss-vdh" className="type-headline max-w-[24ch]">
+            Violences sexistes et sexuelles, harcèlement, discriminations
           </h2>
           <p className="max-w-2xl text-muted">
-            Violences sexistes et sexuelles, harcèlement, discriminations : à chaque soirée du VPC, des référent·es
-            formé·es au brassard rose tournent toute la nuit. Et tu peux prévenir la cellule du BDE sans donner ton nom.
+            Référent·es formé·es, briefing des équipes et canal d&apos;alerte confidentiel ouvert 365 jours par an, sur
+            chaque événement comme en dehors. Ton nom n&apos;est pas obligatoire : il nous faut juste un moyen de te
+            joindre pour te répondre.
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-3">
             <Link
-              href={routes.safety}
+              href={`${routes.safety}#alerte`}
               className="inline-flex min-h-11 items-center gap-2 rounded-sm border-2 border-warn px-4 type-button text-warn transition-colors hover:bg-warn hover:text-on-inverse"
             >
-              Trouver de l&apos;aide
+              Déposer une alerte
               <Icon name="arrow-right" size={18} />
             </Link>
-            <Link
-              href={`${routes.safety}#alerte`}
-              className="inline-flex items-center gap-1.5 type-label text-fg hover:text-warn"
-            >
-              Signaler anonymement
+            <Link href={routes.safety} className="inline-flex items-center gap-1.5 type-label text-fg hover:text-warn">
+              Nos engagements
               <Icon name="arrow-right" size={14} />
             </Link>
           </div>
@@ -52,10 +50,7 @@ export function SafetyTeaser({ emergency }: { emergency: SafetyHotline[] }) {
             <ul className="mt-3 divide-y divide-line border-y border-line">
               {emergency.map((h) => (
                 <li key={h.id}>
-                  <a
-                    href={h.href}
-                    className="group flex min-h-14 items-center gap-4 py-2.5 hover:text-warn"
-                  >
+                  <a href={h.href} className="group flex min-h-14 items-center gap-4 py-2.5 hover:text-warn">
                     <span className="type-numeral w-[4.5rem] shrink-0 text-[2.6rem] text-warn">{h.number}</span>
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="font-bold leading-snug">{h.name}</span>

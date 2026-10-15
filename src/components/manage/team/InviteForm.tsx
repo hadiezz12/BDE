@@ -29,14 +29,14 @@ export function InviteForm({ associationName }: { associationName: string }) {
               name="email"
               autoComplete="off"
               spellCheck={false}
-              placeholder="prenom.nom@gem.exemple.fr"
+              placeholder="Ex : prenom.nom@…"
               required
             />
           )}
         </Field>
         <Field label="Rôle au bureau">
           {({ id, describedBy }) => (
-            <Input id={id} aria-describedby={describedBy} name="role" placeholder="Respo partenariats" required />
+            <Input id={id} aria-describedby={describedBy} name="role" placeholder="Ex : trésorerie" required />
           )}
         </Field>
         <Button type="submit" icon="mail" iconPosition="start" className="md:min-h-12">

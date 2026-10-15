@@ -6,16 +6,21 @@ import { Icon } from "@/components/ui/Icon";
 import { DemoRoleSwitcher } from "./DemoRoleSwitcher";
 
 const EXPLORE = [
-  { href: routes.events, label: "L'agenda" },
+  { href: routes.events, label: "Les 8 événements" },
   { href: routes.associations, label: "Les associations" },
-  { href: routes.recruitment, label: "Recrutements ouverts" },
+  { href: routes.recruitment, label: "Recrutements" },
   { href: routes.campus, label: "Campus — le fil" },
   { href: routes.search, label: "Rechercher" },
 ];
 
+/** The BDE's page, where the carte cotisante is presented (#carte). */
+const BDE_SLUG = "very-pink-club";
+
 /**
  * The night ends on paper: a cream sticker sheet with the real wordmark
  * (it was drawn for light backgrounds — black outline, white keyline).
+ * Copy is the maquette's own footer: no address, room, hours or social
+ * handle that the bureau has not given.
  */
 export function SiteFooter({ role }: { role: DemoRole }) {
   const year = new Date().getFullYear();
@@ -27,8 +32,7 @@ export function SiteFooter({ role }: { role: DemoRole }) {
           <div className="flex flex-col gap-4 pt-2">
             <p className="type-section max-w-[14ch]">Paris by night, version très rose.</p>
             <p className="max-w-xs text-muted">
-              Le bureau des étudiants de GEM Alpine Business School, campus de Paris. Permanence au local B-12, mardi et
-              jeudi de 12h30 à 14h.
+              Very Pink Club — le bureau des étudiants de GEM Alpine Business School.
             </p>
           </div>
         </div>
@@ -50,24 +54,18 @@ export function SiteFooter({ role }: { role: DemoRole }) {
             <h2 className="mb-4 type-label text-accent-text">Le bureau</h2>
             <ul className="flex flex-col gap-2.5">
               <li>
-                <Link href={routes.association("very-pink-club")} className="font-semibold hover:text-accent-text">
+                <Link href={routes.association(BDE_SLUG)} className="font-semibold hover:text-accent-text">
                   Le Very Pink Club
                 </Link>
               </li>
               <li>
-                <Link href={`${routes.association("very-pink-club")}#carte`} className="font-semibold hover:text-accent-text">
-                  Carte cotisante · 30 €
+                <Link href={`${routes.association(BDE_SLUG)}#carte`} className="font-semibold hover:text-accent-text">
+                  Carte cotisante · 30&nbsp;€
                 </Link>
               </li>
-              <li>
-                <a href="https://www.instagram.com/" className="inline-flex items-center gap-2 font-semibold hover:text-accent-text">
-                  <Icon name="instagram" size={18} /> Instagram
-                </a>
-              </li>
-              <li>
-                <a href="https://www.tiktok.com/" className="inline-flex items-center gap-2 font-semibold hover:text-accent-text">
-                  <Icon name="tiktok" size={18} /> TikTok
-                </a>
+              <li className="max-w-[24ch] pt-1 type-small text-muted">
+                Permanence sur le campus et sur place pendant tous les événements. Pendant la campagne des listes, on
+                répond au plus vite via nos réseaux.
               </li>
             </ul>
           </div>
@@ -96,7 +94,7 @@ export function SiteFooter({ role }: { role: DemoRole }) {
         <div className="flex flex-col gap-6 border-t-2 border-fg py-6 lg:flex-row lg:items-end lg:justify-between">
           <DemoRoleSwitcher current={role} />
           <p className="type-meta text-muted">
-            © {year} Very Pink Club — BDE GEM Alpine Business School · campus de Paris
+            © {year} Very Pink Club — BDE · GEM Alpine Business School — Paris
           </p>
         </div>
       </div>

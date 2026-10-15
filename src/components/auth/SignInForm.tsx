@@ -33,7 +33,7 @@ export function SignInForm({ className }: { className?: string }) {
             inputMode="email"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="prenom.nom@gem.exemple.fr"
+            placeholder="Ton adresse mail GEM"
             aria-describedby={describedBy}
           />
         )}
