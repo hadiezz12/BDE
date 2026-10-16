@@ -16,3 +16,16 @@ test("sign-in and onboarding work on a phone", async ({ page }) => {
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Inès");
 });
+
+/** Phone: the light / dark switch lives in the account sheet. */
+test("the light theme is switched from the account sheet on a phone", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Connexion et options" }).click();
+  const toggle = page.getByRole("switch", { name: "Mode clair" });
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});

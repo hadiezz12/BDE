@@ -27,7 +27,7 @@ export function NavLinks() {
                 aria-hidden
                 className={cx(
                   "absolute inset-x-3 bottom-0 h-[3px] rounded-full bg-accent transition-opacity xl:inset-x-4",
-                  active ? "opacity-100 shadow-[0_0_10px_1px_rgb(250_4_121/0.7)]" : "opacity-0",
+                  active ? "opacity-100 shadow-[0_0_calc(var(--is-night)*10px)_1px_rgb(250_4_121/0.7)]" : "opacity-0",
                 )}
               />
             </Link>

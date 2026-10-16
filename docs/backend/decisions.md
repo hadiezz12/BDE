@@ -172,3 +172,15 @@ foundational choice.
 - **Reason:** authenticated is not authorized; no real permission model exists yet.
 - **Consequence:** Phase 4 replaces `lib/manage-preview.ts` with scoped permissions checked by the
   database.
+
+## D18. Fictional test accounts with a password, development only
+
+- **Decision:** accounts `@comptes.example.test`, created by SQL script on non-production
+  projects, sign in with a password through a dashed form that exists only when
+  `AUTH_TEST_ACCOUNTS=on`.
+- **Reason:** the client needs to try the site as each kind of user; fictional addresses cannot
+  receive the sign-in code, and the hosted mailer only delivers to the project team.
+- **Rejected:** a passwordless "sign in as…" switch (a bypass, too easy to leave on); real
+  mailboxes (real people's data in development).
+- **Consequence:** production never sets `AUTH_TEST_ACCOUNTS` (production checklist). The form adds
+  no capability Supabase lacked (password sign-in is part of its API), only a page for it.

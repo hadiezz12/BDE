@@ -55,7 +55,7 @@ export function RegisteredTicket({
   return (
     <article data-accent={accent} className={cx("relative border-2 border-fg bg-raised", className)}>
       <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] sm:grid-cols-[7.5rem_minmax(0,1fr)]">
-        <div data-surface="night" className="flex justify-center px-2 py-5 sm:py-7">
+        <div data-surface="night" data-theme="dark" className="flex justify-center px-2 py-5 sm:py-7">
           <EventDate event={event} size="md" align="center" now={now} />
         </div>
 

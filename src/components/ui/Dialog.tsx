@@ -68,7 +68,7 @@ export function Dialog({
       <div
         className={cx(
           "bg-bg text-fg",
-          variant === "panel" && "rounded-md border border-line-strong shadow-[0_30px_80px_-20px_rgb(0_0_0/0.7)]",
+          variant === "panel" && "rounded-md border border-line-strong shadow-[var(--pop-shadow)]",
           variant === "sheet" &&
             "max-h-[88dvh] overflow-y-auto rounded-t-lg border-t border-line-strong pb-[env(safe-area-inset-bottom)] animate-[sheet-in_260ms_var(--ease-out)]",
           variant === "screen" && "flex h-full flex-col sm:h-auto sm:rounded-md sm:border sm:border-line-strong",

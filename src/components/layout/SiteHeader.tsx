@@ -6,11 +6,13 @@ import { Icon } from "@/components/ui/Icon";
 import { CommandSearch } from "@/components/search/CommandSearch";
 import { AssociationLogo } from "@/components/associations/AssociationLogo";
 import { NavLinks } from "./NavLinks";
+import { ThemeToggle } from "./ThemeToggle";
 import { MobileUserButton, UserMenu } from "./UserMenu";
 
 /**
  * One solid ink bar (no glass). Desktop: lockup · sections · utilities.
- * Mobile: lockup + safety, search, account — sections live in the tab bar.
+ * Mobile: lockup + safety, search, account — sections live in the tab bar,
+ * and the light / dark switch in the account sheet.
  * The VSS / VDH link stays visible at every size, as in the maquette.
  * Between lg and 1440px the utilities stay compact (icons, no names, no
  * shortcut hint), and the officer's "Gérer" label waits for 2xl, so the row
@@ -67,6 +69,10 @@ export function SiteHeader({
           </Link>
 
           <CommandSearch index={searchIndex} />
+
+          <div className="hidden lg:block">
+            <ThemeToggle />
+          </div>
 
           {primaryManaged && (
             <Link

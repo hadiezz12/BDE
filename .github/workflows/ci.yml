@@ -83,6 +83,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: "1"
+      # Throwaway password of a fictional account on this job's local stack only.
+      E2E_TEST_ACCOUNT_PASSWORD: local-stack-only-e2e-password
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -105,6 +107,17 @@ jobs:
           KEY=$(jq -r '.PUBLISHABLE_KEY // .publishable_key // .ANON_KEY // .anon_key // empty' "$RUNNER_TEMP/status.json")
           test -n "$API_URL" && test -n "$KEY"
           printf 'NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "$API_URL" "$KEY" > .env.local
+      - name: Fictional test account and the development test-account sign-in
+        # Same script as for the hosted development project (docs/backend/authentication.md).
+        run: |
+          DB_URL=$(jq -r '.DB_URL // .db_url // empty' "$RUNNER_TEMP/status.json")
+          test -n "$DB_URL"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 \
+            -v email=e2e.membre@comptes.example.test -v password="$E2E_TEST_ACCOUNT_PASSWORD" \
+            -v first_name=Test -v last_name=Membre -v "display_name=Compte test · Membre" -v onboarded=true \
+            -f supabase/dev/create-test-account.sql | tee "$RUNNER_TEMP/test-account.txt"
+          grep -q "e2e.membre@comptes.example.test" "$RUNNER_TEMP/test-account.txt"
+          echo "AUTH_TEST_ACCOUNTS=on" >> .env.local
       - run: npm run db:check
       - run: npm run build
       - name: Start the app

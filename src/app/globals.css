@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* light: — styles for the light theme (html[data-theme="light"], see lib/theme.ts). */
+@custom-variant light (&:where([data-theme="light"] *));
+
 /* ==========================================================================
    VERY PINK CLUB — design tokens
    --------------------------------------------------------------------------
@@ -104,6 +107,7 @@
   --sticker-shadow: 0 0 0 0 transparent;
   --btn-line: transparent;
   --press-shadow: 0 0 0 1px var(--accent), 0 0 1.4rem -0.2rem rgb(250 4 121 / 0.6);
+  --pop-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.8);
   color-scheme: dark;
 }
 
@@ -131,6 +135,7 @@
   --sticker-shadow: 2px 2px 0 #0c0a0e;
   --btn-line: #0c0a0e;
   --press-shadow: 3px 3px 0 #0c0a0e;
+  --pop-shadow: 0 24px 60px -24px rgb(12 10 14 / 0.4);
   color-scheme: light;
 }
 
@@ -158,6 +163,44 @@
   --sticker-shadow: none;
   --btn-line: transparent;
   --press-shadow: 0 2px 0 rgb(20 18 22 / 0.18);
+  --pop-shadow: 0 24px 60px -24px rgb(20 18 22 / 0.3);
+  color-scheme: light;
+}
+
+/* ---- Light theme: the night surface by day --------------------------------
+   html[data-theme="light"] turns the site's night surface into its daytime
+   version: a clear blush white, ink type, and the neon switched off into
+   printed colour (--is-night: 0, so every lit effect takes its paper form).
+   Paper and studio are already light and stay as they are. A small dark
+   object that stays lit by day (a ticket stub, the member card, the
+   management bar) carries data-theme="dark" next to data-surface="night". */
+
+:root[data-theme="light"],
+:root[data-theme="light"] [data-surface="night"]:not([data-theme="dark"]) {
+  --is-night: 0;
+  --bg: #fdf9fb;
+  --bg-raised: #ffffff;
+  --bg-sunken: #f5ecf1;
+  --bg-inverse: #0c0a0e;
+  --fg: #0c0a0e;
+  --fg-muted: #4f4550;
+  --fg-subtle: #6b6069;
+  --fg-inverse: #fdf9fb;
+  --line: rgb(12 10 14 / 0.12);
+  --line-strong: rgb(12 10 14 / 0.5);
+  --accent: #fa0479;
+  --accent-fg: #0c0a0e;
+  --accent-text: #c8005e;
+  --ok: #0b7336;
+  --warn: #8a5a00;
+  --danger: #b8102a;
+  --info: #00697f;
+  --focus: #0c0a0e;
+  --sticker-line: #0c0a0e;
+  --sticker-shadow: 2px 2px 0 #0c0a0e;
+  --btn-line: #0c0a0e;
+  --press-shadow: 3px 3px 0 #0c0a0e;
+  --pop-shadow: 0 24px 60px -24px rgb(12 10 14 / 0.35);
   color-scheme: light;
 }
 
@@ -489,14 +532,20 @@
 
 /* ---- Brand effects ------------------------------------------------------ */
 
-/* Neon tube lettering. Colour comes from --neon (defaults to brand pink). */
+/* Neon tube lettering. Colour comes from --neon (defaults to brand pink).
+   By night a lit tube; where --is-night is 0 (paper, studio, the light theme)
+   the tube is off: its printed ink --neon-ink (AA on light) with a faint halo. */
 @utility neon {
-  color: color-mix(in srgb, var(--neon, #fa0479) 70%, white);
+  color: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--neon, #fa0479) 70%, white) calc(var(--is-night) * 100%),
+    var(--neon-ink, #e1006a)
+  );
   text-shadow:
-    0 0 0.02em #fff,
-    0 0 0.1em var(--neon, #fa0479),
-    0 0 0.28em var(--neon, #fa0479),
-    0 0 0.7em color-mix(in srgb, var(--neon, #fa0479) 60%, transparent);
+    0 0 calc(var(--is-night) * 0.02em) #fff,
+    0 0 calc(var(--is-night) * 0.1em) var(--neon, #fa0479),
+    0 0 calc(var(--is-night) * 0.28em) var(--neon, #fa0479),
+    0 0 0.7em color-mix(in srgb, var(--neon, #fa0479) calc(20% + var(--is-night) * 40%), transparent);
 }
 
 /* The maquette's blinking neon, made irregular like a tired tube. */

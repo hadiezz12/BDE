@@ -90,7 +90,7 @@ export function HomeOpening({
           <div
             data-media-slot="home-hero"
             data-accent="rose"
-            className="relative isolate aspect-[16/10] overflow-hidden border-2 border-line-strong bg-[#08070a] sm:aspect-[3/2] lg:aspect-[4/5]"
+            className="relative isolate aspect-[16/10] overflow-hidden border-2 border-line-strong bg-sunken sm:aspect-[3/2] lg:aspect-[4/5]"
           >
             <span
               aria-hidden

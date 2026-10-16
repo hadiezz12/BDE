@@ -9,6 +9,7 @@ import { classifyAuthError, type AuthProblem } from "@/lib/auth/messages";
 import { safeNextPath, withNext } from "@/lib/auth/next-path";
 import { SSO_SCOPES, ssoProvider } from "@/lib/auth/sso";
 import { destinationAfterSignIn } from "@/lib/auth/after-sign-in";
+import { isTestAccountEmail, testAccountsEnabled } from "@/lib/auth/test-accounts";
 
 /**
  * Sign-in, second factor and sign-out. Every action works from the server's
@@ -27,6 +28,11 @@ export interface SignInState {
 
 export interface CodeState {
   problem?: AuthProblem;
+}
+
+export interface TestSignInState {
+  email: string;
+  failed?: boolean;
 }
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -101,6 +107,31 @@ export async function verifySecondFactor(_prev: CodeState, form: FormData): Prom
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
   redirect(userId ? await destinationAfterSignIn(supabase, { id: userId }, next) : (next ?? routes.account));
+}
+
+/**
+ * Development only: a fictional test account signs in with its password
+ * (lib/auth/test-accounts). The form only exists when AUTH_TEST_ACCOUNTS=on,
+ * but an action can be called directly, so both locks are checked again here.
+ * Every refusal looks the same, whatever the reason.
+ */
+export async function signInWithTestAccount(_prev: TestSignInState, form: FormData): Promise<TestSignInState> {
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
+  const password = String(form.get("password") ?? "");
+  const next = safeNextPath(String(form.get("next") ?? ""));
+  if (!testAccountsEnabled() || !isTestAccountEmail(email) || !password || password.length > 128) {
+    return { email, failed: true };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) {
+    if (error && error.code !== "invalid_credentials") {
+      logAuthProblem("signInWithPassword (test account)", error, classifyAuthError(error));
+    }
+    return { email, failed: true };
+  }
+  redirect(await destinationAfterSignIn(supabase, data.user, next));
 }
 
 /** "Continuer avec ton compte de l'école": only when an institutional provider is configured. */

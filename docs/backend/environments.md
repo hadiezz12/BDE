@@ -55,7 +55,9 @@ the dashboard; who may sign up is data in `private.allowed_signup_domains` and
 
 **verypinkclub-dev today:** migrations applied (profiles, hook function, avatars bucket), but its
 Auth settings are still the hosted defaults: the hook is not enabled and the templates send a link
-instead of a code. Push the config before testing sign-in there.
+instead of a code. Push the config before testing sign-in there. Meanwhile, four fictional test
+accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: see
+[authentication.md](authentication.md#test-accounts-development-only).
 
 ### Production
 
@@ -75,6 +77,7 @@ instead of a code. Push the config before testing sign-in there.
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public (inlined into the browser bundle) | browser and server clients | Dashboard → Settings → API Keys → publishable (`sb_publishable_…`) |
 | `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — nothing calls it yet | API Keys → secret (`sb_secret_…`). Leave empty. |
 | `AUTH_SSO_PROVIDER` | server only, not secret | shows institutional sign-in on `/login` (`azure` or `google`) | leave empty until the school's provider is configured in Supabase |
+| `AUTH_TEST_ACCOUNTS` | server only, not secret | development only: `on` shows the "Comptes de test" form on `/login` | `on` in a development `.env.local`; **never set in production** |
 | `SUPABASE_ACCESS_TOKEN` | **secret**, personal | the Supabase CLI (`login`, `link`, `gen types --linked`) | your account's access tokens; `npx supabase login` stores it for you |
 | `SUPABASE_DB_PASSWORD` | **secret** | the CLI's `link` / `db push` in non-interactive use | the project's database password (Dashboard → Database) |
 

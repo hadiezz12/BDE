@@ -221,6 +221,35 @@ l'école" on `/login`. Before setting it:
    allowed domain is refused.
 6. Test the full flow on the development project before production.
 
+## Test accounts (development only)
+
+Fictional accounts to try the site as each kind of user without a school mailbox. They cannot
+receive a code, so a development environment lets them in with a password, through a dashed
+"Comptes de test" form under the normal sign-in on `/login`.
+
+- Two locks (`src/lib/auth/test-accounts.ts`), checked again by the Server Action
+  `signInWithTestAccount`: the server variable `AUTH_TEST_ACCOUNTS=on` (never set in production),
+  and an address `<name>@comptes.example.test`, a domain reserved for fiction that the sign-up hook
+  never allows. Any other address gets the same refusal, whatever the password.
+- Accounts are created by hand with `supabase/dev/create-test-account.sql` (psql variables; the
+  password is passed in, never committed). The script inserts nothing for any other domain.
+- Sign-in goes through Supabase's own `signInWithPassword`; the second factor, the first-visit
+  form and `next` behave exactly as after a code.
+- A test account is a student account: no role, no management right. Phase 4 grants positions to
+  them on the development project only.
+- The passwords stay outside git, in the maintainer's local `*.local.md` note (ignored).
+
+On `verypinkclub-dev` (created 2026-10-16):
+
+| Address | Profile | Used for |
+| --- | --- | --- |
+| `nouveau@comptes.example.test` | empty, not onboarded | the first-visit form |
+| `membre@comptes.example.test` | "Compte test · Membre" | a signed-in student |
+| `president-bde@comptes.example.test` | "Compte test · Présidence BDE" | the BDE presidency, once Phase 4 grants it |
+| `responsable-asso@comptes.example.test` | "Compte test · Responsable d'asso" | an association officer, once Phase 4 grants it |
+
+CI creates `e2e.membre@comptes.example.test` on its throwaway local stack with the same script.
+
 ## Configuration per environment
 
 | Setting | Local (`config.toml`) | Hosted (dashboard or `npx supabase config push`) |
@@ -254,6 +283,7 @@ production.
 [ ] No privileged key in the client bundle (search the build for sb_secret_)
 [ ] HTTPS everywhere; preview URLs restricted
 [ ] Dev project's legacy anon/service_role keys disabled
+[ ] AUTH_TEST_ACCOUNTS not set; no @comptes.example.test account exists
 ```
 
 ## Tests
@@ -262,8 +292,8 @@ production.
 | --- | --- | --- |
 | Database (pgTAP) | `supabase/tests/database/auth.test.sql` (39) | signup eligibility (domains, exceptions, expiry, look-alikes), hook grants, one profile per user, no role column, profile isolation and column grants, onboarding and avatar constraints, MFA enforcement (aal1 vs aal2), email-change guard, avatar storage isolation, private bucket |
 | Database (pgTAP) | `supabase/tests/database/foundation.test.sql` (13) | RLS on every public table, private helpers allowlist, search_path, security_invoker views |
-| Unit | `src/lib/auth/auth.test.mjs` | open-redirect refusal, error messages, profile validation, avatar path and type detection |
-| End-to-end | `e2e/*.spec.ts` (Playwright, CI on the local stack) | the full scenario below, desktop and phone |
+| Unit | `src/lib/auth/auth.test.mjs` | open-redirect refusal, error messages, profile validation, avatar path and type detection, test-account locks |
+| End-to-end | `e2e/*.spec.ts` (Playwright, CI on the local stack) | the full scenario below, desktop and phone; the test-account sign-in; the light theme |
 
 ### Security matrix
 
@@ -285,6 +315,8 @@ production.
 | `?next=https://evil…` | ignored | unit + e2e |
 | Expired / invalid callback | `/login?error=…` | manual (dev server) |
 | Sign out, then `/account` | redirect to sign in | e2e |
+| Test-account form without `AUTH_TEST_ACCOUNTS=on` | absent, and the action refuses | unit |
+| Test-account form with a non-test address or a wrong password | refused, same message | unit + e2e |
 
 ## Handoff to Phase 4
 

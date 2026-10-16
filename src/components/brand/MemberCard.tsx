@@ -61,6 +61,8 @@ export function MemberCard({
         ref={ref}
         onPointerMove={onMove}
         onPointerLeave={onLeave}
+        data-surface="night"
+        data-theme="dark"
         className="group relative aspect-[1.586] w-full overflow-hidden rounded-lg border-2 border-accent bg-[#100d13] p-[6%] text-[#f7f1f4] shadow-[0_0_0_1px_rgb(250_4_121/0.35),0_0_2.5rem_-0.5rem_rgb(250_4_121/0.55),0_30px_60px_-30px_rgb(0_0_0/0.9)] transition-transform duration-300 ease-out [transform:rotateX(var(--rx,0deg))_rotateY(var(--ry,0deg))] [transform-style:preserve-3d] motion-reduce:transition-none"
       >
         <span

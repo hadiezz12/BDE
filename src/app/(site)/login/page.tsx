@@ -5,6 +5,7 @@ import { getAuthContext } from "@/lib/auth/context";
 import { AUTH_MESSAGES, parseAuthProblem } from "@/lib/auth/messages";
 import { safeNextPath, withNext } from "@/lib/auth/next-path";
 import { ssoProvider } from "@/lib/auth/sso";
+import { testAccountsEnabled } from "@/lib/auth/test-accounts";
 import { startSchoolSignIn } from "@/app/actions/auth";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NeonText } from "@/components/brand/NeonText";
@@ -12,6 +13,7 @@ import { Sticker } from "@/components/ui/Sticker";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { SignInFlow } from "@/components/auth/SignInFlow";
+import { TestAccountSignIn } from "@/components/auth/TestAccountSignIn";
 
 export const metadata: Metadata = {
   title: "Connexion",
@@ -99,6 +101,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           Les comptes sont réservés aux étudiant·es de GEM Alpine Business School. Se connecter ne donne aucun droit sur
           les associations : chaque bureau gérera les siens.
         </p>
+
+        {testAccountsEnabled() && <TestAccountSignIn next={next} />}
       </div>
     </div>
   );

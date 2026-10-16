@@ -38,12 +38,20 @@ Sur la machine de dev Windows (Node portable), utiliser `H:\tools\vpc-dev.cmd`.
 | `npm run test:unit` | tests unitaires (runner intégré de Node) |
 | `npm run db:check` | connexion au projet Supabase de `.env.local` |
 
-## Mode démo (Phase 1)
+## Se connecter en développement
 
-Le pied de page (et la page de connexion) propose **Mode démo** : afficher le site en tant que *Visiteur*
-(par défaut), *Compte démo — étudiant·e* ou *Compte démo — responsable d'asso* (qui gère uniquement le Very
-Pink Club). Les comptes démo ne sont pas de vraies personnes et démarrent vides : aucune inscription, candidature,
-notification ni carte. C'est un simple cookie lu par `src/lib/demo-session.ts` — il sera remplacé par Supabase Auth.
+La connexion se fait avec l'adresse e-mail de l'école et un code à 6 chiffres (Supabase Auth). En
+développement, des **comptes de test fictifs** (`@comptes.example.test`) entrent avec un mot de passe par
+l'encadré pointillé « Comptes de test » en bas de `/login`, affiché seulement si `.env.local` contient
+`AUTH_TEST_ACCOUNTS=on` (jamais en production). Les mots de passe ne sont pas dans git. Détails :
+`docs/backend/authentication.md` (*Test accounts*). L'aperçu de l'espace assos (`/manage`) reste visible en
+développement par le lien « Aperçu de l'espace assos » du pied de page ; en production il reste fermé jusqu'à
+la Phase 4.
+
+## Thème clair
+
+Le site est sombre par défaut (la maquette). Le bouton soleil de l'en-tête, ou « Mode clair » dans le menu
+compte sur mobile, passe le site en clair ; le choix est gardé dans un cookie. Voir `DESIGN.md` (*Light theme*).
 
 ## Structure
 

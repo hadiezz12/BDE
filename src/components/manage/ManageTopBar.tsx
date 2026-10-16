@@ -13,7 +13,7 @@ import { MobileUserButton, UserMenu } from "@/components/layout/UserMenu";
  */
 export function ManageTopBar({ session, managed }: { session: Session; managed: AssociationRef[] }) {
   return (
-    <header data-surface="night" className="z-40 border-b border-line lg:sticky lg:top-0">
+    <header data-surface="night" data-theme="dark" className="z-40 border-b border-line lg:sticky lg:top-0">
       <div className="flex h-14 items-center gap-3 px-[var(--gutter)] lg:px-6">
         <Link href={routes.manage} className="group flex shrink-0 items-center gap-2.5">
           <BrandMark

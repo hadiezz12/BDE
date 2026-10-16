@@ -43,7 +43,7 @@ export function RelatedEventTicket({
       )}
     >
       {/* Decorative: the same date is written out in the body. */}
-      <div aria-hidden data-surface="night" className="flex flex-col items-center justify-center gap-1.5 px-2 py-4 text-center">
+      <div aria-hidden data-surface="night" data-theme="dark" className="flex flex-col items-center justify-center gap-1.5 px-2 py-4 text-center">
         <span className="type-label text-muted">{d.weekday}</span>
         <span className="type-numeral text-[3.25rem] text-assoc-text">{d.day}</span>
         <span className="type-label">{d.month}</span>

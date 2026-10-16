@@ -81,7 +81,7 @@ export default async function AccountApplicationPage({ params }: Props) {
           {/* What comes next: a dated step as a ticket, or the draft still to send */}
           {upcoming?.date ? (
             <section aria-labelledby="etape-titre" className="grid grid-cols-[5.25rem_minmax(0,1fr)] border-2 border-fg bg-raised sm:grid-cols-[7rem_minmax(0,1fr)]">
-              <div data-surface="night" className="flex flex-col items-center justify-center gap-1 px-2 py-5 text-center">
+              <div data-surface="night" data-theme="dark" className="flex flex-col items-center justify-center gap-1 px-2 py-5 text-center">
                 <span aria-hidden className="flex flex-col items-center gap-1">
                   <span className="type-label text-muted">{dateParts(upcoming.date).weekday}</span>
                   <span className="type-numeral text-[3rem] text-assoc-text sm:text-[3.6rem]">{dateParts(upcoming.date).day}</span>

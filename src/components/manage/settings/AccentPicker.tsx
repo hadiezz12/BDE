@@ -91,6 +91,7 @@ export function AccentPreview({
           <div
             aria-hidden
             data-surface={surface}
+            data-theme={surface === "night" ? "dark" : undefined}
             data-accent={association.accent}
             className={cx(
               "flex min-w-0 flex-col gap-4 rounded-md px-4 py-5 sm:px-5",

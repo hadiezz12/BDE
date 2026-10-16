@@ -13,6 +13,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { AssociationLogo } from "@/components/associations/AssociationLogo";
 import { accountName, accountShortName, studyLine } from "@/components/account/identity";
 import { ACCOUNT_NAV } from "./nav";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface Props {
   session: Session;
@@ -76,7 +77,7 @@ export function UserMenu({ session, managed }: Props) {
       <div
         id={panelId}
         hidden={!open}
-        className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80 rounded-md border border-line-strong bg-raised p-2 shadow-[0_24px_60px_-20px_rgb(0_0_0/0.8)]"
+        className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80 rounded-md border border-line-strong bg-raised p-2 shadow-[var(--pop-shadow)]"
       >
         <AccountLinks session={session} managed={managed} />
       </div>
@@ -135,6 +136,7 @@ export function MobileUserButton({ session, managed }: Props) {
               <Icon name="shield" size={20} />
               Signaler une situation — VSS / VDH
             </Link>
+            <ThemeToggle variant="row" />
           </div>
         </div>
       </Dialog>

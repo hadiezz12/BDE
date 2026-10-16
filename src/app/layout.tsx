@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
+import { parseTheme, THEME_COLOR, THEME_COOKIE } from "@/lib/theme";
 import { archivo, spaceMono } from "./fonts";
 import "./globals.css";
 
@@ -12,14 +14,20 @@ export const metadata: Metadata = {
   applicationName: "Very Pink Club",
 };
 
-export const viewport: Viewport = {
-  themeColor: "#0c0a0e",
-  colorScheme: "dark light",
-};
+async function currentTheme() {
+  return parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+}
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export async function generateViewport(): Promise<Viewport> {
+  const theme = await currentTheme();
+  return { themeColor: THEME_COLOR[theme], colorScheme: theme === "light" ? "light" : "dark" };
+}
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // The night surface by default; the visitor's light choice comes from the cookie (lib/theme).
+  const theme = await currentTheme();
   return (
-    <html lang="fr" className={`${archivo.variable} ${spaceMono.variable}`}>
+    <html lang="fr" data-theme={theme} className={`${archivo.variable} ${spaceMono.variable}`}>
       <body data-surface="night" className="min-h-dvh">
         <a
           href="#contenu"

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { safeNextPath, withNext } from "./next-path.ts";
 import { AUTH_MESSAGES, classifyAuthError, parseAuthProblem } from "./messages.ts";
 import { isOwnAvatarPath, validateProfileInput } from "./profile-input.ts";
+import { isTestAccountEmail, TEST_ACCOUNT_DOMAIN, testAccountsEnabled } from "./test-accounts.ts";
 
 test("safeNextPath keeps internal destinations", () => {
   assert.equal(safeNextPath("/account"), "/account");
@@ -109,4 +110,32 @@ test("sniffImage trusts the bytes, not the file name", async () => {
   assert.equal(sniffImage(new Uint8Array(Buffer.from("<html><script>alert(1)</script>"))), null);
   assert.equal(sniffImage(bytes(0x4d, 0x5a, 0x90, 0x00)), null); // an .exe
   assert.equal(sniffImage(bytes()), null);
+});
+
+test("test accounts stay off unless AUTH_TEST_ACCOUNTS is exactly 'on'", () => {
+  assert.equal(testAccountsEnabled({}), false);
+  for (const value of ["", "1", "true", "ON", "yes", " on"]) assert.equal(testAccountsEnabled({ AUTH_TEST_ACCOUNTS: value }), false, value);
+  assert.equal(testAccountsEnabled({ AUTH_TEST_ACCOUNTS: "on" }), true);
+});
+
+test("only the reserved fictional domain can use the test-account sign-in", () => {
+  assert.equal(TEST_ACCOUNT_DOMAIN, "comptes.example.test");
+  for (const ok of ["membre@comptes.example.test", "president-bde@comptes.example.test", "e2e.membre@comptes.example.test"]) {
+    assert.equal(isTestAccountEmail(ok), true, ok);
+  }
+  for (const bad of [
+    "prenom.nom@grenoble-em.com",
+    "someone@gmail.com",
+    "alice@student.example.test",
+    "membre@comptes.example.test.evil.com",
+    "membre@evil-comptes.example.test",
+    "membre@sub.comptes.example.test",
+    "Membre@comptes.example.test",
+    "@comptes.example.test",
+    "a b@comptes.example.test",
+    "membre@comptes.example.test@gmail.com",
+    "",
+  ]) {
+    assert.equal(isTestAccountEmail(bad), false, bad);
+  }
 });

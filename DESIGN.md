@@ -45,6 +45,14 @@ A third, calm **studio** surface (warm grey + white panels) serves association m
 - **Surfaces** — `data-surface="night|paper|studio"` on any element. Components only use semantic
   utilities: `bg-bg bg-raised bg-sunken text-fg text-muted text-subtle border-line border-line-strong
   bg-accent text-accent-fg text-accent-text text-ok text-warn text-danger text-info`.
+- **Light theme** — `html[data-theme="light"]` (cookie `vpc-theme`, read by the server so the first
+  paint is right; `ThemeToggle` in the header and in the mobile account sheet; `src/lib/theme.ts`).
+  Dark, the maquette, stays the default. Only the night surface changes: a clear blush white
+  (`#fdf9fb`), ink type and `--is-night: 0`, so every lit effect takes its printed (paper) form and
+  accents use their AA paper colours; neon text switches its tube for its ink. Paper and studio do
+  not change. A dark object that stays lit by day (ticket stubs, the member card, the management
+  bar) adds `data-theme="dark"` next to `data-surface="night"`. Light-only details use the
+  `light:` variant.
 - **Association accents** — `data-accent="rose|cyan|violet|vert|or|bleu|orange|corail"`; then
   `bg-assoc text-assoc-fg text-assoc-text bg-assoc-soft shadow-assoc-glow shadow-assoc-press`.
   Every accent passes WCAG AA as a fill (ink text) and as text on night, paper and studio. Associations
@@ -71,7 +79,7 @@ A third, calm **studio** surface (warm grey + white panels) serves association m
 | Brand | `BrandMark` (panther / badge / logo / wordmark — the real files), `NeonText`, `Marquee` |
 | UI | `Button`/`ButtonLink`, `Sticker`, `StatusBadge`, `Icon` (house SVG set), `Field`/`Input`/`Textarea`/`Select`/`Checkbox`/`ChoiceGroup`, `FilterChips` (URL-driven), `Dialog`, `Avatar`, `Skeleton`, `EmptyState` |
 | Media | `MediaFrame` (fixed ratio + next/image + designed fallback), `Poster` (generated gig poster or lit emblem) |
-| Layout | `SiteHeader`, `NavLinks`, `MobileTabBar`, `UserMenu`/`MobileUserButton`, `SiteFooter`, `PageHeader`, `Breadcrumbs`, `SectionHeader`, `DemoRoleSwitcher` |
+| Layout | `SiteHeader`, `NavLinks`, `MobileTabBar`, `UserMenu`/`MobileUserButton`, `SiteFooter`, `PageHeader`, `Breadcrumbs`, `SectionHeader`, `ThemeToggle` |
 | Associations | `AssociationLogo` (logo or monogram sticker), `AssociationIdentity` |
 | Search | `CommandSearch` (⌘K / Ctrl K / "/") + `/search` page |
 
@@ -110,5 +118,5 @@ capacity, line-up, statistic, quote, contact detail or event photo — not even 
 
 Typed entities in `src/lib/types.ts`; the real content above in `src/data/mock/` (every other collection is an
 empty array); data access in `src/lib/data/*` (async, server-only) — the only layer to swap for Supabase.
-Pages and components never import `src/data/mock` directly. `src/lib/demo-session.ts` fakes the three session
-states (visitor by default) for Phase 1 review only.
+Pages and components never import `src/data/mock` directly. Sessions come from Supabase Auth (`src/lib/session.ts`,
+Phase 3); fictional development test accounts are described in `docs/backend/authentication.md`.
