@@ -60,12 +60,20 @@ test("a student signs up, onboards, edits their profile, turns on MFA, and still
   // 10–12. Back where she was going; her name in the header; edit the profile.
   await expect(page).toHaveURL(/\/account\/profile$/);
   await expect(page.getByRole("heading", { level: 1, name: "Profil" })).toBeVisible();
-  await page.getByLabel("Nom affiché").fill("Alice E.");
+  // Edit from a settled page: right after the redirect the route may still be
+  // re-rendering, faster than anyone types but not faster than a robot.
+  await page.goto("/account/profile");
+  const displayName = page.getByLabel("Nom affiché");
+  await displayName.fill("Alice E.");
   await page.getByLabel("Année").selectOption("2");
+  await expect(displayName).toHaveValue("Alice E.");
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(page.getByText("Enregistré.")).toBeVisible();
+  // The form now shows what the server saved…
+  await expect(displayName).toHaveValue("Alice E.");
+  // …and so does a fresh page.
   await page.reload();
-  await expect(page.getByLabel("Nom affiché")).toHaveValue("Alice E.");
+  await expect(displayName).toHaveValue("Alice E.");
 
   // Avatar: own folder, private bucket, shown through a signed URL.
   await page.locator('input[type="file"]').setInputFiles({ name: "moi.png", mimeType: "image/png", buffer: PINK_PIXEL_PNG });
