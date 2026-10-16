@@ -15,17 +15,24 @@ test("a fictional test account signs in with its password, and only a test addre
   const secret = page.getByLabel("Mot de passe du compte test");
   const submit = page.getByRole("button", { name: "Entrer avec le compte test" });
 
-  // A school-looking address is refused here, whatever the password.
+  const refused = page.getByText("Adresse ou mot de passe incorrect pour un compte test.");
+
+  // A school-looking address is refused here, whatever the password. Each
+  // attempt ends with React resetting the form (the password field empties):
+  // wait for that before typing the next attempt, or the reset wipes it.
   await address.fill("alice@student.example.test");
   await secret.fill(password!);
   await submit.click();
-  await expect(page.getByText("Adresse ou mot de passe incorrect pour un compte test.")).toBeVisible();
+  await expect(secret).toHaveValue("");
+  await expect(refused).toBeVisible();
 
   // Wrong password.
   await address.fill(EMAIL);
   await secret.fill("not-the-password");
   await submit.click();
-  await expect(page.getByText("Adresse ou mot de passe incorrect pour un compte test.")).toBeVisible();
+  await expect(secret).toHaveValue("");
+  await expect(refused).toBeVisible();
+  await expect(address).toHaveValue(EMAIL);
 
   // Right one: straight to where they were going (the account is already onboarded).
   await secret.fill(password!);

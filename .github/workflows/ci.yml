@@ -127,6 +127,12 @@ jobs:
           cat "$RUNNER_TEMP/next.log"; exit 1
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
-      - name: App log on failure
+      - name: App and Auth logs on failure
         if: failure()
-        run: tail -n 200 "$RUNNER_TEMP/next.log" || true
+        # Also as annotations, readable without signing in (local stack only: no real data or secret).
+        run: |
+          tail -n 200 "$RUNNER_TEMP/next.log" || true
+          encode() { tr -d '\015' | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}'; }
+          echo "::notice title=App log (tail)::$(tail -n 60 "$RUNNER_TEMP/next.log" | head -c 20000 | encode)"
+          AUTH=$(docker ps --format '{{.Names}}' | grep -m1 '^supabase_auth_' || true)
+          if [ -n "$AUTH" ]; then echo "::notice title=Auth log (tail)::$(docker logs --tail 40 "$AUTH" 2>&1 | head -c 20000 | encode)"; fi
