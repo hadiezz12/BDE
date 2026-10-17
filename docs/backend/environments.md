@@ -55,7 +55,13 @@ the dashboard; who may sign up is data in `private.allowed_signup_domains` and
 
 **verypinkclub-dev today:** migrations applied (profiles, hook function, avatars bucket), but its
 Auth settings are still the hosted defaults: the hook is not enabled and the templates send a link
-instead of a code. Push the config before testing sign-in there. Meanwhile, four fictional test
+instead of a code. `npx supabase config push` is refused on this free-plan project ("Email
+template modification is not available for free tier projects using the default email
+provider"): changing templates needs a custom SMTP. Until the BDE's e-mail service exists, set the
+rest by hand: Authentication → Hooks → Before User Created → Postgres →
+`private.before_user_created`, and Authentication → URL Configuration (site URL and the
+`/auth/callback**` redirect URLs). Once a custom SMTP is configured here, the push works in full.
+Meanwhile, four fictional test
 accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: see
 [authentication.md](authentication.md#test-accounts-development-only).
 

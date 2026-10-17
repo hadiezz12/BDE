@@ -264,7 +264,9 @@ CI creates `e2e.membre@comptes.example.test` on its throwaway local stack with t
 
 `npx supabase config push` (after `login` and `link`) applies the `[auth]` section of
 `config.toml` to the linked project. Check the linked project first; never push local URLs to
-production.
+production. A free-plan project on Supabase's default mailer refuses the push, because it includes
+the e-mail templates: configure a custom SMTP first, or set the hook and URLs by hand in the
+dashboard (see [environments.md](environments.md#auth-settings-per-environment)).
 
 ### Production checklist
 
