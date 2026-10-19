@@ -65,6 +65,13 @@ the real domain on purpose; a missing configuration can never open the platform 
 An exception decides only *whether this identity may exist*. It grants nothing: no School
 Responsible, no BDE role. Those are Phase 4.
 
+**The school's domain is `grenoble-em.com`** (confirmed 2026-10-19). It is shared by every GEM
+campus, and the platform is not run with the school (no directory, no institutional sign-in), so a
+school address proves "GEM student", not "Paris campus". The site is meant for the Paris campus;
+that part stays declared by the student and, where it matters (the carte cotisante, members-only
+features), checked by the BDE itself. Production adds this one domain at setup; development
+projects keep fictional data and do not need it.
+
 ### Configuring who may sign up
 
 | Environment | How |
@@ -274,7 +281,7 @@ dashboard (see [environments.md](environments.md#auth-settings-per-environment))
 [ ] Correct production Site URL (https, the real domain)
 [ ] Allowed redirect URLs limited to the site's /auth/callback
 [ ] Before-user-created hook enabled
-[ ] School domain(s) in private.allowed_signup_domains; arbitrary signups refused (test a gmail address)
+[ ] School domain grenoble-em.com in private.allowed_signup_domains; arbitrary signups refused (test a gmail address)
 [ ] Exceptions reviewed (each with a reason, none stale)
 [ ] Institutional OAuth app configured, if used; its secret stored in Supabase only
 [ ] Production SMTP configured; templates reviewed and sent to a test inbox
