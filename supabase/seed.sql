@@ -9,7 +9,8 @@
 -- Rules (docs/backend/database-conventions.md, "Seed data"):
 --   * fake people and content only: never a real student, applicant, CV,
 --     application answer, personal email or reviewer note;
---   * placeholder domains only: gem.exemple.fr and asso.gem.exemple.fr;
+--   * reserved placeholder domains only (.test never resolves): student.example.test
+--     for sign-up, comptes.example.test for the fictional accounts;
 --   * fixed UUIDs, so tests and links stay stable between resets;
 --   * the Phase 1 mock content (src/data/mock) is the reference for
 --     realistic names, dates and wording.

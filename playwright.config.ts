@@ -13,7 +13,9 @@ export default defineConfig({
   retries: 0,
   timeout: 4 * 60_000,
   expect: { timeout: 15_000 },
-  reporter: process.env.CI ? [["list"], ["github"]] : [["list"]],
+  // In CI, a JSON report too: the workflow turns its counts into a public annotation, so a
+  // skipped suite is visible without reading the (private) job log.
+  reporter: process.env.CI ? [["list"], ["github"], ["json", { outputFile: "playwright-report.json" }]] : [["list"]],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3020",
     locale: "fr-FR",

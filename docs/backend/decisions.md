@@ -165,7 +165,7 @@ foundational choice.
 - **Consequence:** the first grant of the `private` schema to `authenticated` (usage + this one
   helper); the foundation test now checks an explicit allowlist.
 
-## D17. `/manage` unavailable in production until Phase 4
+## D17. `/manage` unavailable in production until Phase 4 (superseded by D19)
 
 - **Decision:** production shows "L'espace des bureaux ouvre bientôt" on every `/manage` page for
   everyone; `next dev` keeps the Phase 1 shell as a preview with a fictional officer.
@@ -184,3 +184,71 @@ foundational choice.
   mailboxes (real people's data in development).
 - **Consequence:** production never sets `AUTH_TEST_ACCOUNTS` (production checklist). The form adds
   no capability Supabase lacked (password sign-in is part of its API), only a page for it.
+
+## D19. Authorization is computed by the database at request time
+
+- **Decision:** a right is the conjunction of an open membership, a current mandate (or a backed
+  delegation) on a position carrying the key, and an organization status that allows it, evaluated
+  by `private.user_has_organization_permission` on every request. No role in the JWT, no cached
+  permission set, no scheduled expiry. Replaces the Phase 1 `/manage` preview (D17).
+- **Reason:** expiry and revocation must work without jobs or sign-outs (brief §25, §80); one
+  function shared by RLS and the RPCs cannot drift.
+- **Rejected:** custom JWT claims (stale until refresh), a nightly expiry job (authorization would
+  depend on it running), checks in Next.js only (bypassable).
+- **Consequence:** every policy and function calls the same helpers; a revoked right disappears on
+  the next request.
+
+## D20. Writes only through `security definer` functions
+
+- **Decision:** `authenticated` has no INSERT/UPDATE/DELETE on governance tables; each action is a
+  function that checks authority, MFA, ceiling, dates and states, writes in one transaction and
+  audits.
+- **Reason:** multi-row invariants (a succession ends and starts mandates at the same instant, an
+  invitation creates a membership and a mandate) cannot be expressed safely as row policies, and
+  every action must be audited atomically.
+- **Consequence:** the advisor's "authenticated can execute SECURITY DEFINER" warnings are expected
+  (D21); new mutations follow the same pattern.
+
+## D21. Accepting the advisor's SECURITY DEFINER warnings
+
+- **Decision:** keep the governance RPCs executable by `authenticated`.
+- **Reason:** they are the API. Each identifies the caller with `auth.uid()` and checks rights
+  itself; `search_path` is pinned; pgTAP calls each as unauthorized users.
+- **Consequence:** reviewing an advisor report means checking that every listed function is in
+  [rls-policies.md](rls-policies.md#the-rpc-surface), not silencing the list.
+
+## D22. Several permissive SELECT policies per table
+
+- **Decision:** one policy per reading rule (own, team, platform) rather than one combined policy.
+- **Reason:** each rule reviewable on its own line; volumes are small.
+- **Consequence:** the advisor's "multiple permissive policies" warning is accepted; revisit if a
+  table grows past tens of thousands of rows.
+
+## D23. "Garant·e de continuité" instead of "School Responsible"
+
+- **Decision:** the brief's School Responsible is a platform role named Garant·e de continuité,
+  provisioned only by the project owner in SQL, with recovery powers only.
+- **Reason:** the site is not validated by the school; the name must not suggest an official
+  school position. Recovery must not depend on the people it replaces.
+- **Consequence:** the BDE (or whoever it designates) chooses the person; the school can hold the
+  role only if it agrees to, without the site claiming any official status.
+
+## D24. Stay on Supabase
+
+- **Decision (2026-10-19):** keep Supabase rather than rebuilding authentication, database
+  hosting and storage ourselves.
+- **Reason:** the limits met so far are free-plan limits (e-mail templates need custom SMTP, no
+  automatic backups), not architectural ones; rebuilding auth, MFA, sessions and storage security
+  would add risk with no gain; the schema is plain Postgres (migrations, RLS, functions) and stays
+  portable.
+- **Consequence:** production goes on the Pro plan for backups; the BDE configures its own SMTP
+  (Brevo or similar) before launch.
+
+## D25. Invitations and governance requests are in-app only (Phase 4)
+
+- **Decision:** invitations, proposed presidencies and approvals wait in Mon espace › Invitations;
+  no e-mail is sent.
+- **Reason:** the generalized notification engine is a later phase, and Supabase's built-in mailer
+  only sends sign-in codes; security never depends on an e-mail arriving.
+- **Consequence:** the inviter is told to warn the person; the notification phase adds e-mails on
+  top of the same rows.

@@ -26,4 +26,5 @@ Read `docs/backend/README.md` before touching the database, Supabase clients, en
 - Never assume UI hiding equals authorization.
 - Never remove constraints to make an error disappear.
 - Never use real applicant or student personal data in seeds or tests.
-- Authentication is not authorization: a signed-in user has no management right until Phase 4's scoped permissions grant one. No role in `profiles` or `user_metadata`, no "if this e-mail then admin". Sign-in, profiles and MFA: `docs/backend/authentication.md`.
+- Authentication is not authorization: a signed-in user has no management right until a position with a current mandate grants one. No role in `profiles` or `user_metadata`, no "if this e-mail then admin". Sign-in, profiles and MFA: `docs/backend/authentication.md`.
+- Authorization and governance (Phase 4): `docs/backend/authorization.md` first, then `permissions.md`, `governance.md`, `leadership-transitions.md`, `rls-policies.md`. Governance tables are written only through the `security definer` functions; never grant table writes, never hand-edit mandates, never add an admin bypass. Real people are bootstrapped in production by the project owner only.

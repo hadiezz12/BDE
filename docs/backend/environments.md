@@ -74,6 +74,12 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
 - Recommended plan: Pro or higher, for daily backups (see below).
 - Only reviewed migrations reach it (`supabase db push` from `main`, deliberately). No manual
   schema edits in its dashboard, no seed, no experiments, no `db reset --linked`, ever.
+- **Governance bootstrap (Phase 4)**, once, after the migrations: the BDE names its real first
+  president, vice-president and continuity guardian (three different people); each signs in once;
+  then the project owner runs `private.bootstrap_governance(...)` in the SQL editor
+  ([governance.md](governance.md#bootstrap-first-bde-leadership)). Never with test accounts, never
+  invented people. Until then, nobody manages anything in production.
+- `AUTH_TEST_ACCOUNTS` is never set in production.
 
 ## Variables
 

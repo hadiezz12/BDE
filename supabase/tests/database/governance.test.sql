@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(150);
+select plan(157);
 
 -- Fixture ids (computed as the owner, readable by every role below).
 create temp table fx (k text primary key, id uuid);
@@ -783,6 +783,48 @@ select throws_ok(
   $$ select public.propose_bde_recovery('bde_president', 'lucas.finance@comptes.example.test', 'take over', now() + interval '2 months') $$,
   'P0001', 'insufficient_permission', 'an ordinary member cannot invoke recovery'
 );
+
+-- =============================================================================
+-- 11b. Cancelling a succession, and a proposer who loses the office meanwhile
+-- =============================================================================
+
+set local request.jwt.claims to '{"sub": "a0000000-0000-4000-8000-000000000008", "role": "authenticated", "aal": "aal2"}';
+select lives_ok(
+  $$ insert into fx (k, id) select 't_cancel', public.propose_association_succession((select id from fx where k = 'finance'),
+       'lucas.finance@comptes.example.test', now() + interval '6 months') $$,
+  'the interim president proposes a successor'
+);
+select lives_ok(
+  $$ select public.cancel_leadership_transition((select id from fx where k = 't_cancel'), 'Erreur de personne (test)') $$,
+  'the proposer cancels it'
+);
+select is(
+  (select status from public.leadership_transitions where id = (select id from fx where k = 't_cancel')), 'cancelled',
+  'a cancelled succession stays in the history as cancelled'
+);
+select lives_ok(
+  $$ insert into fx (k, id) select 't_lost', public.propose_association_succession((select id from fx where k = 'finance'),
+       'lucas.finance@comptes.example.test', now() + interval '6 months') $$,
+  'a new proposal is possible once the first is cancelled'
+);
+set local request.jwt.claims to '{"sub": "a0000000-0000-4000-8000-000000000001", "role": "authenticated", "aal": "aal2"}';
+select lives_ok(
+  $$ select public.end_office_mandate(
+       (select a.id from public.position_assignments a
+         where a.organization_id = (select id from fx where k = 'finance') and a.office = 'association_president'
+           and a.status = 'active' and a.starts_at <= now() and now() < a.ends_at),
+       'Compte compromis (test)') $$,
+  'BDE leadership ends the proposer''s presidency'
+);
+set local request.jwt.claims to '{"sub": "a0000000-0000-4000-8000-000000000005", "role": "authenticated", "aal": "aal2"}';
+select throws_ok(
+  $$ select public.respond_to_leadership_candidacy((select id from fx where k = 't_lost'), true) $$,
+  'P0001', 'proposer_lost_authority', 'nobody takes office from a president who no longer holds it'
+);
+reset role;
+select is(private.office_holder((select id from fx where k = 'finance'), 'association_president', now()), null::uuid,
+  'the presidency stays vacant until the BDE appoints someone');
+set local role authenticated;
 
 -- =============================================================================
 -- 12. Organization lifecycle and bootstrap

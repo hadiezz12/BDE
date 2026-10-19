@@ -111,7 +111,8 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   invitation_not_found: "Cette invitation n'existe plus.",
   invitation_not_pending: "Cette invitation a déjà reçu une réponse ou a été annulée.",
   invitation_expired: "Cette invitation a expiré. Demande à l'asso de t'en envoyer une nouvelle.",
-  invitation_invalid: "Cette invitation ne correspond pas à ton compte.",
+  invitation_invalid:
+    "Cette invitation n'est plus valable (la personne qui l'a envoyée n'a plus ce droit) ou ne correspond pas à ton compte. Demande à l'asso de t'en envoyer une nouvelle.",
   user_not_found:
     "Personne ne s'est encore connecté avec cette adresse. La personne doit d'abord se connecter une fois au site.",
   user_not_eligible: "Cette adresse ne peut pas créer de compte sur le site : invite son adresse de l'école.",
@@ -132,7 +133,7 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   office_occupied: "Ce poste est occupé : la reprise d'urgence ne concerne qu'un poste vacant.",
   invalid_office: "Ce poste ne correspond pas à cette asso.",
   bde_leadership_vacant:
-    "Les deux postes de direction du BDE sont vacants : la reprise passe par la procédure hors ligne (docs/backend/governance.md).",
+    "Les deux postes de direction du BDE sont vacants : plus personne ne peut approuver une passation. Le ou la garant·e de continuité rétablit d'abord un poste (reprise d'urgence).",
   already_responded: "Tu as déjà répondu.",
   already_approved: "Tu as déjà approuvé cette passation.",
   approval_not_allowed: "Ton approbation n'est pas attendue pour cette passation.",

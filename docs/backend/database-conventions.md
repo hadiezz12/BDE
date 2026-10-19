@@ -181,7 +181,7 @@ integrity.
 ## Seed data
 
 `supabase/seed.sql` runs after the migrations on every local reset. Fake data only, obviously
-fictitious ("Association exemple", "[démo]"), placeholder domains (`gem.exemple.fr`), fixed
+fictitious ("Finance (exemple)", "[démo]"), reserved `.test` domains (`student.example.test`, `comptes.example.test`), fixed
 UUIDs. Never a real student, applicant, CV, answer, email or reviewer note, even anonymised.
 Seeds never reach production. Real content is entered by the BDE and the association presidents
 through the platform.

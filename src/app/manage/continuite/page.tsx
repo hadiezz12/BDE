@@ -137,20 +137,19 @@ export default async function ContinuityPage({ searchParams }: { searchParams: P
             <ManageEmpty icon="check" title="Rien à reprendre">
               <p>Les deux postes de direction du BDE sont occupés. Une reprise n&apos;est possible que pour un poste vacant.</p>
             </ManageEmpty>
-          ) : vacant.length === 2 ? (
-            <ManageEmpty icon="alert" title="Les deux postes sont vacants">
-              <p>
-                Une reprise depuis le site suppose qu&apos;un des deux postes reste occupé. Quand les deux sont vacants, la reprise passe par la
-                procédure hors ligne de la documentation (docs/backend/governance.md), avec la personne qui administre le projet.
-              </p>
-            </ManageEmpty>
           ) : (
             g?.can.recover_bde && (
-              <Disclosure summary={`Proposer une personne pour ${OFFICE_LABEL[vacant[0].office].toLowerCase()}`} icon="user" tone="primary" open>
+              <Disclosure
+                summary={vacant.length === 2 ? "Les deux postes sont vacants : rétablir un poste" : `Proposer une personne pour ${OFFICE_LABEL[vacant[0].office].toLowerCase()}`}
+                icon="user"
+                tone="primary"
+                open
+              >
                 <ActionForm action={proposeBdeRecovery} submitLabel="Proposer" resetOnDone>
                   <p className="type-small text-muted">
                     La personne doit avoir un compte. Elle accepte depuis son espace (Invitations), avec la double authentification&nbsp;; la
                     reprise est alors immédiate. Aucun mail n&apos;est envoyé&nbsp;: préviens-la.
+                    {vacant.length === 2 && " Un poste à la fois : rétablis la présidence, puis la vice-présidence."}
                   </p>
                   <div className="grid gap-4 md:grid-cols-3">
                     <Field label="Poste">

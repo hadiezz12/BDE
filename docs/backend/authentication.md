@@ -334,6 +334,6 @@ dashboard (see [environments.md](environments.md#auth-settings-per-environment))
 - Server checks: `requireUser()` for "who", `requireAal2()` for sensitive governance actions.
   Database checks: `auth.uid()`, `(auth.jwt() ->> 'aal') = 'aal2'`, and new helpers in `private`
   (granted to `authenticated` one by one, added to the foundation test's allowlist).
-- `/manage` stays unavailable in production until Phase 4 replaces `lib/manage-preview.ts` with real,
-  scoped permissions. The dev preview's fictional officer must never be connected to real users.
+- Done in Phase 4: `/manage` reads real, scoped permissions ([authorization.md](authorization.md));
+  the Phase 1 preview and its fictional officer are gone.
 - Never: a role column on profiles, roles in `user_metadata`, or "if this e-mail then admin".

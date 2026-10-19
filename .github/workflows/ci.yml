@@ -124,6 +124,12 @@ jobs:
           cat "$RUNNER_TEMP/next.log"; exit 1
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
+      - name: Test counts
+        if: always()
+        run: |
+          if [ -f playwright-report.json ]; then
+            echo "::notice title=Playwright::$(jq -r '.stats | "passed \(.expected), skipped \(.skipped), failed \(.unexpected), flaky \(.flaky)"' playwright-report.json)"
+          fi
       - name: App and Auth logs on failure
         if: failure()
         # Also as annotations, readable without signing in (local stack only: no real data or secret).
