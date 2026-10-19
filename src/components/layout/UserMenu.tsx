@@ -3,21 +3,23 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import type { AssociationRef, Session } from "@/lib/types";
+import type { Session } from "@/lib/types";
+import type { ManageEntry } from "@/lib/governance/workspace";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { signOut } from "@/app/actions/auth";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import { Dialog } from "@/components/ui/Dialog";
-import { AssociationLogo } from "@/components/associations/AssociationLogo";
+import { ManageEntryMark } from "@/components/manage/ManageEntryMark";
 import { accountName, accountShortName, studyLine } from "@/components/account/identity";
 import { ACCOUNT_NAV } from "./nav";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface Props {
   session: Session;
-  managed: AssociationRef[];
+  /** "Gérer…" links from the person's effective permissions (lib/governance/workspace.ts). */
+  managed: ManageEntry[];
 }
 
 /** Desktop: disclosure panel under the avatar. */
@@ -179,17 +181,20 @@ function AccountLinks({ session, managed }: Props) {
       </ul>
       {managed.length > 0 && (
         <div className="border-t border-line py-1.5">
-          <p className="px-2 pb-1 pt-2 type-label text-subtle">Mes associations</p>
+          <p className="px-2 pb-1 pt-2 type-label text-subtle">Gérer</p>
           <ul>
-            {managed.map((a) => (
-              <li key={a.id}>
+            {managed.map((entry) => (
+              <li key={entry.key}>
                 <Link
-                  href={routes.manageHome(a.slug)}
-                  className="flex min-h-11 items-center gap-3 rounded-sm px-2 font-semibold hover:bg-fg/8"
+                  href={entry.href}
+                  className="flex min-h-11 items-center gap-3 rounded-sm px-2 py-1 font-semibold hover:bg-fg/8"
                 >
-                  <AssociationLogo association={a} size={24} />
-                  <span className="truncate">Gérer {a.shortName ?? a.name}</span>
-                  <Icon name="arrow-right" size={16} className="ml-auto text-muted" />
+                  <ManageEntryMark entry={entry} size={24} />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate">{entry.label}</span>
+                    <span className="truncate type-meta font-normal text-subtle">{entry.detail}</span>
+                  </span>
+                  <Icon name="arrow-right" size={16} className="ml-auto shrink-0 text-muted" />
                 </Link>
               </li>
             ))}

@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GOVERNANCE_MESSAGES, governanceErrorCode, governanceErrorMessage } from "./messages.ts";
-import { academicYearEnd, academicYearLabel, endOfParisDay, startOfParisDay, toDateInput, AUDIT_ACTION_LABEL } from "./labels.ts";
+import { academicYearEnd, academicYearLabel, defaultMandateEnd, endOfParisDay, startOfParisDay, toDateInput, AUDIT_ACTION_LABEL } from "./labels.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const migrations = fs
@@ -86,6 +86,9 @@ test("the default mandate ends on the next 31 August, 23:59 in Paris", () => {
   assert.equal(academicYearEnd(new Date("2027-09-02T10:00:00Z")).toISOString(), "2028-08-31T21:59:00.000Z");
   assert.equal(academicYearLabel(new Date("2027-08-31T21:59:00Z")), "2026–2027");
   assert.equal(academicYearLabel(new Date("2026-10-19T10:00:00Z")), "2026–2027");
+  // A form opened in mid-August suggests the next academic year, still within 13 months.
+  assert.equal(defaultMandateEnd(new Date("2027-08-10T10:00:00Z")).toISOString(), "2028-08-31T21:59:00.000Z");
+  assert.equal(defaultMandateEnd(new Date("2027-03-01T10:00:00Z")).toISOString(), "2027-08-31T21:59:00.000Z");
 });
 
 test("date inputs are read as Paris days, summer and winter", () => {

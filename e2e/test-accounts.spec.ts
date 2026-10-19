@@ -42,5 +42,5 @@ test("a fictional test account signs in with its password, and only a test addre
 
   // Signed in is not authorized: still nothing to manage.
   await page.goto("/manage");
-  await expect(page.getByText("L'espace des bureaux ouvre bientôt.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tu ne fais partie d'aucune équipe d'asso pour l'instant." })).toBeVisible();
 });

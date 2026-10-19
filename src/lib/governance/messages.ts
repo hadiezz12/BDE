@@ -114,7 +114,7 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   invitation_invalid: "Cette invitation ne correspond pas à ton compte.",
   user_not_found:
     "Personne ne s'est encore connecté avec cette adresse. La personne doit d'abord se connecter une fois au site.",
-  user_not_eligible: "Ce compte ne peut pas recevoir ce rôle.",
+  user_not_eligible: "Cette adresse ne peut pas créer de compte sur le site : invite son adresse de l'école.",
   self_delegation: "Tu ne peux pas te déléguer des droits à toi-même.",
   delegation_not_found: "Cette délégation n'existe plus.",
   delegation_not_active: "Cette délégation est déjà terminée.",

@@ -138,6 +138,23 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   bde_office_removed: "a mis fin à un mandat du BDE en urgence",
 };
 
+/** Confirmations shown by a page after an answer removed the card it came from (?fait=…). */
+export const DONE_MESSAGES = {
+  "passation-validee": "C'est fait : la passation est validée. Le nouveau mandat commence à la date prévue.",
+  "accord-enregistre": "Accord enregistré. La passation aboutira dès que les autres étapes seront faites.",
+  "proposition-refusee": "Tu as refusé : la passation est annulée.",
+  "approbation-enregistree": "Approbation enregistrée. La passation aboutira quand toutes les étapes seront faites.",
+  "passation-bde-validee": "Approbation enregistrée : la passation du BDE est validée.",
+  "invitation-refusee": "Invitation refusée.",
+} as const;
+
+export type DoneCode = keyof typeof DONE_MESSAGES;
+
+export function doneMessage(code: string | string[] | undefined): string | null {
+  const key = Array.isArray(code) ? code[0] : code;
+  return key && key in DONE_MESSAGES ? DONE_MESSAGES[key as DoneCode] : null;
+}
+
 /**
  * Default end of a mandate: the next 31 August, 23:59 in Paris (the academic
  * year ends there). A label only helps people pick a date: authorization
@@ -147,6 +164,21 @@ export function academicYearEnd(now = new Date()): Date {
   const year = now.getUTCMonth() > 7 || (now.getUTCMonth() === 7 && now.getUTCDate() >= 31) ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
   // 31 August 23:59 Paris = 21:59 UTC (summer time, UTC+2).
   return new Date(Date.UTC(year, 7, 31, 21, 59, 0));
+}
+
+/**
+ * The end date a mandate form suggests: this academic year's end, or the
+ * next one when this one ends within 30 days (stays within the 13-month
+ * limit of a leadership mandate that starts now).
+ */
+export function defaultMandateEnd(now = new Date()): Date {
+  const end = academicYearEnd(now);
+  return end.getTime() - now.getTime() < 30 * 86_400_000 ? academicYearEnd(new Date(end.getTime() + 86_400_000)) : end;
+}
+
+/** Default end of a delegation: two weeks from now (92 days at most). */
+export function defaultDelegationEnd(now = new Date()): Date {
+  return new Date(now.getTime() + 14 * 86_400_000);
 }
 
 /** "2026–2027" for the academic year a date falls in. */

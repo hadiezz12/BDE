@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import type { Association, AssociationRef } from "@/lib/types";
+import type { WorkspaceOrganization } from "@/lib/data/manage";
+import type { WorkspaceRef } from "@/lib/governance/workspace";
 import { routes } from "@/lib/routes";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { ButtonLink } from "@/components/ui/Button";
@@ -51,8 +52,8 @@ export function ManageStatePanel({
 /**
  * Why someone cannot use the workspace, in words:
  *  - login     : visitor — log in first
- *  - forbidden : logged in, not on this association's bureau
- *  - none      : logged in, manages no association at all (the /manage chooser)
+ *  - forbidden : logged in, not a member of this association
+ *  - none      : logged in, member of no association at all (the /manage chooser)
  */
 export function ManageGateState({
   reason,
@@ -60,9 +61,9 @@ export function ManageGateState({
   managed = [],
 }: {
   reason: "login" | "forbidden" | "none";
-  association?: Association;
-  /** Associations the viewer does manage (offered as a way out of "forbidden"). */
-  managed?: AssociationRef[];
+  association?: WorkspaceOrganization;
+  /** Association workspaces the viewer does have (offered as a way out of "forbidden"). */
+  managed?: WorkspaceRef[];
 }) {
   const header = association ? (
     <span data-accent={association.accent} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
@@ -85,33 +86,28 @@ export function ManageGateState({
             <ButtonLink href={routes.login} icon="arrow-right">
               Se connecter
             </ButtonLink>
-            <ButtonLink
-              href={association ? routes.association(association.slug) : routes.associations}
-              variant="secondary"
-            >
-              {association ? "Voir la page publique" : "Voir les associations"}
+            <ButtonLink href={routes.associations} variant="secondary">
+              Voir les associations
             </ButtonLink>
           </>
         }
       >
         <p>
-          C&apos;est ici que les bureaux publient leurs événements, trient les candidatures et tiennent leur page à
-          jour. Connecte-toi avec ton mail GEM&nbsp;: si ton compte a les droits, tu arrives directement sur ton
-          espace.
+          C&apos;est ici que les équipes des assos s&apos;organisent&nbsp;: membres, postes, droits et passations.
+          Connecte-toi avec ton mail de l&apos;école&nbsp;: si tu fais partie de l&apos;asso, tu arrives directement
+          sur son espace.
         </p>
       </ManageStatePanel>
     );
   }
 
   if (reason === "forbidden" && association) {
-    // The first listed member leads the bureau (présidente, responsable d'antenne…).
-    const lead = association.team[0];
     const elsewhere = managed.filter((a) => a.id !== association.id);
     return (
       <ManageStatePanel
-        kicker="Accès réservé au bureau"
+        kicker="Accès réservé à l'équipe"
         header={header}
-        title={`Tu ne fais pas partie du bureau de ${association.name}.`}
+        title={`Tu ne fais pas partie de l'équipe de ${association.name}.`}
         actions={
           <>
             {elsewhere.map((a) => (
@@ -119,11 +115,8 @@ export function ManageGateState({
                 Gérer {a.shortName ?? a.name}
               </ButtonLink>
             ))}
-            <ButtonLink
-              href={routes.association(association.slug)}
-              variant={elsewhere.length ? "secondary" : "primary"}
-            >
-              Voir la page publique
+            <ButtonLink href={routes.accountInvitations} variant={elsewhere.length ? "secondary" : "primary"}>
+              Mes invitations
             </ButtonLink>
             <ButtonLink href={routes.account} variant="ghost">
               Mon espace
@@ -132,16 +125,9 @@ export function ManageGateState({
         }
       >
         <p>
-          Seul·es les membres du bureau peuvent modifier sa page, ses événements et ses recrutements. Tu viens
-          d&apos;être élu·e&nbsp;?{" "}
-          {lead ? (
-            <>
-              Demande à <strong className="font-bold text-fg">{lead.name}</strong> ({lead.role.toLowerCase()}) de
-              t&apos;ajouter depuis l&apos;onglet Équipe.
-            </>
-          ) : (
-            <>Demande à la personne qui préside l&apos;association de t&apos;ajouter depuis l&apos;onglet Équipe.</>
-          )}
+          Cet espace s&apos;ouvre aux membres de l&apos;asso, sur invitation. Tu viens d&apos;être élu·e ou
+          recruté·e&nbsp;? Demande à la présidence de t&apos;inviter depuis l&apos;onglet Équipe, avec l&apos;adresse
+          de ton compte&nbsp;: l&apos;invitation t&apos;attendra dans Mes invitations.
         </p>
       </ManageStatePanel>
     );
@@ -151,21 +137,22 @@ export function ManageGateState({
     <ManageStatePanel
       kicker="Aucune association"
       icon="users"
-      title="Tu ne gères aucune association pour l'instant."
+      title="Tu ne fais partie d'aucune équipe d'asso pour l'instant."
       actions={
         <>
-          <ButtonLink href={routes.recruitment} icon="arrow-right">
-            Voir les recrutements
+          <ButtonLink href={routes.accountInvitations} icon="arrow-right">
+            Mes invitations
           </ButtonLink>
-          <ButtonLink href={routes.account} variant="secondary">
-            Mon espace
+          <ButtonLink href={routes.recruitment} variant="secondary">
+            Voir les recrutements
           </ButtonLink>
         </>
       }
     >
       <p>
-        Cet espace s&apos;ouvre aux membres d&apos;un bureau, une fois ajouté·es par leur présidence. Envie d&apos;en
-        être&nbsp;? Les assos qui cherchent du monde publient leurs postes dans Recrutement.
+        Cet espace s&apos;ouvre aux membres d&apos;une asso, sur invitation de son équipe. Une invitation reçue
+        t&apos;attend dans Mes invitations. Envie de rejoindre une asso&nbsp;? Celles qui cherchent du monde
+        publient leurs postes dans Recrutement.
       </p>
     </ManageStatePanel>
   );

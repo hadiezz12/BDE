@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { AssociationRef, Session } from "@/lib/types";
+import type { Session } from "@/lib/types";
+import type { ManageEntry } from "@/lib/governance/workspace";
 import { routes } from "@/lib/routes";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Icon } from "@/components/ui/Icon";
@@ -11,7 +12,7 @@ import { MobileUserButton, UserMenu } from "@/components/layout/UserMenu";
  * the workspace needs the height. Sticky from lg: up; on phones the section
  * rail is the sticky element instead.
  */
-export function ManageTopBar({ session, managed }: { session: Session; managed: AssociationRef[] }) {
+export function ManageTopBar({ session, managed }: { session: Session; managed: ManageEntry[] }) {
   return (
     <header data-surface="night" data-theme="dark" className="z-40 border-b border-line lg:sticky lg:top-0">
       <div className="flex h-14 items-center gap-3 px-[var(--gutter)] lg:px-6">

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import type { AssociationRef, SearchEntry, Session } from "@/lib/types";
+import type { SearchEntry, Session } from "@/lib/types";
+import type { ManageEntry } from "@/lib/governance/workspace";
 import { routes } from "@/lib/routes";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Icon } from "@/components/ui/Icon";
 import { CommandSearch } from "@/components/search/CommandSearch";
-import { AssociationLogo } from "@/components/associations/AssociationLogo";
+import { ManageEntryMark } from "@/components/manage/ManageEntryMark";
 import { NavLinks } from "./NavLinks";
 import { ThemeToggle } from "./ThemeToggle";
 import { MobileUserButton, UserMenu } from "./UserMenu";
@@ -24,7 +25,7 @@ export function SiteHeader({
   searchIndex,
 }: {
   session: Session;
-  managed: AssociationRef[];
+  managed: ManageEntry[];
   searchIndex: SearchEntry[];
 }) {
   const primaryManaged = managed[0];
@@ -76,12 +77,12 @@ export function SiteHeader({
 
           {primaryManaged && (
             <Link
-              href={routes.manageHome(primaryManaged.slug)}
+              href={managed.length > 1 ? routes.manage : primaryManaged.href}
               className="hidden min-h-10 items-center gap-2 rounded-sm border border-line-strong/60 p-1 text-[0.82rem] font-bold hover:border-fg lg:inline-flex 2xl:pr-3"
             >
-              <AssociationLogo association={primaryManaged} size={26} />
+              <ManageEntryMark entry={primaryManaged} size={26} />
               <span className="sr-only 2xl:not-sr-only">Gérer</span>
-              <span className="sr-only"> {primaryManaged.shortName ?? primaryManaged.name}</span>
+              <span className="sr-only"> {managed.length > 1 ? "tes espaces" : primaryManaged.label}</span>
             </Link>
           )}
 

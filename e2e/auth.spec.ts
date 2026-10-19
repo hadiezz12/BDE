@@ -126,7 +126,8 @@ test("a student signs up, onboards, edits their profile, turns on MFA, and still
   await page.goto("/");
   await expect(page.getByRole("link", { name: /Gérer/ })).toHaveCount(0);
   await page.goto("/manage");
-  await expect(page.getByText("L'espace des bureaux ouvre bientôt.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tu ne fais partie d'aucune équipe d'asso pour l'instant." })).toBeVisible();
+  // The BDE's workspace exists, and is closed to a student outside its team.
   await page.goto("/manage/very-pink-club/events");
-  await expect(page.getByText("L'espace des bureaux ouvre bientôt.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tu ne fais pas partie de l'équipe de Very Pink Club." })).toBeVisible();
 });

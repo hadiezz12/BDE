@@ -1,265 +1,261 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { routes } from "@/lib/routes";
-import { formatDayFull, plural } from "@/lib/format";
-import { getManageContext, getManageGate, getManageNavCounts } from "@/lib/data/manage";
-import { getEvents } from "@/lib/data/events";
-import { getEventSeries } from "@/lib/data/event-series";
-import { getPosts } from "@/lib/data/posts";
-import { getCampaigns } from "@/lib/data/recruitment";
-import { getApplicants, getMedia, getTasks } from "@/lib/data/users";
+import { formatDateLong } from "@/lib/format";
+import { getManageContext, getManageGate } from "@/lib/data/manage";
+import {
+  getGovernanceInbox,
+  getOrganizationGovernance,
+  getOrganizationTeam,
+  getPermissionCatalog,
+} from "@/lib/governance/queries";
+import { expiringAssignments } from "@/lib/governance/team";
+import {
+  ORGANIZATION_STATUS_LABEL,
+  PERMISSION_CATEGORY_LABEL,
+  PERMISSION_CATEGORY_ORDER,
+  TRANSITION_KIND_LABEL,
+} from "@/lib/governance/labels";
+import { Icon } from "@/components/ui/Icon";
 import { ButtonLink } from "@/components/ui/Button";
-import { isTonight } from "@/components/events/event-facts";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ManagePageHeader, ManageSection } from "@/components/manage/ManagePageHeader";
 import { ManageEmpty } from "@/components/manage/ManageEmpty";
-import type { ManageSectionKey } from "@/components/manage/sections";
-import { greeting } from "@/components/manage/viewer";
-import { TaskList } from "@/components/manage/home/TaskList";
-import { SetupList, type SetupStep } from "@/components/manage/home/SetupList";
-import { UpcomingEvents } from "@/components/manage/home/UpcomingEvents";
-import { CampaignDigest, PendingPosts } from "@/components/manage/home/Digests";
-import { QuickLinks } from "@/components/manage/home/QuickLinks";
+import { StatGroup, StatTile } from "@/components/manage/StatTile";
+import { MANAGE_SECTIONS } from "@/components/manage/sections";
 import { SectionLink } from "@/components/manage/home/SectionLink";
+import { MfaNotice, Notice, ReadOnlyNotice } from "@/components/manage/governance/Notices";
 
 type Params = Promise<{ asso: string }>;
 
-/**
- * The [asso] layout's title template only applies to child segments, so the
- * home page names the association itself ("Accueil · <asso> · Espace assos").
- */
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { asso } = await params;
   const gate = await getManageGate(asso);
-  return { title: gate ? `Accueil · ${gate.association.name}` : "Association introuvable" };
+  return { title: gate ? `Accueil · ${gate.organization.name}` : "Association introuvable" };
 }
 
-const UPCOMING_SHOWN = 5;
-
-/** "a", "a et b", "a, b et c". */
-function frenchList(items: string[]): string {
-  if (items.length <= 1) return items.join("");
-  return `${items.slice(0, -1).join(", ")} et ${items[items.length - 1]}`;
-}
+/** Keys whose use needs a second factor: handing out rights, leadership. */
+const SENSITIVE_KEYS = ["positions.manage", "positions.assign", "delegations.manage", "governance.succession"];
 
 /**
- * /manage/[asso] — the bureau's desk: what the public page still lacks,
- * what to do (and by when), open recruitments with their applicants, posts
- * waiting to go out, the next dated events and how full they are, and a
- * ruled index of the sections. Every block reads real records only; an empty
- * one says what will appear there and who adds it.
+ * /manage/[asso] — the person's desk in this association: their positions
+ * and mandates, what they can do here (and what is still to come), what
+ * waits for them, and, for those who may see it, the team and leadership at
+ * a glance. Every number is a real count from the database.
  */
 export default async function ManageHomePage({ params }: { params: Params }) {
   const { asso } = await params;
   const ctx = await getManageContext(asso);
   if (!ctx) return null;
 
-  const { association, user } = ctx;
-  const now = new Date();
-
-  const [tasks, upcoming, posts, campaigns, counts, media, series] = await Promise.all([
-    getTasks(association.id),
-    getEvents({ associationId: association.id, includeUnpublished: true, when: "upcoming" }),
-    getPosts({ associationId: association.id, includeUnpublished: true }),
-    getCampaigns({ associationId: association.id }),
-    getManageNavCounts(association.id),
-    getMedia(association.id),
-    getEventSeries({ associationId: association.id }),
+  const { organization, membership, can } = ctx;
+  const [catalog, team, governance, inbox] = await Promise.all([
+    getPermissionCatalog(),
+    can("members.view") ? getOrganizationTeam(organization.id) : null,
+    can("governance.view") ? getOrganizationGovernance(organization.id) : null,
+    getGovernanceInbox(),
   ]);
-  const applicants = campaigns.length ? await getApplicants({ campaignIds: campaigns.map((c) => c.id) }) : [];
 
-  const running = campaigns.filter((c) => c.status !== "cloturee");
-  // Oldest draft first: it has been waiting the longest. Scheduled ones after, soonest first.
-  const pending = [
-    ...posts.filter((p) => p.publication === "brouillon").reverse(),
-    ...posts.filter((p) => p.publication === "programme").reverse(),
-  ];
-  const urgent = tasks.filter((t) => t.priority === "haute").length;
-  const unread = applicants.filter((a) => a.status === "envoyee").length;
-  const drafts = posts.filter((p) => p.publication === "brouillon").length;
-  const tonight = upcoming.find((e) => e.publication === "publie" && isTonight(e, now));
-  const role = user.memberships.find((m) => m.associationId === association.id)?.role;
-  const hello = greeting(user);
-  const blank = tasks.length === 0 && upcoming.length === 0 && posts.length === 0 && campaigns.length === 0;
+  const held = new Set(membership.permissions);
+  const byCategory = PERMISSION_CATEGORY_ORDER.map((category) => ({
+    category,
+    items: catalog.filter((p) => p.scope === "organization" && p.category === category && held.has(p.key)),
+  })).filter((g) => g.items.length > 0);
 
-  const todo = [
-    urgent > 0 && plural(urgent, "tâche urgente", "tâches urgentes"),
-    unread > 0 && plural(unread, "candidature à lire", "candidatures à lire"),
-    drafts > 0 && plural(drafts, "brouillon à relire", "brouillons à relire"),
-  ].filter((s): s is string => Boolean(s));
+  const readOnly =
+    membership.membership_status === "suspended"
+      ? "membership_suspended"
+      : organization.status === "suspended"
+        ? "organization_suspended"
+        : organization.status === "archived"
+          ? "organization_archived"
+          : null;
+  const needsMfa = ctx.aal !== "aal2" && SENSITIVE_KEYS.some((k) => held.has(k));
 
-  // What the public page lacks, straight from the empty fields of the profile.
-  const setup: SetupStep[] = [];
-  if (association.team.length === 0) {
-    setup.push({
-      key: "team",
-      label: "Présente le bureau",
-      detail: "Personne n'est encore listé au bureau. Invite chaque membre avec son rôle : il apparaîtra sur la page publique.",
-      href: routes.manageTeam(association.slug),
-    });
-  }
-  if (!association.contactEmail && association.socials.length === 0) {
-    setup.push({
-      key: "contact",
-      label: "Ajoute un contact et vos réseaux",
-      detail: "La page publique n'a encore ni mail de contact ni lien vers vos réseaux.",
-      href: routes.manageSettings(association.slug),
-    });
-  }
-  if (!association.cover) {
-    setup.push({
-      key: "cover",
-      label: "Choisis une photo de couverture",
-      detail: "En attendant, la page publique affiche un visuel dessiné à ta couleur.",
-      href: routes.manageSettings(association.slug),
-    });
-  }
-
-  const facts: Partial<Record<ManageSectionKey, string>> = {
-    content: counts.content?.label ?? (posts.length ? plural(posts.length, "article") : "Rien de publié"),
-    events:
-      counts.events?.label ??
-      [
-        series.length ? plural(series.length, "événement de l'année", "événements de l'année") : null,
-        upcoming.length ? `${upcoming.length} à venir` : "aucune date",
+  const waiting = inbox.ok
+    ? [
+        ...inbox.data.candidacies
+          .filter((c) => c.organization.id === organization.id)
+          .map((c) => ({ key: `c-${c.transition_id}`, text: `On te propose la présidence (${TRANSITION_KIND_LABEL[c.kind].toLowerCase()}).` })),
+        ...(organization.kind === "bde"
+          ? inbox.data.approvals.map((a) => ({ key: `a-${a.transition_id}`, text: "Ton approbation est attendue pour la passation du BDE." }))
+          : []),
       ]
-        .filter(Boolean)
-        .join(" · "),
-    team: association.team.length ? `${association.team.length} au bureau` : "Bureau à présenter",
-    recruitment:
-      counts.recruitment?.label ??
-      (running.length ? plural(running.length, "campagne en cours", "campagnes en cours") : "Aucune campagne en cours"),
-    media: media.length ? plural(media.length, "fichier") : "Médiathèque vide",
-  };
-  const highlight = (["content", "events", "recruitment"] as const).filter((k) => counts[k]);
+    : [];
+
+  const teamData = team?.ok ? team.data : null;
+  const expiring = teamData ? expiringAssignments(teamData) : [];
+  const transition = governance?.ok ? governance.data.transition : null;
+  const president = governance?.ok ? governance.data.offices[0]?.holder : null;
+  const soon = MANAGE_SECTIONS.filter((s) => s.soon && ctx.workspace.sections.includes(s.key));
 
   return (
     <div className="flex flex-col gap-10">
       <ManagePageHeader
         kicker="Accueil"
-        title={association.name}
+        title={organization.name}
         description={
           <p>
-            {hello && <>{hello} </>}
-            {todo.length
-              ? `Sur ton bureau : ${frenchList(todo)}.`
-              : blank
-                ? "Ton espace est prêt. Il se remplit au fil de ce que le bureau ajoute : dates, équipe, articles et recrutements."
-                : "Rien d'urgent : de quoi préparer la suite au calme."}
-            {tonight && <> Et ce soir, c&apos;est {tonight.title}.</>}
+            {membership.positions.length
+              ? `${membership.positions.length > 1 ? "Tes postes" : "Ton poste"} ici : ${membership.positions.map((p) => p.title).join(", ")}.`
+              : "Tu fais partie de l'asso, sans poste de gestion pour l'instant."}{" "}
+            Ce que tu vois dans cet espace suit tes postes du moment&nbsp;: il change dès qu&apos;un mandat commence ou
+            s&apos;arrête.
           </p>
         }
         meta={
           <>
-            <span>{formatDayFull(now.toISOString())}</span>
-            {role && <span>Ton rôle&nbsp;: {role}</span>}
-            {user.demoLabel && <span>{user.demoLabel}</span>}
+            {organization.status !== "active" && <span>{ORGANIZATION_STATUS_LABEL[organization.status]}</span>}
+            {membership.positions.map((p) => (
+              <span key={`${p.title}-${p.ends_at}`}>
+                {p.title} jusqu&apos;au {formatDateLong(p.ends_at)}
+              </span>
+            ))}
           </>
+        }
+        actions={
+          <ButtonLink href={routes.manageMember(asso, membership.membership_id)} variant="secondary" icon="user" iconPosition="start">
+            Ma fiche
+          </ButtonLink>
         }
       />
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-12">
-        <div className="flex flex-col gap-10">
-          {setup.length > 0 && (
-            <ManageSection
-              title="Pour compléter ta page"
-              count={setup.length}
-              description={`Ce qui manque encore à la page publique de ${association.name}. Chaque point disparaît une fois rempli.`}
-            >
-              <SetupList steps={setup} />
-            </ManageSection>
-          )}
-
-          <ManageSection title="À faire" count={tasks.length}>
-            {tasks.length ? (
-              <TaskList tasks={tasks} asso={association.slug} now={now} />
-            ) : (
-              <ManageEmpty icon="check" title="Rien sur la liste">
-                <p>
-                  Quand une campagne reçoit des candidatures ou qu&apos;un brouillon attend, la tâche arrive ici avec son
-                  échéance.
-                </p>
-              </ManageEmpty>
-            )}
-          </ManageSection>
-        </div>
-
-        <div className="flex flex-col gap-10">
-          <ManageSection
-            title="Recrutements"
-            count={running.length}
-            action={<SectionLink href={routes.manageRecruitment(association.slug)}>Candidatures</SectionLink>}
-          >
-            {running.length ? (
-              <CampaignDigest campaigns={running} applicants={applicants} now={now} />
-            ) : (
-              <ManageEmpty icon="megaphone" title="Aucune campagne en cours">
-                <p>Ouvre une campagne quand tu cherches du monde&nbsp;: elle apparaîtra dans Recrutement, côté étudiant·es.</p>
-              </ManageEmpty>
-            )}
-          </ManageSection>
-
-          <ManageSection
-            title="En attente de publication"
-            count={pending.length}
-            action={<SectionLink href={routes.manageContent(association.slug)}>Contenus</SectionLink>}
-          >
-            {pending.length ? (
-              <PendingPosts posts={pending} now={now} />
-            ) : posts.length ? (
-              <ManageEmpty icon="file" title="Rien en attente">
-                <p>Pas de brouillon ni d&apos;article programmé&nbsp;: tout ce que le bureau a écrit est en ligne.</p>
-              </ManageEmpty>
-            ) : (
-              <ManageEmpty icon="file" title="Rien d'écrit pour l'instant">
-                <p>Les brouillons et les articles programmés du bureau attendront ici avant de partir dans le fil.</p>
-              </ManageEmpty>
-            )}
-          </ManageSection>
-        </div>
-      </div>
-
-      <ManageSection
-        title="Événements à venir"
-        count={upcoming.length}
-        action={<SectionLink href={routes.manageEvents(association.slug)}>Tous les événements</SectionLink>}
-        description={
-          upcoming.length > UPCOMING_SHOWN
-            ? `Les ${UPCOMING_SHOWN} prochains, brouillons compris. La suite est dans Événements.`
-            : upcoming.length > 0
-              ? "Brouillons compris : ils n'apparaissent dans l'agenda qu'une fois publiés."
-              : undefined
-        }
-      >
-        {upcoming.length ? (
-          <UpcomingEvents events={upcoming.slice(0, UPCOMING_SHOWN)} now={now} />
-        ) : (
-          <ManageEmpty
-            icon="calendar"
-            title="Aucune date annoncée"
-            actions={
-              series.length > 0 ? (
-                <ButtonLink
-                  href={routes.manageEvents(association.slug)}
-                  variant="secondary"
-                  size="sm"
-                  icon="arrow-right"
-                >
-                  Voir les {plural(series.length, "événement")}
+      {(readOnly || needsMfa || waiting.length > 0) && (
+        <div className="flex flex-col gap-3">
+          {readOnly && <ReadOnlyNotice reason={readOnly} />}
+          {needsMfa && <MfaNotice what="Attribuer des postes, modifier les droits ou préparer une passation" />}
+          {waiting.map((w) => (
+            <Notice
+              key={w.key}
+              tone="info"
+              icon="bell"
+              title={w.text}
+              action={
+                <ButtonLink href={routes.accountInvitations} size="sm" icon="arrow-right">
+                  Répondre
                 </ButtonLink>
-              ) : undefined
-            }
-          >
-            <p>
-              {series.length > 0
-                ? `Les ${plural(series.length, "événement")} de l'année ont leur page, sans date pour l'instant. Dès que le bureau fixe celle d'une édition, ajoute-la depuis Événements : elle apparaîtra ici avec son remplissage.`
-                : "Le prochain événement que tu crées apparaîtra ici avec son remplissage, dès l'ouverture des inscriptions."}
-            </p>
-          </ManageEmpty>
-        )}
-      </ManageSection>
+              }
+            />
+          ))}
+        </div>
+      )}
 
-      <ManageSection title="Raccourcis">
-        <QuickLinks asso={association.slug} facts={facts} highlight={highlight} />
-      </ManageSection>
+      {teamData && (
+        <StatGroup label={`L'équipe de ${organization.name} en chiffres`} columns={can("members.invite") ? 4 : 3}>
+          <StatTile label="Membres" value={teamData.members.filter((m) => m.status === "active").length} />
+          <StatTile label="Postes" value={teamData.positions.length} />
+          {/* Pending invitations are only listed to those who may invite. */}
+          {can("members.invite") && (
+            <StatTile label="Invitations en attente" value={teamData.invitations.filter((i) => !i.expired).length} />
+          )}
+          <StatTile
+            label="Mandats à renouveler"
+            value={expiring.length}
+            comparison="dans les 30 prochains jours"
+            tone={expiring.length ? "danger" : "neutral"}
+          />
+        </StatGroup>
+      )}
+
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-12">
+        <ManageSection
+          title="Ce que tu peux faire ici"
+          count={held.size}
+          description="Tes droits du moment, venus de tes postes et des délégations en cours. Un droit d'un module à venir fonctionnera dès son arrivée."
+        >
+          {byCategory.length ? (
+            <dl className="flex flex-col divide-y divide-line rounded-md border border-line bg-raised">
+              {byCategory.map(({ category, items }) => (
+                <div key={category} className="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
+                  <dt className="type-label text-subtle">{PERMISSION_CATEGORY_LABEL[category]}</dt>
+                  <dd className="flex flex-wrap gap-x-3 gap-y-1 type-small">
+                    {items.map((p) => (
+                      <span key={p.key} className="inline-flex items-center gap-1.5">
+                        <Icon name="check" size={14} className="text-ok" />
+                        {p.label}
+                        {!p.module_ready && <span className="text-subtle">(à venir)</span>}
+                      </span>
+                    ))}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <ManageEmpty icon="lock" title="Aucun droit de gestion pour l'instant">
+              <p>
+                Tu fais partie de l&apos;équipe sans poste qui donne des droits. Quand la présidence t&apos;attribue un
+                poste, ses droits apparaissent ici, sans avoir à te reconnecter.
+              </p>
+            </ManageEmpty>
+          )}
+          {soon.length > 0 && (
+            <p className="type-small text-muted">
+              Modules à venir où tu auras la main&nbsp;: {soon.map((s) => s.label.toLowerCase()).join(", ")}.
+            </p>
+          )}
+        </ManageSection>
+
+        {governance?.ok ? (
+          <ManageSection
+            title="Gouvernance"
+            action={<SectionLink href={routes.manageGovernance(asso)}>Détails</SectionLink>}
+          >
+            <div className="flex flex-col gap-3 rounded-md border border-line bg-raised px-4 py-4">
+              {governance.data.offices.map((office) => (
+                <div key={office.office} className="flex flex-col gap-0.5">
+                  <p className="type-label text-subtle">{office.title}</p>
+                  {office.holder ? (
+                    <p className="font-bold">
+                      {office.holder.name}
+                      {office.holder.is_you && <span className="font-normal text-muted"> (toi)</span>}
+                      <span className="block type-small font-normal text-muted">
+                        Mandat jusqu&apos;au {formatDateLong(office.holder.ends_at)}
+                      </span>
+                    </p>
+                  ) : (
+                    <StatusBadge tone="danger">Poste vacant</StatusBadge>
+                  )}
+                </div>
+              ))}
+              <div className="border-t border-line pt-3">
+                {transition ? (
+                  <StatusBadge tone="info">{TRANSITION_KIND_LABEL[transition.kind]} en cours</StatusBadge>
+                ) : (
+                  <p className="type-small text-muted">Aucune passation en cours.</p>
+                )}
+              </div>
+            </div>
+            {!president && organization.kind === "association" && (
+              <p className="type-small text-muted">
+                Sans présidence, c&apos;est le BDE qui peut proposer une nouvelle personne (Gouvernance).
+              </p>
+            )}
+          </ManageSection>
+        ) : (
+          <ManageSection title="Raccourcis">
+            <ul className="flex flex-col divide-y divide-line rounded-md border border-line bg-raised">
+              {MANAGE_SECTIONS.filter((s) => s.key !== "home" && ctx.workspace.sections.includes(s.key)).map((s) => (
+                <li key={s.key}>
+                  <Link href={s.href(asso)} className="flex min-h-12 items-center gap-3 px-4 font-semibold hover:bg-fg/5">
+                    <Icon name={s.icon} size={18} className="text-subtle" />
+                    {s.label}
+                    {s.soon && <span className="type-meta text-subtle">bientôt</span>}
+                    <Icon name="arrow-right" size={16} className="ml-auto text-muted" />
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href={routes.accountInvitations} className="flex min-h-12 items-center gap-3 px-4 font-semibold hover:bg-fg/5">
+                  <Icon name="mail" size={18} className="text-subtle" />
+                  Mes invitations
+                  <Icon name="arrow-right" size={16} className="ml-auto text-muted" />
+                </Link>
+              </li>
+            </ul>
+            {waiting.length === 0 && <p className="type-small text-muted">Rien ne t&apos;attend ici pour l&apos;instant.</p>}
+          </ManageSection>
+        )}
+      </div>
     </div>
   );
 }

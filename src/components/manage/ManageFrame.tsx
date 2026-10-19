@@ -14,15 +14,13 @@ export function ManageMain({ children, className }: { children: ReactNode; class
   );
 }
 
-/** Bottom strip: says plainly what this workspace is today. */
-export function ManageFooter({ preview }: { preview: boolean }) {
+/** Bottom strip: says plainly what this workspace is and is not. */
+export function ManageFooter() {
   return (
     <footer className="border-t border-line">
       <div className="px-[var(--gutter)] py-6 lg:px-6">
         <p className="type-meta text-subtle">
-          {preview
-            ? "Aperçu de développement · compte démo fictif, aucune donnée réelle, aucun droit réel"
-            : "Espace assos · ouverture avec les droits des bureaux"}
+          Espace assos du Very Pink Club · chaque action est vérifiée et gardée dans l&apos;historique de l&apos;asso
         </p>
       </div>
     </footer>

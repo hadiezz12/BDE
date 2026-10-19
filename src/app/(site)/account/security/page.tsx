@@ -23,8 +23,9 @@ function methodLabel(methods: string[]): string {
 }
 
 /**
- * Sécurité: two-factor authentication (optional for students; the bureau's
- * sensitive actions will require it later), how you sign in, and signing out
+ * Sécurité: two-factor authentication (optional for students; required by
+ * the database for sensitive governance actions: handing out rights,
+ * passations, BDE platform actions), how you sign in, and signing out
  * of this or every device. No account deletion here yet: it touches
  * applications, memberships and history, and comes with the privacy phase.
  */
@@ -38,7 +39,7 @@ export default async function AccountSecurityPage() {
         variant="document"
         kicker="Mon espace"
         title="Sécurité"
-        intro="Ton compte, bien fermé. La double authentification est facultative, et vivement conseillée."
+        intro="Ton compte, bien fermé. La double authentification est conseillée à tout le monde, et obligatoire pour les actions sensibles d'une équipe d'asso (postes, droits, passations)."
         meta={user.email ? <span className="break-all">{user.email}</span> : undefined}
       />
 

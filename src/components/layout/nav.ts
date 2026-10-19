@@ -21,6 +21,7 @@ export const ACCOUNT_NAV: NavItem[] = [
   { href: routes.account, label: "Mon espace", short: "Espace", icon: "home" },
   { href: routes.accountEvents, label: "Mes événements", short: "Billets", icon: "ticket" },
   { href: routes.accountApplications, label: "Mes candidatures", short: "Candid.", icon: "file" },
+  { href: routes.accountInvitations, label: "Invitations", short: "Invit.", icon: "mail" },
   { href: routes.accountNotifications, label: "Notifications", short: "Notifs", icon: "bell" },
   { href: routes.accountProfile, label: "Profil", short: "Profil", icon: "user" },
   { href: routes.accountSecurity, label: "Sécurité", short: "Sécurité", icon: "lock" },

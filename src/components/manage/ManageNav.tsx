@@ -15,24 +15,30 @@ export interface ManageNavCount {
 
 /**
  * Section navigation of an association workspace — the only client part of
- * the shell (it needs the pathname for the active state).
+ * the shell (it needs the pathname for the active state). Lists only the
+ * sections the person's current permissions open (sections.ts); a module
+ * still to come carries a "Bientôt" tag.
  *  - sidebar : desktop column, one row per section
  *  - rail    : phone/tablet strip, scrolls sideways and keeps the active tab in view
  * The active marker is the association's own accent.
  */
 export function ManageNav({
   asso,
+  sections,
   counts = {},
   variant,
   className,
 }: {
   asso: string;
+  /** Sections to list (from the person's effective permissions). */
+  sections: ManageSectionKey[];
   counts?: Partial<Record<ManageSectionKey, ManageNavCount>>;
   variant: "sidebar" | "rail";
   className?: string;
 }) {
   const pathname = usePathname();
   const active = activeSection(pathname, asso);
+  const shown = MANAGE_SECTIONS.filter((s) => sections.includes(s.key));
   const listRef = useRef<HTMLUListElement>(null);
 
   // Rail: bring the active tab into view without moving the page vertically.
@@ -51,7 +57,7 @@ export function ManageNav({
           ref={listRef}
           className="relative flex overflow-x-auto overscroll-x-contain px-[calc(var(--gutter)-0.75rem)] [scrollbar-width:none] [mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)] [&::-webkit-scrollbar]:hidden"
         >
-          {MANAGE_SECTIONS.map((s) => {
+          {shown.map((s) => {
             const isActive = s.key === active;
             const count = counts[s.key];
             return (
@@ -66,6 +72,7 @@ export function ManageNav({
                 >
                   <Icon name={s.icon} size={18} className={isActive ? "text-assoc-text" : "text-subtle"} />
                   {s.label}
+                  {s.soon && <SoonTag />}
                   {count && <CountChip count={count} />}
                   <span
                     aria-hidden
@@ -88,7 +95,7 @@ export function ManageNav({
   return (
     <nav aria-label="Sections de gestion" className={className}>
       <ul className="flex flex-col gap-0.5">
-        {MANAGE_SECTIONS.map((s) => {
+        {shown.map((s) => {
           const isActive = s.key === active;
           const count = counts[s.key];
           return (
@@ -110,13 +117,22 @@ export function ManageNav({
                 />
                 <Icon name={s.icon} size={18} className={isActive ? "text-assoc-text" : "text-subtle"} />
                 <span className="truncate">{s.label}</span>
-                {count && <CountChip count={count} className="ml-auto" />}
+                {s.soon && <SoonTag className="ml-auto" />}
+                {count && <CountChip count={count} className={s.soon ? undefined : "ml-auto"} />}
               </Link>
             </li>
           );
         })}
       </ul>
     </nav>
+  );
+}
+
+function SoonTag({ className }: { className?: string }) {
+  return (
+    <span className={cx("rounded-xs border border-line px-1 font-mono text-[0.62rem] font-bold uppercase tracking-[0.08em] text-subtle", className)}>
+      Bientôt
+    </span>
   );
 }
 

@@ -1,51 +1,98 @@
 import type { Metadata } from "next";
-import type { AssociationMember, TeamMember } from "@/lib/types";
+import Link from "next/link";
+import { routes } from "@/lib/routes";
+import { formatDateLong, formatDayShort, plural } from "@/lib/format";
 import { getManageContext } from "@/lib/data/manage";
-import { getAssociationMembers, getTeamInvites } from "@/lib/data/team";
-import { ButtonLink } from "@/components/ui/Button";
+import { getOrganizationTeam, getPermissionCatalog } from "@/lib/governance/queries";
+import { assignablePositions, expiringAssignments, memberTitles, myPositionKeys, permissionLabels } from "@/lib/governance/team";
+import { defaultMandateEnd, MEMBERSHIP_STATUS_LABEL, toDateInput } from "@/lib/governance/labels";
+import type { TeamMember } from "@/lib/governance/types";
+import { inviteMember, revokeDelegation, revokeInvitation } from "@/app/actions/governance";
+import { Field, Input, Select } from "@/components/ui/Field";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ManagePageHeader, ManageSection } from "@/components/manage/ManagePageHeader";
 import { DataTable, type DataColumn } from "@/components/manage/DataTable";
 import { StatGroup, StatTile } from "@/components/manage/StatTile";
 import { ManageEmpty } from "@/components/manage/ManageEmpty";
-import { PersonCell, SinceCell } from "@/components/manage/team/TeamCells";
-import { InviteForm, PendingInvites } from "@/components/manage/team/InviteForm";
+import { ActionForm } from "@/components/manage/governance/ActionForm";
+import { Disclosure } from "@/components/manage/governance/Disclosure";
+import { MfaNotice, ReadOnlyNotice } from "@/components/manage/governance/Notices";
+import { SectionDenied } from "@/components/manage/governance/SectionDenied";
 
 type Params = Promise<{ asso: string }>;
 
 export const metadata: Metadata = { title: "Équipe" };
 
 /**
- * /manage/[asso]/team — who is who. The bureau (Association.team, in the
- * association's own order) runs this workspace; active members help on the
- * ground without access to it. Inviting someone onto the bureau is a demo
- * form in Phase 1.
+ * /manage/[asso]/team — who is in the association, with which positions and
+ * until when; invitations waiting for an answer; delegations in progress.
+ * Every list comes from public.organization_team, which checks members.view
+ * itself. Actions appear only to those whose rights allow them, and the
+ * database checks them again.
  */
 export default async function ManageTeamPage({ params }: { params: Params }) {
   const { asso } = await params;
   const ctx = await getManageContext(asso);
   if (!ctx) return null;
+  const { organization, can } = ctx;
+  if (!can("members.view")) return <SectionDenied section="team" ctx={ctx} />;
 
-  const { association, user } = ctx;
-  const now = new Date();
-  const [members, invites] = await Promise.all([
-    getAssociationMembers(association.id),
-    getTeamInvites(association.id),
-  ]);
+  const [team, catalog] = await Promise.all([getOrganizationTeam(organization.id), getPermissionCatalog()]);
+  if (!team.ok) return <SectionDenied section="team" ctx={ctx} code={team.code} />;
+  const { members, invitations, delegations } = team.data;
 
-  const me = `${user.firstName} ${user.lastName}`;
-  const short = association.shortName ?? association.name;
+  const short = organization.shortName ?? organization.name;
+  const writable = !ctx.workspace.readOnly;
+  const ceiling = myPositionKeys(team.data);
+  const positionsOffered = can("positions.assign") ? assignablePositions(team.data, ceiling) : [];
+  const expiring = expiringAssignments(team.data);
+  const active = members.filter((m) => m.status === "active");
 
-  const bureauColumns: DataColumn<TeamMember>[] = [
-    { key: "name", header: "Nom", primary: true, cell: (m) => <PersonCell name={m.name} isYou={m.name === me} /> },
-    { key: "role", header: "Rôle", cell: (m) => m.role },
-    { key: "promo", header: "Promo", cell: (m) => <span className="type-meta">{m.promo ?? "—"}</span> },
-  ];
-
-  const memberColumns: DataColumn<AssociationMember>[] = [
-    { key: "name", header: "Nom", primary: true, cell: (m) => <PersonCell name={m.name} isYou={m.name === me} /> },
-    { key: "role", header: "Rôle", cell: (m) => m.role },
-    { key: "promo", header: "Promo", cell: (m) => <span className="type-meta">{m.promo ?? "—"}</span> },
-    { key: "since", header: "Depuis", cell: (m) => <SinceCell iso={m.since} /> },
+  const columns: DataColumn<TeamMember>[] = [
+    {
+      key: "name",
+      header: "Nom",
+      primary: true,
+      cell: (m) => (
+        <Link href={routes.manageMember(asso, m.membership_id)} className="font-bold hover:text-assoc-text hover:underline">
+          {m.name}
+          {m.is_you && <span className="font-normal text-muted"> (toi)</span>}
+        </Link>
+      ),
+    },
+    {
+      key: "positions",
+      header: "Postes",
+      cell: (m) => (
+        <span className="flex flex-col">
+          <span>{memberTitles(m)}</span>
+          {m.assignments.some((a) => a.upcoming) && (
+            <span className="type-meta text-subtle">
+              À venir&nbsp;: {m.assignments.filter((a) => a.upcoming).map((a) => `${a.title} (${formatDayShort(a.starts_at)})`).join(", ")}
+            </span>
+          )}
+          {m.delegations.length > 0 && (
+            <span className="type-meta text-subtle">{plural(m.delegations.length, "délégation")} en cours</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "until",
+      header: "Mandat jusqu'au",
+      hideOnPhone: true,
+      cell: (m) => {
+        const ends = m.assignments.filter((a) => !a.upcoming).map((a) => a.ends_at).sort()[0];
+        return <span className="type-meta">{ends ? formatDayShort(ends) : "—"}</span>;
+      },
+    },
+    {
+      key: "status",
+      header: "Statut",
+      cell: (m) => (
+        <StatusBadge tone={m.status === "active" ? "ok" : "warn"}>{MEMBERSHIP_STATUS_LABEL[m.status]}</StatusBadge>
+      ),
+    },
   ];
 
   return (
@@ -55,95 +102,156 @@ export default async function ManageTeamPage({ params }: { params: Params }) {
         title="Équipe"
         description={
           <p>
-            Le bureau tient cet espace&nbsp;: contenus, événements, recrutements, réglages. Les membres actifs font
-            tourner {association.name} sur le terrain, sans accès ici.
+            Chaque membre a un compte à son nom et des postes avec une date de fin&nbsp;: quand un mandat s&apos;arrête,
+            ses droits s&apos;arrêtent avec lui. Ouvre une fiche pour voir précisément ce que la personne peut faire.
           </p>
-        }
-        actions={
-          <ButtonLink href="#inviter" icon="plus" iconPosition="start">
-            Inviter
-          </ButtonLink>
         }
       />
 
-      {/* Two zeros say nothing the empty states below don't already say. */}
-      {(association.team.length > 0 || members.length > 0 || association.memberCount !== undefined) && (
-        <StatGroup label={`L'équipe de ${association.name} en chiffres`} columns={association.memberCount !== undefined ? 3 : 2}>
-          <StatTile label="Au bureau" value={association.team.length} comparison="Avec accès à cet espace" />
-          <StatTile label="Membres actifs" value={members.length} comparison="Sans accès à cet espace" />
-          {association.memberCount !== undefined && (
-            <StatTile
-              label="Adhérent·es"
-              value={association.memberCount}
-              comparison="Cette année, bureau compris"
-            />
+      {!writable && (
+        <ReadOnlyNotice
+          reason={
+            ctx.membership.membership_status === "suspended"
+              ? "membership_suspended"
+              : organization.status === "archived"
+                ? "organization_archived"
+                : "organization_suspended"
+          }
+        />
+      )}
+      {writable && ctx.aal !== "aal2" && can("positions.assign") && (
+        <MfaNotice what="Inviter quelqu'un avec un poste, attribuer un poste ou déléguer des droits" />
+      )}
+
+      <StatGroup label={`L'équipe de ${short} en chiffres`}>
+        <StatTile label="Membres actifs" value={active.length} comparison={members.length > active.length ? `${members.length - active.length} suspendu·e(s)` : undefined} />
+        <StatTile label="Invitations en attente" value={invitations.filter((i) => !i.expired).length} />
+        <StatTile label="Mandats à renouveler" value={expiring.length} comparison="dans les 30 jours" tone={expiring.length ? "danger" : "neutral"} />
+        <StatTile label="Délégations en cours" value={delegations.length} />
+      </StatGroup>
+
+      {writable && can("members.invite") && (
+        <ManageSection
+          title="Inviter quelqu'un"
+          description="L'invitation est liée à une adresse e-mail et dure 14 jours. La personne la trouve dans son espace (Invitations) en se connectant avec cette adresse : aucun mail n'est envoyé pour l'instant, préviens-la toi-même."
+        >
+          <Disclosure summary="Nouvelle invitation" icon="plus" tone="primary">
+            <ActionForm action={inviteMember} hidden={{ organization_id: organization.id }} submitLabel="Inviter" resetOnDone>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Adresse e-mail" hint="Celle avec laquelle la personne se connecte au site.">
+                  {({ id, describedBy }) => (
+                    <Input id={id} aria-describedby={describedBy} type="email" name="email" autoComplete="off" spellCheck={false} placeholder="Ex : prenom.nom@…" required />
+                  )}
+                </Field>
+                {positionsOffered.length > 0 && (
+                  <Field label="Poste proposé" optional hint="Sans poste, la personne rejoint l'asso comme membre.">
+                    {({ id, describedBy }) => (
+                      <Select id={id} aria-describedby={describedBy} name="position_id" defaultValue="">
+                        <option value="">Membre, sans poste</option>
+                        {positionsOffered.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.title}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </Field>
+                )}
+                {positionsOffered.length > 0 && (
+                  <Field label="Fin du mandat (si poste)" hint="Par défaut, la fin de l'année universitaire.">
+                    {({ id, describedBy }) => (
+                      <Input id={id} aria-describedby={describedBy} type="date" name="ends_on" defaultValue={toDateInput(defaultMandateEnd())} />
+                    )}
+                  </Field>
+                )}
+              </div>
+            </ActionForm>
+          </Disclosure>
+        </ManageSection>
+      )}
+
+      <ManageSection title="Membres" count={members.length}>
+        <DataTable
+          caption={`Membres de ${organization.name}`}
+          columns={columns}
+          rows={members}
+          rowKey={(m) => m.membership_id}
+          actions={(m) => (
+            <Link href={routes.manageMember(asso, m.membership_id)} className="inline-flex min-h-9 items-center px-2 type-small font-semibold text-muted hover:text-fg">
+              Fiche
+            </Link>
           )}
-        </StatGroup>
+          empty={
+            <ManageEmpty icon="users" title="Personne dans l'équipe pour l'instant">
+              <p>Les personnes invitées apparaissent ici dès qu&apos;elles acceptent leur invitation.</p>
+            </ManageEmpty>
+          }
+        />
+      </ManageSection>
+
+      {can("members.invite") && (
+        <ManageSection title="Invitations en attente" count={invitations.length}>
+          {invitations.length ? (
+            <ul className="flex flex-col divide-y divide-line rounded-md border border-line bg-raised">
+              {invitations.map((i) => (
+                <li key={i.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate font-semibold">{i.email}</span>
+                    <span className="type-meta text-subtle">
+                      {i.position_title ? `${i.position_title} jusqu'au ${formatDateLong(i.mandate_ends_at!)}` : "Membre"} · par {i.invited_by_name} ·{" "}
+                      {i.expired ? "expirée" : `expire le ${formatDayShort(i.expires_at)}`}
+                    </span>
+                  </div>
+                  {writable && (
+                    <ActionForm action={revokeInvitation} hidden={{ invitation_id: i.id }} submitLabel="Annuler" variant="secondary" size="sm" inline />
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ManageEmpty icon="mail" title="Aucune invitation en attente">
+              <p>Les invitations envoyées attendent ici leur réponse, 14 jours au plus.</p>
+            </ManageEmpty>
+          )}
+        </ManageSection>
       )}
 
       <ManageSection
-        title="Bureau"
-        count={association.team.length}
-        description="Dans l'ordre de la page publique, présidence en tête. Chaque membre du bureau a accès à cet espace."
+        title="Délégations en cours"
+        count={delegations.length}
+        description="Des droits prêtés pour une durée courte (92 jours au plus), avec une raison. Une délégation s'arrête seule à sa date de fin, ou dès que la personne qui l'a donnée perd ces droits."
       >
-        <DataTable
-          caption={`Bureau de ${association.name}`}
-          columns={bureauColumns}
-          rows={association.team}
-          rowKey={(m) => m.id}
-          empty={
-            <ManageEmpty
-              icon="users"
-              title="Le bureau n'est pas encore renseigné"
-              demo="les invitations ne partent pas encore, personne n'est ajouté."
-            >
-              <p>
-                La présidence invite chaque membre du bureau ci-dessous, avec son rôle&nbsp;: nom, rôle et promo
-                apparaîtront ici et sur la page publique de {association.name}.
-              </p>
-            </ManageEmpty>
-          }
-        />
+        {delegations.length ? (
+          <ul className="flex flex-col divide-y divide-line rounded-md border border-line bg-raised">
+            {delegations.map((d) => (
+              <li key={d.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-semibold">
+                    {d.delegator_name} → {d.delegate_name}
+                  </span>
+                  <span className="type-small text-muted">{permissionLabels(d.permissions, catalog).join(", ")}</span>
+                  <span className="type-meta text-subtle">
+                    Jusqu&apos;au {formatDayShort(d.ends_at)} · {d.reason}
+                  </span>
+                  {!d.effective && (
+                    <StatusBadge tone="warn">Sans effet : la personne qui a délégué n&apos;a plus ces droits</StatusBadge>
+                  )}
+                </div>
+                {writable && (d.delegator_is_you || d.delegate_is_you || can("delegations.manage")) && (
+                  <ActionForm action={revokeDelegation} hidden={{ delegation_id: d.id }} submitLabel="Arrêter" variant="secondary" size="sm" inline />
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ManageEmpty icon="clock" title="Aucune délégation en cours">
+            <p>
+              Besoin d&apos;un coup de main pendant une absence&nbsp;? Depuis la fiche d&apos;un membre, tu peux lui prêter
+              certains de tes droits pour quelques semaines.
+            </p>
+          </ManageEmpty>
+        )}
       </ManageSection>
-
-      <ManageSection
-        title="Membres actifs"
-        count={members.length}
-        description="Staff de soirée, plumes, coups de main réguliers. Pour donner accès à l'espace, invite la personne au bureau."
-      >
-        <DataTable
-          caption={`Membres actifs de ${association.name}`}
-          columns={memberColumns}
-          rows={members}
-          rowKey={(m) => m.id}
-          empty={
-            <ManageEmpty icon="users" title="Pas encore de membre actif">
-              <p>
-                Les personnes qui donnent un coup de main sans être au bureau apparaîtront ici, avec ce qu&apos;elles
-                font et depuis quand.
-              </p>
-            </ManageEmpty>
-          }
-        />
-      </ManageSection>
-
-      <div id="inviter">
-        <ManageSection
-          title="Inviter au bureau"
-          description={`L'invitation part sur le mail GEM de la personne. Elle rejoint le bureau de ${association.name} dès qu'elle accepte.`}
-        >
-          <InviteForm associationName={association.name} />
-          {invites.length > 0 && (
-            <div className="mt-4 flex flex-col gap-1">
-              <h3 className="flex items-baseline gap-2.5 type-label text-subtle">
-                En attente de réponse
-                <span className="type-meta normal-case">{invites.length}</span>
-              </h3>
-              <PendingInvites invites={invites} now={now} />
-            </div>
-          )}
-        </ManageSection>
-      </div>
     </div>
   );
 }
