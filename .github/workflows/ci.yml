@@ -55,26 +55,23 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          cache: npm
+      - run: npm ci
       - name: Generated types match the migrations
-        # Compares the Database types, not the file text: the local generator
-        # (npm run db:types) and the hosted one (db:types:linked) format the
-        # same schema differently. __InternalSupabase only names the API version.
+        # Compares the Database types structurally, not the file text: the local
+        # generator (npm run db:types) and the hosted one (db:types:linked)
+        # format the same schema differently. Any difference is listed entry by
+        # entry, in annotations short enough to be read whole.
         run: |
           supabase gen types --lang typescript --local --schema public > "$RUNNER_TEMP/generated.ts"
-          cp src/types/database.types.ts "$RUNNER_TEMP/committed.ts"
-          cat > "$RUNNER_TEMP/compare.ts" <<'EOF'
-          import type { Database as Committed } from "./committed";
-          import type { Database as Generated } from "./generated";
-          type Schema<T> = Omit<T, "__InternalSupabase">;
-          type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
-          export const sameSchema: Same<Schema<Committed>, Schema<Generated>> = true;
-          EOF
-          cd "$RUNNER_TEMP"
-          # Keep the TypeScript version in step with package-lock.json.
-          if ! npx --yes -p typescript@5.9.3 tsc --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target es2022 compare.ts; then
+          if ! node scripts/compare-db-types.mjs src/types/database.types.ts "$RUNNER_TEMP/generated.ts" > "$RUNNER_TEMP/types-diff.txt"; then
+            cat "$RUNNER_TEMP/types-diff.txt"
             encode() { tr -d '\015' | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}'; }
-            echo "::error file=src/types/database.types.ts::src/types/database.types.ts does not match the migrations. Run npm run db:types (or db:types:linked) and commit the result.%0A$(diff -u -w committed.ts generated.ts | head -c 30000 | encode)"
-            echo "::notice title=Expected database.types.ts::$(head -c 60000 generated.ts | encode)"
+            echo "::error file=src/types/database.types.ts::src/types/database.types.ts does not match the migrations. Run npm run db:types (or db:types:linked) and commit the result. Differences follow in notices."
+            split -b 3500 -d "$RUNNER_TEMP/types-diff.txt" "$RUNNER_TEMP/types-diff-part-"
+            for part in $(ls "$RUNNER_TEMP"/types-diff-part-* | head -n 9); do
+              echo "::notice title=Type differences ($(basename "$part"))::$(encode < "$part")"
+            done
             exit 1
           fi
 

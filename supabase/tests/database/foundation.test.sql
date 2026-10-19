@@ -24,7 +24,15 @@ select is_empty(
        join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'private'
         and has_function_privilege('authenticated', p.oid, 'execute')
-        and p.proname not in ('mfa_requirement_met') $$,
+        and p.proname not in (
+          'mfa_requirement_met',          -- Phase 3: restrictive MFA policies
+          'has_organization_permission',  -- Phase 4: read policies (caller only)
+          'has_platform_permission',
+          'my_organization_ids_with',
+          'my_open_organization_ids',
+          'my_transition_ids',
+          'current_user_email'
+        ) $$,
   'authenticated can execute only the allowlisted private helpers'
 );
 
