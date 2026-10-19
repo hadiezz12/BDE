@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(149);
+select plan(150);
 
 -- Fixture ids (computed as the owner, readable by every role below).
 create temp table fx (k text primary key, id uuid);
@@ -583,6 +583,10 @@ set local request.jwt.claims to '{"sub": "a0000000-0000-4000-8000-000000000001",
 select throws_ok(
   $$ select public.end_office_mandate((select id from fx where k = 'a_julie_pres'), '') $$,
   'P0001', 'reason_required', 'an emergency needs a written reason'
+);
+select throws_ok(
+  $$ select public.create_organization('Plateforme', 'plateforme') $$,
+  'P0001', 'organization_invalid', 'workspace route names are reserved slugs'
 );
 select lives_ok(
   $$ select public.end_office_mandate((select id from fx where k = 'a_julie_pres'), 'Compte de la présidente compromis (test)') $$,

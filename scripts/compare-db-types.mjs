@@ -46,8 +46,20 @@ const isPlainObject = (type) =>
 // The two files each declare their own `Json`: drop the file part of names.
 const text = (type) => checker.typeToString(type, undefined, flags).replace(/import\("[^"]*"\)\./g, "");
 // Unions print in a stable but arbitrary order: compare their members as a set.
-const normalized = (type) =>
-  type.isUnion() ? type.types.map(normalized).sort().join(" | ") : text(type);
+const members = (type) => (type.isUnion() ? type.types.map(normalized).sort() : [text(type)]);
+const JSON_OBJECT = "{ [key: string]: Json | undefined; }";
+// Known format differences between the two generators, folded away:
+//  - a function without arguments: `Args: never` (hosted) or
+//    `Args: Record<PropertyKey, never>` (local);
+//  - an expanded Json: the hosted `Json` already contains null, so it cannot
+//    say whether a jsonb column is nullable; compare Json columns without it.
+function normalized(type) {
+  const list = members(type);
+  const joined = list.join(" | ");
+  if (joined === "never" || joined === "Record<PropertyKey, never>") return "<no arguments>";
+  if (list.includes(JSON_OBJECT)) return list.filter((m) => m !== "null").join(" | ");
+  return joined;
+}
 
 const differences = [];
 
