@@ -136,6 +136,23 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   leadership_transition_cancelled: "a annulé une passation",
   association_president_removed: "a mis fin à une présidence en urgence",
   bde_office_removed: "a mis fin à un mandat du BDE en urgence",
+  // Phase 5: the public page
+  association_profile_updated: "a modifié le brouillon de la page",
+  association_gallery_updated: "a modifié la galerie (brouillon)",
+  association_public_team_updated: "a modifié la présentation de l'équipe (brouillon)",
+  association_page_published: "a publié la page",
+  association_page_unpublished: "a retiré la page du site",
+  association_page_withheld: "a suspendu la page (modération BDE)",
+  association_page_released: "a rétabli la page (modération BDE)",
+  organization_slug_changed: "a changé l'adresse de la page",
+  association_media_uploaded: "a ajouté une image",
+  association_media_removed: "a retiré une image",
+  public_team_profile_updated: "a changé sa présentation publique",
+  invitation_renewed: "a prolongé une invitation",
+  association_category_created: "a créé une catégorie d'assos",
+  association_category_updated: "a modifié une catégorie d'assos",
+  association_category_archived: "a retiré une catégorie d'assos",
+  association_category_restored: "a rétabli une catégorie d'assos",
 };
 
 /** Confirmations shown by a page after an answer removed the card it came from (?fait=…). */

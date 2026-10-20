@@ -63,7 +63,7 @@ union all select 'deleg_lucas', d.id from public.delegations d where d.delegate_
 
 select is((select count(*)::int from public.organizations where kind = 'bde'), 1, 'exactly one BDE root');
 select throws_ok(
-  $$ insert into public.organizations (slug, name, kind, category, status) values ('autre-bde', 'Autre BDE', 'bde', 'bde', 'active') $$,
+  $$ insert into public.organizations (slug, name, kind, status) values ('autre-bde', 'Autre BDE', 'bde', 'active') $$,
   '23505', null, 'a second BDE is refused'
 );
 select throws_ok(
@@ -71,7 +71,7 @@ select throws_ok(
   '23514', null, 'the BDE cannot be archived'
 );
 select throws_ok(
-  $$ update public.organizations set kind = 'association', category = 'autre' where kind = 'bde' $$,
+  $$ update public.organizations set kind = 'association' where kind = 'bde' $$,
   'P0001', 'organization_kind_immutable', 'the BDE cannot become an association'
 );
 select throws_ok(

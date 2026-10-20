@@ -14,6 +14,313 @@ export type Database = {
   }
   public: {
     Tables: {
+      association_categories: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      association_gallery_items: {
+        Row: {
+          caption: string | null
+          media_id: string
+          organization_id: string
+          position: number
+          stage: string
+        }
+        ComputedFields: never
+        Insert: {
+          caption?: string | null
+          media_id: string
+          organization_id: string
+          position: number
+          stage: string
+        }
+        Update: {
+          caption?: string | null
+          media_id?: string
+          organization_id?: string
+          position?: number
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_gallery_items_media_fkey"
+            columns: ["organization_id", "media_id"]
+            isOneToOne: false
+            referencedRelation: "association_media"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "association_gallery_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_media: {
+        Row: {
+          alt_text: string | null
+          bytes: number
+          created_at: string
+          created_by: string | null
+          height: number
+          id: string
+          kind: string
+          object_path: string
+          organization_id: string
+          removed_at: string | null
+          removed_by: string | null
+          width: number
+        }
+        ComputedFields: never
+        Insert: {
+          alt_text?: string | null
+          bytes: number
+          created_at?: string
+          created_by?: string | null
+          height: number
+          id: string
+          kind: string
+          object_path: string
+          organization_id: string
+          removed_at?: string | null
+          removed_by?: string | null
+          width: number
+        }
+        Update: {
+          alt_text?: string | null
+          bytes?: number
+          created_at?: string
+          created_by?: string | null
+          height?: number
+          id?: string
+          kind?: string
+          object_path?: string
+          organization_id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_media_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_pages: {
+        Row: {
+          first_published_at: string | null
+          organization_id: string
+          published_at: string | null
+          published_by: string | null
+          published_revision: number | null
+          status: string
+          unpublished_at: string | null
+          updated_at: string
+          withheld_at: string | null
+          withheld_by: string | null
+          withheld_reason: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          first_published_at?: string | null
+          organization_id: string
+          published_at?: string | null
+          published_by?: string | null
+          published_revision?: number | null
+          status?: string
+          unpublished_at?: string | null
+          updated_at?: string
+          withheld_at?: string | null
+          withheld_by?: string | null
+          withheld_reason?: string | null
+        }
+        Update: {
+          first_published_at?: string | null
+          organization_id?: string
+          published_at?: string | null
+          published_by?: string | null
+          published_revision?: number | null
+          status?: string
+          unpublished_at?: string | null
+          updated_at?: string
+          withheld_at?: string | null
+          withheld_by?: string | null
+          withheld_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_pages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_profiles: {
+        Row: {
+          accent: string | null
+          category_ids: string[]
+          contact_email: string | null
+          cover_focal: string | null
+          cover_media_id: string | null
+          description: string | null
+          founded_year: number | null
+          kind_label: string | null
+          logo_media_id: string | null
+          meeting_info: string | null
+          name: string | null
+          organization_id: string
+          pillars: Json
+          revision: number
+          short_name: string | null
+          social_links: Json
+          stage: string
+          tagline: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          accent?: string | null
+          category_ids?: string[]
+          contact_email?: string | null
+          cover_focal?: string | null
+          cover_media_id?: string | null
+          description?: string | null
+          founded_year?: number | null
+          kind_label?: string | null
+          logo_media_id?: string | null
+          meeting_info?: string | null
+          name?: string | null
+          organization_id: string
+          pillars?: Json
+          revision?: number
+          short_name?: string | null
+          social_links?: Json
+          stage: string
+          tagline?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accent?: string | null
+          category_ids?: string[]
+          contact_email?: string | null
+          cover_focal?: string | null
+          cover_media_id?: string | null
+          description?: string | null
+          founded_year?: number | null
+          kind_label?: string | null
+          logo_media_id?: string | null
+          meeting_info?: string | null
+          name?: string | null
+          organization_id?: string
+          pillars?: Json
+          revision?: number
+          short_name?: string | null
+          social_links?: Json
+          stage?: string
+          tagline?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_profiles_cover_fkey"
+            columns: ["organization_id", "cover_media_id"]
+            isOneToOne: false
+            referencedRelation: "association_media"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "association_profiles_logo_fkey"
+            columns: ["organization_id", "logo_media_id"]
+            isOneToOne: false
+            referencedRelation: "association_media"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "association_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_team_entries: {
+        Row: {
+          display_title: string | null
+          hidden: boolean
+          membership_id: string
+          organization_id: string
+          position: number
+          stage: string
+        }
+        ComputedFields: never
+        Insert: {
+          display_title?: string | null
+          hidden?: boolean
+          membership_id: string
+          organization_id: string
+          position: number
+          stage: string
+        }
+        Update: {
+          display_title?: string | null
+          hidden?: boolean
+          membership_id?: string
+          organization_id?: string
+          position?: number
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_team_entries_membership_fkey"
+            columns: ["membership_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       delegation_permissions: {
         Row: {
           delegation_id: string
@@ -293,6 +600,39 @@ export type Database = {
           },
         ]
       }
+      membership_public_profiles: {
+        Row: {
+          bio: string | null
+          hidden: boolean
+          membership_id: string
+          show_photo: boolean
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          bio?: string | null
+          hidden?: boolean
+          membership_id: string
+          show_photo?: boolean
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          hidden?: boolean
+          membership_id?: string
+          show_photo?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_public_profiles_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: true
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memberships: {
         Row: {
           created_at: string
@@ -409,14 +749,42 @@ export type Database = {
           },
         ]
       }
+      organization_slug_history: {
+        Row: {
+          organization_id: string
+          replaced_at: string
+          replaced_by: string | null
+          slug: string
+        }
+        ComputedFields: never
+        Insert: {
+          organization_id: string
+          replaced_at?: string
+          replaced_by?: string | null
+          slug: string
+        }
+        Update: {
+          organization_id?: string
+          replaced_at?: string
+          replaced_by?: string | null
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_slug_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           accent: string
           archived_at: string | null
-          category: string
           created_at: string
           created_by: string | null
-          description: string | null
           id: string
           kind: string
           name: string
@@ -424,17 +792,14 @@ export type Database = {
           slug: string
           status: string
           status_reason: string | null
-          tagline: string | null
           updated_at: string
         }
         ComputedFields: never
         Insert: {
           accent?: string
           archived_at?: string | null
-          category?: string
           created_at?: string
           created_by?: string | null
-          description?: string | null
           id?: string
           kind: string
           name: string
@@ -442,16 +807,13 @@ export type Database = {
           slug: string
           status?: string
           status_reason?: string | null
-          tagline?: string | null
           updated_at?: string
         }
         Update: {
           accent?: string
           archived_at?: string | null
-          category?: string
           created_at?: string
           created_by?: string | null
-          description?: string | null
           id?: string
           kind?: string
           name?: string
@@ -459,7 +821,6 @@ export type Database = {
           slug?: string
           status?: string
           status_reason?: string | null
-          tagline?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -851,9 +1212,22 @@ export type Database = {
         }
         Returns: string
       }
+      association_editor: { Args: { p_organization_id: string }; Returns: Json }
+      association_preview: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
       cancel_leadership_transition: {
         Args: { p_reason?: string; p_transition_id: string }
         Returns: undefined
+      }
+      change_organization_slug: {
+        Args: { p_organization_id: string; p_slug: string }
+        Returns: string
+      }
+      create_association_category: {
+        Args: { p_label: string; p_slug: string; p_sort_order?: number }
+        Returns: string
       }
       create_delegation: {
         Args: {
@@ -954,6 +1328,41 @@ export type Database = {
         }
         Returns: string
       }
+      public_association: { Args: { p_slug: string }; Returns: Json }
+      public_association_categories: { Args: never; Returns: Json }
+      public_associations: { Args: never; Returns: Json }
+      public_portrait_path: {
+        Args: { p_membership_id: string }
+        Returns: string
+      }
+      publish_association_page: {
+        Args: { p_expected_revision: number; p_organization_id: string }
+        Returns: string
+      }
+      register_association_media: {
+        Args: {
+          p_alt_text?: string
+          p_bytes: number
+          p_height: number
+          p_kind: string
+          p_media_id: string
+          p_organization_id: string
+          p_width: number
+        }
+        Returns: string
+      }
+      release_association_page: {
+        Args: { p_organization_id: string; p_reason: string }
+        Returns: undefined
+      }
+      remove_association_media: {
+        Args: { p_media_id: string }
+        Returns: string
+      }
+      renew_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: undefined
+      }
       respond_to_invitation: {
         Args: { p_accept: boolean; p_invitation_id: string }
         Returns: string
@@ -970,12 +1379,50 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
+      save_association_draft: {
+        Args: { p_base: Json; p_organization_id: string; p_patch: Json }
+        Returns: number
+      }
+      set_association_gallery: {
+        Args: { p_base: Json; p_items: Json; p_organization_id: string }
+        Returns: number
+      }
+      set_association_team_presentation: {
+        Args: { p_base: Json; p_entries: Json; p_organization_id: string }
+        Returns: number
+      }
       set_membership_status: {
         Args: { p_membership_id: string; p_reason?: string; p_status: string }
         Returns: undefined
       }
+      set_my_public_team_profile: {
+        Args: {
+          p_bio?: string
+          p_hidden: boolean
+          p_membership_id: string
+          p_show_photo: boolean
+        }
+        Returns: undefined
+      }
       set_organization_status: {
         Args: { p_organization_id: string; p_reason?: string; p_status: string }
+        Returns: undefined
+      }
+      unpublish_association_page: {
+        Args: { p_organization_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      update_association_category: {
+        Args: {
+          p_archived: boolean
+          p_category_id: string
+          p_label: string
+          p_sort_order: number
+        }
+        Returns: undefined
+      }
+      update_association_media: {
+        Args: { p_alt_text: string; p_media_id: string }
         Returns: undefined
       }
       update_position: {
@@ -989,6 +1436,10 @@ export type Database = {
       }
       withdraw_bde_approval: {
         Args: { p_transition_id: string }
+        Returns: undefined
+      }
+      withhold_association_page: {
+        Args: { p_organization_id: string; p_reason: string }
         Returns: undefined
       }
     }

@@ -286,10 +286,17 @@ export interface PlatformOrganization {
   name: string;
   short_name: string | null;
   kind: OrganizationKind;
-  category: string;
   accent: AccentKey;
   status: OrganizationStatus;
   status_reason: string | null;
+  /** The public page (Phase 5), separate from the organization's own status. */
+  page: {
+    status: "draft" | "published" | "unpublished";
+    published_at: string | null;
+    withheld_at: string | null;
+    withheld_reason: string | null;
+    is_public: boolean;
+  };
   created_at: string;
   archived_at: string | null;
   president: { name: string; ends_at: string; assignment_id: string } | null;

@@ -10,13 +10,24 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(13);
 
--- The private schema exists, visitors cannot reach it, and signed-in users
--- can call only the helpers RLS policies need. Granting another one is a
--- deliberate decision: add it to this list in the same migration.
+-- The private schema exists, and visitors and signed-in users can call only
+-- the helpers policies need. Granting another one is a deliberate decision:
+-- add it to these lists in the same migration.
 select has_schema('private', 'the private schema exists');
-select ok(
-  not has_schema_privilege('anon', 'private', 'usage'),
-  'anon has no usage on the private schema'
+-- Phase 5: Storage policies run as the visitor, so anon calls exactly the
+-- three helpers that say whether a file is public (nothing else).
+select is_empty(
+  $$ select p.oid::regprocedure::text
+       from pg_proc p
+       join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'private'
+        and has_function_privilege('anon', p.oid, 'execute')
+        and p.proname not in (
+          'association_media_organization',
+          'association_media_object_is_public',
+          'portrait_object_is_public'
+        ) $$,
+  'anon can execute only the allowlisted Storage helpers'
 );
 select is_empty(
   $$ select p.oid::regprocedure::text
@@ -31,7 +42,11 @@ select is_empty(
           'my_organization_ids_with',
           'my_open_organization_ids',
           'my_transition_ids',
-          'current_user_email'
+          'current_user_email',
+          'my_page_organization_ids',     -- Phase 5: page team read policies
+          'association_media_organization', -- Phase 5: Storage policies
+          'association_media_object_is_public',
+          'portrait_object_is_public'
         ) $$,
   'authenticated can execute only the allowlisted private helpers'
 );

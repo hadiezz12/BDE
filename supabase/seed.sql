@@ -179,3 +179,59 @@ begin
   perform set_config('request.jwt.claims', '', true);
 end
 $seed$;
+
+-- Phase 5: fictional association pages, each with its own look, all built
+-- through the same functions and the same page component (no special code
+-- per association): variation comes only from data. No photos (the seed
+-- cannot upload files): pages show their designed fallbacks.
+--   Finance (exemple)  published · bleu · 2 categories · pillars, socials, contact
+--   Sports (exemple)   published · vert · meeting info, no socials
+--   Arts (exemple)     draft only (association still being set up)
+do $seed5$
+declare
+  v_julie uuid := 'a0000000-0000-4000-8000-000000000004';
+  v_lucas uuid := 'a0000000-0000-4000-8000-000000000005';
+  v_emma uuid := 'a0000000-0000-4000-8000-000000000006';
+  v_finance uuid := (select id from public.organizations where slug = 'exemple-finance');
+  v_sports uuid := (select id from public.organizations where slug = 'exemple-sports');
+begin
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_julie, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.save_association_draft(v_finance,
+    (select to_jsonb(p) from public.association_profiles p where p.organization_id = v_finance and p.stage = 'draft'),
+    jsonb_build_object(
+      'kind_label', 'Association étudiante (exemple)',
+      'tagline', 'Exemple fictif : la finance de marché, racontée entre étudiant·es.',
+      'description', E'Association fictive des données de démonstration. Ce texte montre une présentation de plusieurs paragraphes.\n\nUn deuxième paragraphe, pour voir l''espacement de la page publique.',
+      'pillars', jsonb_build_array(
+        jsonb_build_object('title', 'Exemple de point fort', 'detail', 'Une phrase fictive qui explique ce point.'),
+        jsonb_build_object('title', 'Un deuxième point', 'detail', 'Encore une phrase de démonstration.')),
+      'contact_email', 'finance@asso.example.test',
+      'social_links', jsonb_build_array(
+        jsonb_build_object('platform', 'instagram', 'url', 'https://www.instagram.com/exemple.finance.test/'),
+        jsonb_build_object('platform', 'website', 'url', 'https://finance.example.test/')),
+      'category_ids', (select jsonb_agg(id order by sort_order) from public.association_categories where slug in ('pro', 'entrepreneuriat'))
+    ));
+  perform public.publish_association_page(v_finance,
+    (select revision from public.association_profiles where organization_id = v_finance and stage = 'draft'));
+
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_emma, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.save_association_draft(v_sports,
+    (select to_jsonb(p) from public.association_profiles p where p.organization_id = v_sports and p.stage = 'draft'),
+    jsonb_build_object(
+      'kind_label', 'Association sportive (exemple)',
+      'tagline', 'Exemple fictif : du sport chaque semaine, sans prise de tête.',
+      'description', 'Association fictive des données de démonstration, avec un seul paragraphe de présentation.',
+      'meeting_info', 'Exemple : entraînement fictif le mercredi soir.'
+    ));
+  perform public.publish_association_page(v_sports,
+    (select revision from public.association_profiles where organization_id = v_sports and stage = 'draft'));
+
+  -- Lucas chooses to show a short bio (no photo) on Finance's public team.
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_lucas, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  perform public.set_my_public_team_profile(
+    (select id from public.memberships where organization_id = v_finance and user_id = v_lucas),
+    false, false, 'Bio fictive de démonstration.');
+
+  perform set_config('request.jwt.claims', '', true);
+end
+$seed5$;

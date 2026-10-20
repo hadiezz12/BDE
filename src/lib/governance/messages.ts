@@ -69,6 +69,23 @@ export type GovernanceErrorCode =
   | "approval_not_allowed"
   | "approval_not_found"
   | "conflict"
+  // Phase 5: association pages
+  | "profile_invalid"
+  | "draft_conflict"
+  | "draft_changed"
+  | "page_incomplete"
+  | "page_withheld"
+  | "page_not_published"
+  | "page_not_withheld"
+  | "media_not_found"
+  | "media_quota"
+  | "media_invalid"
+  | "media_in_use"
+  | "slug_invalid"
+  | "category_invalid"
+  | "category_taken"
+  | "gallery_invalid"
+  | "team_invalid"
   | "unavailable"
   | "unexpected";
 
@@ -139,6 +156,25 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   approval_not_allowed: "Ton approbation n'est pas attendue pour cette passation.",
   approval_not_found: "Il n'y a pas d'approbation à retirer.",
   conflict: "Quelqu'un vient de faire une modification au même endroit. Recharge la page, puis recommence.",
+  profile_invalid: "Un champ n'est pas au bon format : vérifie les longueurs, l'adresse e-mail et les liens.",
+  draft_conflict:
+    "Quelqu'un de l'équipe a modifié ce même champ entre-temps. Recharge la page pour voir sa version : ce que tu as tapé reste dans le formulaire jusque-là.",
+  draft_changed:
+    "Le brouillon a changé depuis ton aperçu. Relis l'aperçu, puis publie : on publie toujours ce qui a été vu.",
+  page_incomplete: "Il manque l'essentiel pour publier : une accroche, une présentation et au moins une catégorie.",
+  page_withheld:
+    "Le BDE a retiré cette page temporairement : elle ne peut pas être republiée tant qu'il ne l'a pas rétablie. La raison est indiquée sur la page de réglages.",
+  page_not_published: "La page n'est pas en ligne.",
+  page_not_withheld: "Cette page n'est pas retirée.",
+  media_not_found: "Cette image n'existe plus dans la médiathèque. Recharge la page.",
+  media_quota: "La médiathèque est pleine (300 images) : retire celles qui ne servent plus.",
+  media_invalid: "Cette image n'a pas pu être enregistrée.",
+  media_in_use: "Cette image est utilisée (logo, couverture ou galerie, en brouillon ou en ligne) : remplace-la d'abord.",
+  slug_invalid: "Adresse invalide : lettres minuscules, chiffres et tirets, sans les mots réservés du site.",
+  category_invalid: "Cette catégorie n'existe pas ou n'est plus proposée.",
+  category_taken: "Une catégorie porte déjà ce nom ou cette adresse.",
+  gallery_invalid: "La galerie compte 24 images au plus, chacune une seule fois.",
+  team_invalid: "La présentation de l'équipe n'a pas pu être enregistrée : recharge la page.",
   unavailable: "Le service est momentanément indisponible. Réessaie dans un instant.",
   unexpected: "Une erreur inattendue est survenue. Réessaie, et préviens le BDE si ça continue.",
 };
