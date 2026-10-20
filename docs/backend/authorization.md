@@ -96,7 +96,7 @@ aal1 (`private.mfa_requirement_met()`, restrictive policies).
 
 ## Tests
 
-- `supabase/tests/database/governance.test.sql` — 157 pgTAP checks: isolation between
+- `supabase/tests/database/governance.test.sql` — 163 pgTAP checks: isolation between
   organizations, no self-promotion, ceilings, protected offices, overlapping mandates, expiry,
   delegations losing their source, suspended organizations and memberships, invitations bound to an
   e-mail, every transition kind, dual approval, recovery, concurrency guards, audit immutability,

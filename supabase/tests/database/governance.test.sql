@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(157);
+select plan(163);
 
 -- Fixture ids (computed as the owner, readable by every role below).
 create temp table fx (k text primary key, id uuid);
@@ -825,6 +825,44 @@ reset role;
 select is(private.office_holder((select id from fx where k = 'finance'), 'association_president', now()), null::uuid,
   'the presidency stays vacant until the BDE appoints someone');
 set local role authenticated;
+
+-- =============================================================================
+-- 11c. A BDE officer withdraws their approval
+-- =============================================================================
+
+reset role;
+-- Act as whichever BDE officer sits right now. Proposing is not approving: the
+-- officer approves in a separate, explicit step.
+select set_config('request.jwt.claims', jsonb_build_object(
+  'sub', coalesce(private.office_holder((select id from fx where k = 'bde'), 'bde_president', now()),
+                  private.office_holder((select id from fx where k = 'bde'), 'bde_vice_president', now())),
+  'role', 'authenticated', 'aal', 'aal2')::text, true);
+set local role authenticated;
+select lives_ok(
+  $$ insert into fx (k, id) select 't_withdraw', public.propose_bde_succession('lucas.finance@comptes.example.test',
+       'paul.sports@comptes.example.test', now() + interval '6 months') $$,
+  'a sitting BDE officer proposes the next leadership'
+);
+select is(public.approve_bde_succession((select id from fx where k = 't_withdraw')), 'open',
+  'then approves it (still waiting for the rest)');
+select lives_ok(
+  $$ select public.withdraw_bde_approval((select id from fx where k = 't_withdraw')) $$,
+  'the officer withdraws their approval'
+);
+reset role;
+select is(
+  (select count(*)::int from public.leadership_transition_approvals where transition_id = (select id from fx where k = 't_withdraw')),
+  0, 'no approval is left on the transition'
+);
+set local role authenticated;
+select throws_ok(
+  $$ select public.withdraw_bde_approval((select id from fx where k = 't_withdraw')) $$,
+  'P0001', 'approval_not_found', 'there is nothing left to withdraw'
+);
+select lives_ok(
+  $$ select public.cancel_leadership_transition((select id from fx where k = 't_withdraw'), 'Test terminé') $$,
+  'the officer cancels the proposal'
+);
 
 -- =============================================================================
 -- 12. Organization lifecycle and bootstrap

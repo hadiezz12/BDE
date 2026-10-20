@@ -120,8 +120,8 @@ export default async function ManageGovernancePage({ params, searchParams }: { p
             <Disclosure summary="Proposer la direction suivante du BDE" icon="arrow-right" tone="primary">
               <ActionForm action={proposeBdeSuccession} submitLabel="Proposer" resetOnDone>
                 <p className="type-small text-muted">
-                  Ta proposition compte comme ton approbation. Il faudra celle de l&apos;autre membre de la direction, puis
-                  l&apos;accord des deux personnes (chacune avec la double authentification). Aucun mail n&apos;est envoyé.
+                  Ensuite, chaque membre de la direction approuve (toi compris, avec le bouton qui apparaîtra ici), et les
+                  deux personnes choisies acceptent, chacune avec la double authentification. Aucun mail n&apos;est envoyé.
                 </p>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="Présidence : adresse e-mail">

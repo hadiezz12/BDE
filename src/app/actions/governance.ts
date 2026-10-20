@@ -298,7 +298,7 @@ export async function proposeBdeSuccession(_prev: GovernanceActionState, form: F
         p_mandate_ends_at: endsAt,
         p_effective_at: effective,
       }),
-    "Passation du BDE proposée, avec ton approbation. Il manque l'autre approbation et l'accord des deux personnes.",
+    "Passation du BDE proposée. Approuve-la ci-dessous ; il faudra aussi l'approbation de l'autre membre de la direction et l'accord des deux personnes.",
   );
 }
 

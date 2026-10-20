@@ -11,7 +11,7 @@ through the ordinary position functions. They change through a **leadership tran
 | --- | --- | --- | --- |
 | `association_succession` | the sitting association president (`governance.succession`) | the candidate's acceptance | yearly handover |
 | `association_appointment` | BDE leadership (`platform.associations.intervene`), with a reason | the candidate's acceptance | first president of a new association; association left without a president |
-| `bde_succession` | the BDE president or vice-president; their proposal counts as their approval | both sitting officers' approvals (or the guardian's when one office is vacant) **and** both candidates' acceptances | yearly BDE handover (president + vice-president together) |
+| `bde_succession` | the BDE president or vice-president (proposing is not approving: the proposer approves in a separate step) | both sitting officers' approvals (or the guardian's when one office is vacant) **and** both candidates' acceptances | yearly BDE handover (president + vice-president together) |
 | `bde_recovery` | the guardian (`platform.recovery`), with a reason, for a **vacant** BDE office | the candidate's acceptance | a BDE office left vacant, or after an emergency end |
 
 Every proposing, accepting and approving step requires a second factor (aal2). Candidates must
@@ -76,7 +76,7 @@ The office becomes vacant immediately; the next step is an appointment (associat
 
 ## BDE dual approval in detail
 
-- Proposal by the president (or the vice-president) for both offices at once: two different people.
+- Proposal by the president (or the vice-president) for one or both offices (the interface asks for both): never the same person twice, never the guardian. The proposer then approves like the other officer: proposing alone is not an approval.
 - Required approvals are computed **at completion time** from who holds the offices then:
   - both offices filled: the president's and the vice-president's approvals;
   - one office vacant: the remaining officer's approval and the guardian's;
@@ -102,5 +102,5 @@ expired transition refused, a proposer who lost the office before the successor 
 appointment after an emergency end, BDE dual approval (one approval is not enough, one person never
 counts twice, aal2 required, the guardian's approval with one vacant office, a future-dated
 succession kept across an interim), recovery and its refusals, and the overlap constraints.
-Withdrawing a BDE approval is not covered yet. `e2e/governance.spec.ts` hands a presidency over in
+Withdrawing an approval, and a proposal that is not yet an approval, are covered too. `e2e/governance.spec.ts` hands a presidency over in
 the browser, including the refusal without a second factor.
