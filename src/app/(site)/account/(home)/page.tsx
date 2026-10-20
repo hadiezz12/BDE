@@ -4,7 +4,7 @@ import type { EventItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { formatDateLong, formatDayFull, formatTime, plural, relativeDay } from "@/lib/format";
 import { getSession } from "@/lib/session";
-import { getAssociations, getAssociationsByIds, toRef } from "@/lib/data/associations";
+import { getAssociationsByIds, getBde, toRef } from "@/lib/data/associations";
 import { getEventsByIds } from "@/lib/data/events";
 import { getApplications, getNotifications } from "@/lib/data/users";
 import { getMyMfaStatus } from "@/lib/auth/mfa";
@@ -72,7 +72,7 @@ export default async function AccountHomePage() {
   const managed = associations.filter((a) => user.managedAssociationIds.includes(a.id));
   const card = user.memberCard;
   // Without a card, point to the BDE page, where the card is presented (#carte).
-  const bde = card ? null : (await getAssociations({ category: "bde" }))[0];
+  const bde = card ? null : await getBde();
   // Demo accounts are greeted without a name: they are not a person.
   const name = greetingName(user);
 

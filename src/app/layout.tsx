@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { parseTheme, THEME_COLOR, THEME_COOKIE } from "@/lib/theme";
+import { siteUrl } from "@/lib/site-url";
 import { archivo, spaceMono } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // Absolute links in Open Graph and canonical tags: SITE_URL, once the BDE has its domain.
+  metadataBase: siteUrl() ?? undefined,
   title: {
     default: "Very Pink Club — BDE GEM Paris",
     template: "%s · Very Pink Club",

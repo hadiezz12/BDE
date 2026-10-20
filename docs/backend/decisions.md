@@ -252,3 +252,61 @@ foundational choice.
   only sends sign-in codes; security never depends on an e-mail arriving.
 - **Consequence:** the inviter is told to warn the person; the notification phase adds e-mails on
   top of the same rows.
+
+## D26. Draft and published versions in the same tables (Phase 5)
+
+- **Decision:** `association_profiles`, `association_gallery_items` and `association_team_entries`
+  hold a `draft` and a `published` stage; publishing copies one into the other in a transaction.
+- **Reason:** one schema, one set of constraints for both; the preview and the public page use the
+  same payload builder; no JSON snapshot that could drift from the columns.
+- **Consequence:** public reads go only through functions that pick the published stage
+  (`public_association*`); the page team reads the draft through RLS and `association_editor`.
+
+## D27. Field-level merge instead of locking (Phase 5)
+
+- **Decision:** a save sends the changed fields and the values the editor loaded; the database
+  refuses only a field someone else changed meanwhile (`draft_conflict`). Publishing names the
+  revision that was previewed (`draft_changed` otherwise).
+- **Reason:** small teams edit at odd hours from phones; locks get stuck and last-write-wins loses
+  work silently.
+- **Consequence:** the editor saves per section; a conflict asks to reload, keeping what was typed.
+
+## D28. Images only through the site's own routes, re-encoded on upload (Phase 5)
+
+- **Decision:** the `association-media` bucket is private; images are served by
+  `/media/associations/…` (public only while a public page uses them, checked by a Storage policy
+  as the visitor) and `/media/apercu/…` (page team, never cached). Every upload is re-encoded to
+  WebP without metadata by `sharp` on the server.
+- **Reason:** a draft image must never leak through a guessable or cached URL; photos carry GPS
+  and device metadata; a re-encode neutralises malformed files.
+- **Consequence:** `next/image` optimizes public images with a 5-minute cache (`minimumCacheTTL`),
+  preview images are `unoptimized`; uploads use a route handler (progress) with an origin check.
+
+## D29. Each member owns their public presentation (Phase 5)
+
+- **Decision:** whether someone appears on the public team, with their photo and a line, is their
+  own setting (`membership_public_profiles`); photo off by default; editors may hide, never expose.
+- **Reason:** the site publishes students' names; consent has to come from the person, and a
+  position title is enough to show a bureau exists.
+- **Consequence:** member photos never appear in previews; the portrait route re-checks consent on
+  every request.
+
+## D30. Former addresses redirect forever and are never reused (Phase 5)
+
+- **Decision:** a changed slug goes into `organization_slug_history`; it redirects permanently and
+  no other organization can take it.
+- **Reason:** shared links (posters, Instagram bios) keep working, and nobody can impersonate an
+  association by grabbing its old address.
+
+## D31. BDE moderation is withhold/release only (Phase 5)
+
+- **Decision:** `platform.content.moderate` can take a page off the site with a reason and put it
+  back; it cannot read drafts or change content.
+- **Reason:** the brief's oversight without routine access to associations' private work.
+- **Consequence:** the association sees the reason in its editor and fixes its own page.
+
+## D32. The site address is configured, never guessed (Phase 5)
+
+- **Decision:** absolute URLs (Open Graph, canonical, sitemap) use the server setting `SITE_URL`;
+  empty in production until the BDE buys its domain, and the sitemap is then empty.
+- **Reason:** the domain is the client's decision; a guessed one would leak into shared previews.

@@ -5,7 +5,7 @@ import { routes } from "@/lib/routes";
 import { getSession } from "@/lib/session";
 import { getEvents, getEventsByIds } from "@/lib/data/events";
 import { getEventSeries } from "@/lib/data/event-series";
-import { getAssociations, getAssociationsByIds } from "@/lib/data/associations";
+import { getAssociations, getAssociationsByIds, getBde, legacyId } from "@/lib/data/associations";
 import { getCampaigns } from "@/lib/data/recruitment";
 import { getPosts } from "@/lib/data/posts";
 import { getSafetyDirectory } from "@/lib/data/safety";
@@ -80,14 +80,14 @@ async function HomeContent() {
       getAssociations(),
       getPosts({ limit: 6 }),
       getSafetyDirectory(),
-      getAssociations({ category: "bde" }).then((list) => list[0] ?? null),
+      getBde(),
       user ? getApplications(user.id) : Promise.resolve<ApplicationItem[]>([]),
       user ? getEventsByIds(user.registeredEventIds) : Promise.resolve<EventItem[]>([]),
       user ? getAssociationsByIds(user.managedAssociationIds) : Promise.resolve<Association[]>([]),
     ]);
 
   const personal = personalFor(user);
-  const cardOffer = bde ? await getMemberCardOffer(bde.id) : null;
+  const cardOffer = bde ? await getMemberCardOffer(legacyId(bde)) : null;
   // The card is presented on the BDE's page; without one, the index still finds it.
   const memberCard: MemberCardLink = {
     href: bde && cardOffer ? memberCardHref(bde.slug) : routes.associations,

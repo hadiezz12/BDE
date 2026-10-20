@@ -8,6 +8,8 @@ import { Avatar } from "@/components/ui/Avatar";
  * on the right. One column in a side column, two once the container is wide
  * enough (container query, so it adapts to wherever it is placed).
  * Order is the association's own — the first line is usually the président·e.
+ * A member's photo and line (bio) appear only if that member chose to show
+ * them (Phase 5: membership_public_profiles); otherwise initials.
  */
 export function TeamList({
   team,
@@ -29,7 +31,7 @@ export function TeamList({
         {team.map((m) => (
           <li
             key={m.id}
-            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3.5 border-t border-line py-3.5"
+            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3.5 border-t border-line py-3.5"
           >
             {/* The visible name follows; hide the avatar's own label from assistive tech. */}
             <span aria-hidden className="flex">
@@ -37,7 +39,8 @@ export function TeamList({
             </span>
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="font-bold leading-tight break-words">{m.name}</span>
-              <span className="type-small text-muted">{m.role}</span>
+              {m.role && <span className="type-small text-muted">{m.role}</span>}
+              {m.bio && <span className="type-small text-fg/85">{m.bio}</span>}
             </span>
             {m.promo ? (
               <span className="max-w-[7.5rem] text-right type-meta text-subtle">{m.promo}</span>

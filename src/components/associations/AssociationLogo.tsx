@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { AssociationRef } from "@/lib/types";
 import { cx } from "@/lib/cx";
+import { isPrivateMedia } from "@/lib/media-url";
 
 /**
  * An association's mark. Uploaded logos sit on a neutral disc; without one we
@@ -34,7 +35,7 @@ export function AssociationLogo({
       style={{ width: size, height: size }}
     >
       {logo ? (
-        <Image src={logo.src} alt="" fill sizes={`${size}px`} className="object-contain p-[6%]" />
+        <Image src={logo.src} alt="" fill unoptimized={isPrivateMedia(logo.src)} sizes={`${size}px`} className="object-contain p-[6%]" />
       ) : (
         <span
           className="font-black uppercase leading-none"

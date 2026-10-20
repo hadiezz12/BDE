@@ -10,7 +10,7 @@ import { categoryKicker, type TileSticker } from "./association-facts";
 
 type TileAssociation = Pick<
   Association,
-  "slug" | "name" | "shortName" | "kind" | "category" | "accent" | "logo" | "tagline" | "cover"
+  "slug" | "name" | "shortName" | "kind" | "categories" | "accent" | "logo" | "tagline" | "cover"
 >;
 
 /**
@@ -39,7 +39,7 @@ export function AssociationTile({
   className?: string;
 }) {
   const H = `h${headingLevel}` as "h2" | "h3" | "h4";
-  const kicker = categoryKicker(association.category);
+  const kicker = categoryKicker(association.categories);
 
   return (
     <article

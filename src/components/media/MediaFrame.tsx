@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { AccentKey, Photo } from "@/lib/types";
 import { cx } from "@/lib/cx";
+import { isPrivateMedia } from "@/lib/media-url";
 import { Poster } from "./Poster";
 
 /**
@@ -70,6 +71,7 @@ export function MediaFrame({
           fill
           sizes={sizes}
           priority={priority}
+          unoptimized={isPrivateMedia(photo.src)}
           className={cx("object-cover", imgClassName)}
           style={photo.focal ? { objectPosition: photo.focal } : undefined}
         />

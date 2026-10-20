@@ -5,8 +5,10 @@ set up the foundation (tooling, conventions, client plumbing, tests). Phase 3 ad
 authentication: school-email sign-in, private student profiles and two-factor authentication.
 Phase 4 added authorization and governance: organizations, memberships, positions and scoped
 permissions, time-bound mandates, delegations, invitations, leadership transitions, the continuity
-guardian, and an append-only audit log. Content, events and recruitment still read the Phase 1 mock
-layer in `src/lib/data` until their own phases.
+guardian, and an append-only audit log. Phase 5 added association pages: the database-driven
+directory, public profiles prepared as drafts and published, the image library, each member's
+consent on the public team, and BDE moderation. Content, events and recruitment still read the
+Phase 1 mock layer in `src/lib/data` until their own phases.
 
 Read in this order:
 
@@ -19,6 +21,7 @@ Read in this order:
 | [governance.md](governance.md) | Organizations, memberships, mandates, delegations, invitations, guardian, bootstrap, recovery, audit |
 | [leadership-transitions.md](leadership-transitions.md) | Successions, appointments, BDE dual approval, recovery |
 | [rls-policies.md](rls-policies.md) | Every policy and grant, the private helpers, the RPC surface |
+| [association-pages.md](association-pages.md) | Pages, drafts and publishing, preview, public team and consent, images, moderation, directory and SEO |
 | [environments.md](environments.md) | Local, development/staging and production; which variables exist, which are secret; backups |
 | [supabase-workflow.md](supabase-workflow.md) | Commands, the daily workflow, how a migration is made and shipped, the change checklist |
 | [database-conventions.md](database-conventions.md) | Naming, keys, timestamps, constraints, statuses, deletion, RLS — **mandatory before writing SQL** |

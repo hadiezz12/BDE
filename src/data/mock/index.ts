@@ -14,6 +14,6 @@ export { campaigns } from "./recruitment";
 export { users } from "./users";
 export { applications, applicants } from "./applications";
 export { notifications } from "./notifications";
-export { tasks, mediaAssets } from "./manage";
+export { tasks } from "./manage";
 export { ticketSales } from "./analytics";
 export type { DailySales, TicketSalesSeries } from "./analytics";

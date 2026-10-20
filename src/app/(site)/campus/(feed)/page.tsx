@@ -4,7 +4,7 @@ import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { formatDayFull, plural } from "@/lib/format";
 import { getPosts } from "@/lib/data/posts";
-import { getAssociations, getAssociationsByIds, toRef } from "@/lib/data/associations";
+import { getAssociationsByIds, getBde, toRef } from "@/lib/data/associations";
 import { getSession } from "@/lib/session";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { FilterChips, type FilterOption } from "@/components/ui/FilterChips";
@@ -52,7 +52,7 @@ export default async function CampusFeedPage({ searchParams }: { searchParams: S
   const [all, session, bde] = await Promise.all([
     getPosts(),
     getSession(),
-    getAssociations({ category: "bde" }).then((list) => list[0] ?? null),
+    getBde(),
   ]);
   const managed = (await getAssociationsByIds(session.user?.managedAssociationIds ?? [])).map(toRef);
   const posts = kind ? all.filter((p) => p.kind === kind) : all;

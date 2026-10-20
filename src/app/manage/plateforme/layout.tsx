@@ -51,6 +51,7 @@ export default async function PlatformLayout({ children }: { children: ReactNode
           tabs={[
             { href: routes.managePlatform, label: "Vue d'ensemble", exact: true },
             { href: routes.managePlatformOrganizations, label: "Assos" },
+            { href: routes.managePlatformCategories, label: "Catégories" },
             { href: routes.managePlatformHistory, label: "Historique" },
           ]}
         />

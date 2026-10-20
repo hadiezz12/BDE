@@ -16,7 +16,8 @@ export const associations: Association[] = [
     slug: "very-pink-club",
     name: "Very Pink Club",
     kind: "Bureau des étudiants",
-    category: "bde",
+    isBde: true,
+    categories: [],
     accent: "rose",
     tagline: "Paris by night, version très rose.",
     description: [

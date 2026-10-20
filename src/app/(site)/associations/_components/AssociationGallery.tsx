@@ -10,7 +10,9 @@ import { MediaFrame } from "@/components/media/MediaFrame";
  * when there is one. Not links: there is nothing behind a photo.
  *
  * Phone: two columns, the big frame across both. Desktop: 12 columns with
- * fixed-height rows so every group closes flush.
+ * fixed-height rows so every group closes flush. A caption the association
+ * wrote sits on the photo's bottom edge (two lines at most; the full text is
+ * also the image's alternative text when no description was given).
  */
 
 type Shape = "trio-a" | "trio-b" | "duo-a" | "duo-b" | "solo";
@@ -111,14 +113,20 @@ export function AssociationGallery({
           className="grid auto-rows-[7.25rem] grid-cols-2 gap-3 sm:auto-rows-[10rem] lg:auto-rows-[clamp(6.5rem,8.5vw,8.75rem)] lg:grid-cols-12 lg:gap-4"
         >
           {group.map((photo, i) => (
-            <MediaFrame
-              key={photo.src}
-              photo={photo}
-              slot="gallery"
-              sizes={FRAMES[shape][i].sizes}
-              fallback={{ title: name, accent }}
-              className={cx("border-2 border-fg", FRAMES[shape][i].className)}
-            />
+            <figure key={photo.src} className={cx("relative min-h-0", FRAMES[shape][i].className)}>
+              <MediaFrame
+                photo={photo}
+                slot="gallery"
+                sizes={FRAMES[shape][i].sizes}
+                fallback={{ title: name, accent }}
+                className="border-2 border-fg"
+              />
+              {photo.caption && (
+                <figcaption className="absolute bottom-2 left-2 right-2 w-fit max-w-[calc(100%-1rem)] rounded-sm bg-bg/90 px-2.5 py-1.5 type-caption text-fg line-clamp-2">
+                  {photo.caption}
+                </figcaption>
+              )}
+            </figure>
           ))}
         </div>
       ))}

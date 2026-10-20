@@ -16,6 +16,9 @@ const PLATFORM: Record<SocialLink["kind"], { name: string; icon: IconName }> = {
   instagram: { name: "Instagram", icon: "instagram" },
   tiktok: { name: "TikTok", icon: "tiktok" },
   linkedin: { name: "LinkedIn", icon: "linkedin" },
+  youtube: { name: "YouTube", icon: "youtube" },
+  facebook: { name: "Facebook", icon: "facebook" },
+  x: { name: "X", icon: "x" },
   site: { name: "Site web", icon: "globe" },
   mail: { name: "E-mail", icon: "mail" },
 };

@@ -1,60 +1,47 @@
-import type { AssociationCategory } from "@/lib/types";
+import type { CategoryRef } from "@/lib/types";
 import type { FilterOption } from "@/components/ui/FilterChips";
 import type { IconName } from "@/components/ui/Icon";
 import type { StickerTone } from "@/components/ui/Sticker";
-import { ASSOCIATION_CATEGORY_LABEL, plural } from "@/lib/format";
+import { plural } from "@/lib/format";
 
 /**
  * Small, pure helpers shared by the association components and pages:
- * category order and parsing for the URL filter, the kicker printed on a
- * tile, and the one sticker a tile may carry. No data access here.
+ * category parsing for the URL filter, the kicker printed on a tile, and the
+ * one sticker a tile may carry. The category catalog itself comes from the
+ * database (BDE leadership maintains it); nothing here lists categories.
  */
 
-/** Order of the category chips: the BDE first, then the way students browse. */
-export const ASSOCIATION_CATEGORIES: AssociationCategory[] = [
-  "bde",
-  "sport",
-  "culture",
-  "arts",
-  "pro",
-  "entrepreneuriat",
-  "solidarite",
-  "international",
-  "media",
-  "autre",
-];
+export interface CategoryWithCount extends CategoryRef {
+  count: number;
+}
 
-/** `?categorie=sport` → "sport"; anything unknown → null (= all). */
-export function parseAssociationCategory(value: string | string[] | undefined): AssociationCategory | null {
+/** `?categorie=sport` → "sport" when the catalog has it; anything else → null (= all). */
+export function parseCategory(value: string | string[] | undefined, catalog: readonly CategoryRef[]): string | null {
   const v = Array.isArray(value) ? value[0] : value;
-  return ASSOCIATION_CATEGORIES.includes(v as AssociationCategory) ? (v as AssociationCategory) : null;
+  return v && catalog.some((c) => c.slug === v) ? v : null;
 }
 
 /**
- * Category as a kicker above a name ("SPORT", "PRO"). "Autres" is a filter
- * bucket, not an identity, so it prints nothing.
+ * The first category as a kicker above a name ("SPORT", "PRO"). "Autres" is
+ * a filter bucket, not an identity, so it prints nothing.
  */
-export function categoryKicker(category: AssociationCategory): string | null {
-  return category === "autre" ? null : ASSOCIATION_CATEGORY_LABEL[category];
+export function categoryKicker(categories: readonly CategoryRef[]): string | null {
+  const first = categories.find((c) => c.slug !== "autre");
+  return first ? first.label : null;
 }
 
 /**
- * FilterChips options from getAssociationCategoryCounts(): "Toutes" with the
- * total first, then only the categories that have at least one association —
- * an empty chip is a dead end.
+ * FilterChips options: "Toutes" with the total first, then only the
+ * categories that have at least one public page (an empty chip is a dead end).
  */
 export function associationCategoryOptions(
-  counts: Partial<Record<AssociationCategory, number>>,
+  categories: readonly CategoryWithCount[],
+  total: number,
   allLabel = "Toutes",
 ): FilterOption[] {
-  const total = ASSOCIATION_CATEGORIES.reduce((n, c) => n + (counts[c] ?? 0), 0);
   return [
     { value: null, label: allLabel, count: total },
-    ...ASSOCIATION_CATEGORIES.filter((c) => (counts[c] ?? 0) > 0).map((c) => ({
-      value: c,
-      label: ASSOCIATION_CATEGORY_LABEL[c],
-      count: counts[c],
-    })),
+    ...categories.filter((c) => c.count > 0).map((c) => ({ value: c.slug, label: c.label, count: c.count })),
   ];
 }
 

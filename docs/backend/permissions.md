@@ -47,10 +47,11 @@ Database guards: an ordinary position may only carry grantable organization keys
 | `governance.view` | governance | ✓ | ✓ | | ✓ |
 | `audit.view` | governance | ✓ | ✓ | | ✓ |
 | `governance.succession` (propose one's successor) | governance | | | | ✓ |
-| `organization.settings.update` | settings | ✓ | ✓ | | Phase 5 |
+| `organization.settings.update` (prepare the page's draft) | settings | ✓ | ✓ | | ✓ (Phase 5) |
+| `organization.page.publish` (publish, unpublish, change the address) | settings | ✓ | | | ✓ (Phase 5) |
 | `posts.create`, `posts.edit`, `posts.publish` | content | ✓ | ✓ | | later |
 | `events.create`, `events.edit`, `events.publish` | events | ✓ | ✓ | | later |
-| `media.manage` | media | ✓ | ✓ | | later |
+| `media.manage` (the image library) | media | ✓ | ✓ | | ✓ (Phase 5) |
 | `recruitment.campaigns.manage`, `recruitment.questions.manage` | recruitment | ✓ | ✓ | | later |
 | `recruitment.applications.view`, `.review`, `.export` | recruitment | ✓ | | ✓ | later |
 | `analytics.view` | insights | ✓ | ✓ | | later |
@@ -67,7 +68,7 @@ lending them would let a borrower hand out rights the lender's position does not
 | `platform.associations.intervene` (appoint or end an association presidency in an emergency) | BDE president, BDE vice-president |
 | `platform.bde.succession` | BDE president, BDE vice-president |
 | `platform.audit.view` | BDE president, BDE vice-president |
-| `platform.content.moderate` (later phase) | BDE president, BDE vice-president |
+| `platform.content.moderate` (withhold and release an association page, Phase 5) | BDE president, BDE vice-president |
 | `platform.recovery` (restore a vacant BDE office, end a compromised one) | guardian only |
 
 The two BDE offices also carry every organization key **of the BDE organization itself**, so they
@@ -89,6 +90,11 @@ run the BDE's own team like any president. They get no key inside another associ
 | Sur mesure | none, chosen one by one |
 
 The editor offers every template except the offices.
+
+Phase 5 added `organization.page.publish` to the office templates and to every existing office
+position, and to nothing else: a team can prepare its page (Vice-présidence holds
+`organization.settings.update`; Communication and Événements hold `media.manage`) while putting it
+online stays with the presidency, unless the presidency creates a position that carries it.
 
 ## Ceilings (no self-promotion, brief §20–21)
 

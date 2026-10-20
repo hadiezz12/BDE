@@ -30,7 +30,7 @@ export async function getSearchIndex(): Promise<SearchEntry[]> {
       context: a.kind,
       href: routes.association(a.slug),
       accent: a.accent,
-      keywords: [a.shortName, a.tagline, a.category].filter(Boolean).join(" "),
+      keywords: [a.shortName, a.tagline, ...a.categories.map((c) => c.label)].filter(Boolean).join(" "),
     })),
     ...series.map<SearchEntry>((s) => ({
       kind: "evenement",

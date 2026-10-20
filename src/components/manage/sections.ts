@@ -82,15 +82,14 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     ],
     soon: true,
   },
-  { key: "media", label: "Médias", icon: "image", href: routes.manageMedia, requires: ["media.manage"], soon: true },
+  { key: "media", label: "Médias", icon: "image", href: routes.manageMedia, requires: ["media.manage"] },
   { key: "analytics", label: "Statistiques", icon: "chart", href: routes.manageAnalytics, requires: ["analytics.view"], soon: true },
   {
     key: "settings",
-    label: "Réglages",
-    icon: "sliders",
+    label: "Page publique",
+    icon: "globe",
     href: routes.manageSettings,
-    requires: ["organization.settings.update"],
-    soon: true,
+    requires: ["organization.settings.update", "organization.page.publish"],
   },
 ];
 
@@ -113,6 +112,8 @@ export function visibleSections(permissions: readonly string[]): ManageSectionKe
 export function activeSection(pathname: string, asso: string): ManageSectionKey | null {
   const home = routes.manageHome(asso);
   if (pathname === home || pathname === `${home}/`) return "home";
+  // The setup wizard is part of the page editor.
+  if (pathname.startsWith(routes.manageSetup(asso))) return "settings";
   const match = MANAGE_SECTIONS.find(
     (s) => s.key !== "home" && (pathname === s.href(asso) || pathname.startsWith(`${s.href(asso)}/`)),
   );

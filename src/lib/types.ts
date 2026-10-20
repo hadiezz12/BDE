@@ -24,22 +24,22 @@ export interface Photo {
   /** CSS object-position, e.g. "50% 30%", to keep faces in frame when cropped. */
   focal?: string;
   credit?: string;
+  /** Shown under the image in a gallery (written by the association). */
+  caption?: string;
 }
 
-export type AssociationCategory =
-  | "bde"
-  | "sport"
-  | "culture"
-  | "pro"
-  | "entrepreneuriat"
-  | "solidarite"
-  | "international"
-  | "arts"
-  | "media"
-  | "autre";
+/**
+ * A directory category. The catalog lives in the database
+ * (public.association_categories) and BDE leadership maintains it: never a
+ * fixed list in the code.
+ */
+export interface CategoryRef {
+  slug: string;
+  label: string;
+}
 
 export interface SocialLink {
-  kind: "instagram" | "tiktok" | "linkedin" | "site" | "mail";
+  kind: "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook" | "x" | "site" | "mail";
   href: string;
   label: string;
 }
@@ -50,6 +50,8 @@ export interface TeamMember {
   role: string;
   promo?: string;
   avatar?: Photo;
+  /** A line the member chose to show publicly. */
+  bio?: string;
 }
 
 export interface Association {
@@ -60,7 +62,10 @@ export interface Association {
   shortName?: string;
   /** Official status line, e.g. "Bureau des étudiants", "Junior-Entreprise". */
   kind: string;
-  category: AssociationCategory;
+  /** The BDE (one, the platform's root) rather than an association. */
+  isBde: boolean;
+  /** 0 to 3 directory categories, in the association's order. */
+  categories: CategoryRef[];
   accent: AccentKey;
   /** One line, written like the association talks. */
   tagline: string;
@@ -72,7 +77,8 @@ export interface Association {
   socials: SocialLink[];
   contactEmail?: string;
   foundedYear?: number;
-  memberCount?: number;
+  /** When the page was first published (directory "récentes"). */
+  firstPublishedAt?: string;
   /** Where/when to find them, e.g. "Permanence le mardi 12h30, salle B204". */
   meetingInfo?: string;
   team: TeamMember[];
@@ -371,16 +377,6 @@ export interface Applicant {
   status: ApplicationStatus;
 }
 
-export interface MediaAsset {
-  id: string;
-  associationId: string;
-  photo: Photo;
-  uploadedAt: string;
-  uploadedBy: string;
-  /** Where the asset is currently used ("Couverture", "Événement : Boo Party"). */
-  usedIn?: string;
-}
-
 export interface ManageTask {
   id: string;
   associationId: string;
@@ -419,7 +415,7 @@ export interface TeamInvite {
 
 export type AssociationRef = Pick<
   Association,
-  "id" | "slug" | "name" | "shortName" | "kind" | "category" | "accent" | "logo"
+  "id" | "slug" | "name" | "shortName" | "kind" | "isBde" | "categories" | "accent" | "logo"
 >;
 
 export type EventItem = CampusEvent & { association: AssociationRef };

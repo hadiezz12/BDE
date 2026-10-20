@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Form from "next/form";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
 import { formatDateLong, formatDayShort, plural } from "@/lib/format";
@@ -8,6 +9,11 @@ import { assignablePositions, expiringAssignments, memberTitles, myPositionKeys,
 import { defaultMandateEnd, MEMBERSHIP_STATUS_LABEL, toDateInput } from "@/lib/governance/labels";
 import type { TeamMember } from "@/lib/governance/types";
 import { inviteMember, revokeDelegation, revokeInvitation } from "@/app/actions/governance";
+import { renewInvitation } from "@/app/actions/association-page";
+import { cleanQuery, normalizeSearch } from "@/lib/associations/search";
+import { Button } from "@/components/ui/Button";
+import { FilterChips } from "@/components/ui/FilterChips";
+import { Icon } from "@/components/ui/Icon";
 import { Field, Input, Select } from "@/components/ui/Field";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ManagePageHeader, ManageSection } from "@/components/manage/ManagePageHeader";
@@ -20,6 +26,16 @@ import { MfaNotice, ReadOnlyNotice } from "@/components/manage/governance/Notice
 import { SectionDenied } from "@/components/manage/governance/SectionDenied";
 
 type Params = Promise<{ asso: string }>;
+type Search = Promise<{ [key: string]: string | string[] | undefined }>;
+
+type MemberFilter = "bureau" | "postes" | "sans-poste" | "suspendus";
+
+const FILTERS: { value: MemberFilter; label: string; test: (m: TeamMember) => boolean }[] = [
+  { value: "bureau", label: "Bureau", test: (m) => m.assignments.some((a) => !a.upcoming && a.office !== null) },
+  { value: "postes", label: "Avec un poste", test: (m) => m.assignments.some((a) => !a.upcoming) },
+  { value: "sans-poste", label: "Sans poste", test: (m) => !m.assignments.some((a) => !a.upcoming) },
+  { value: "suspendus", label: "Suspendus", test: (m) => m.status === "suspended" },
+];
 
 export const metadata: Metadata = { title: "Équipe" };
 
@@ -29,9 +45,14 @@ export const metadata: Metadata = { title: "Équipe" };
  * Every list comes from public.organization_team, which checks members.view
  * itself. Actions appear only to those whose rights allow them, and the
  * database checks them again.
+ *
+ * The member list filters in the URL (?q=…&filtre=bureau): a name search
+ * (accents ignored) and who holds a position. A pending invitation can be
+ * given 14 more days instead of being sent again.
  */
-export default async function ManageTeamPage({ params }: { params: Params }) {
+export default async function ManageTeamPage({ params, searchParams }: { params: Params; searchParams: Search }) {
   const { asso } = await params;
+  const sp = await searchParams;
   const ctx = await getManageContext(asso);
   if (!ctx) return null;
   const { organization, can } = ctx;
@@ -47,6 +68,13 @@ export default async function ManageTeamPage({ params }: { params: Params }) {
   const positionsOffered = can("positions.assign") ? assignablePositions(team.data, ceiling) : [];
   const expiring = expiringAssignments(team.data);
   const active = members.filter((m) => m.status === "active");
+  const q = cleanQuery(sp.q);
+  const words = normalizeSearch(q).split(" ").filter(Boolean);
+  const filter = FILTERS.find((f) => f.value === (Array.isArray(sp.filtre) ? sp.filtre[0] : sp.filtre)) ?? null;
+  const shown = members.filter(
+    (m) => (!filter || filter.test(m)) && words.every((w) => normalizeSearch(`${m.name} ${memberTitles(m)}`).includes(w)),
+  );
+  const filtering = Boolean(q || filter);
 
   const columns: DataColumn<TeamMember>[] = [
     {
@@ -171,10 +199,56 @@ export default async function ManageTeamPage({ params }: { params: Params }) {
       )}
 
       <ManageSection title="Membres" count={members.length}>
+        {members.length > 1 && (
+          <div className="flex flex-col gap-4">
+            <Form action={routes.manageTeam(asso)} role="search" className="flex max-w-xl items-stretch gap-2">
+              {filter && <input type="hidden" name="filtre" value={filter.value} />}
+              <label htmlFor="team-q" className="sr-only">
+                Chercher un membre par nom ou par poste
+              </label>
+              <Input
+                key={q}
+                id="team-q"
+                name="q"
+                type="search"
+                defaultValue={q}
+                placeholder="Nom ou poste"
+                autoComplete="off"
+                maxLength={60}
+                className="min-w-0 flex-1"
+              />
+              <Button type="submit" variant="secondary" icon="search">
+                <span className="max-sm:sr-only">Chercher</span>
+              </Button>
+            </Form>
+            <FilterChips
+              label="Filtrer les membres"
+              param="filtre"
+              options={[
+                { value: null, label: "Tous", count: members.length },
+                ...FILTERS.map((f) => ({ value: f.value, label: f.label, count: members.filter(f.test).length })).filter(
+                  (o) => o.count > 0,
+                ),
+              ]}
+              current={filter?.value ?? null}
+              basePath={routes.manageTeam(asso)}
+              params={{ q: q || undefined }}
+            />
+            {filtering && (
+              <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1 type-meta text-muted">
+                <span role="status">{plural(shown.length, "membre trouvé", "membres trouvés")}</span>
+                <Link href={routes.manageTeam(asso)} className="inline-flex min-h-10 items-center gap-1.5 type-label text-fg">
+                  <Icon name="close" size={14} />
+                  Tout effacer
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
         <DataTable
           caption={`Membres de ${organization.name}`}
           columns={columns}
-          rows={members}
+          rows={shown}
           rowKey={(m) => m.membership_id}
           actions={(m) => (
             <Link href={routes.manageMember(asso, m.membership_id)} className="inline-flex min-h-9 items-center px-2 type-small font-semibold text-muted hover:text-fg">
@@ -182,9 +256,15 @@ export default async function ManageTeamPage({ params }: { params: Params }) {
             </Link>
           )}
           empty={
-            <ManageEmpty icon="users" title="Personne dans l'équipe pour l'instant">
-              <p>Les personnes invitées apparaissent ici dès qu&apos;elles acceptent leur invitation.</p>
-            </ManageEmpty>
+            filtering ? (
+              <ManageEmpty icon="search" title="Personne ne correspond">
+                <p>Essaie un autre nom, ou retire le filtre.</p>
+              </ManageEmpty>
+            ) : (
+              <ManageEmpty icon="users" title="Personne dans l'équipe pour l'instant">
+                <p>Les personnes invitées apparaissent ici dès qu&apos;elles acceptent leur invitation.</p>
+              </ManageEmpty>
+            )
           }
         />
       </ManageSection>
@@ -203,7 +283,17 @@ export default async function ManageTeamPage({ params }: { params: Params }) {
                     </span>
                   </div>
                   {writable && (
-                    <ActionForm action={revokeInvitation} hidden={{ invitation_id: i.id }} submitLabel="Annuler" variant="secondary" size="sm" inline />
+                    <div className="flex flex-wrap items-start gap-2">
+                      <ActionForm
+                        action={renewInvitation}
+                        hidden={{ invitation_id: i.id }}
+                        submitLabel={i.expired ? "Relancer 14 jours" : "Prolonger de 14 jours"}
+                        variant="secondary"
+                        size="sm"
+                        inline
+                      />
+                      <ActionForm action={revokeInvitation} hidden={{ invitation_id: i.id }} submitLabel="Annuler" variant="ghost" size="sm" inline />
+                    </div>
                   )}
                 </li>
               ))}

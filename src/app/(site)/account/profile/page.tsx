@@ -4,7 +4,7 @@ import { routes } from "@/lib/routes";
 import { formatDateLong } from "@/lib/format";
 import { getSession } from "@/lib/session";
 import { getAvatarUrl, getMyProfile } from "@/lib/data/profile";
-import { getAssociations } from "@/lib/data/associations";
+import { getBde } from "@/lib/data/associations";
 import { getNotificationPreferences } from "@/lib/data/preferences";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
@@ -54,7 +54,7 @@ export default async function AccountProfilePage() {
   const [preferences, bde] = await Promise.all([
     getNotificationPreferences(user.id),
     // Without a card, the way to the BDE's page, where the card is presented (#carte).
-    card ? Promise.resolve(null) : getAssociations({ category: "bde" }).then((list) => list[0] ?? null),
+    card ? Promise.resolve(null) : getBde(),
   ]);
   const who = user.email;
 

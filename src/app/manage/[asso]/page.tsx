@@ -25,6 +25,9 @@ import { StatGroup, StatTile } from "@/components/manage/StatTile";
 import { MANAGE_SECTIONS } from "@/components/manage/sections";
 import { SectionLink } from "@/components/manage/home/SectionLink";
 import { MfaNotice, Notice, ReadOnlyNotice } from "@/components/manage/governance/Notices";
+import { getAssociationEditor, getMyPublicProfile } from "@/lib/associations/editor";
+import { getMyProfile } from "@/lib/data/profile";
+import { MyPublicProfileCard, PageCard } from "@/components/manage/page-editor/HomeCards";
 
 type Params = Promise<{ asso: string }>;
 
@@ -34,14 +37,26 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: gate ? `Accueil · ${gate.organization.name}` : "Association introuvable" };
 }
 
-/** Keys whose use needs a second factor: handing out rights, leadership. */
-const SENSITIVE_KEYS = ["positions.manage", "positions.assign", "delegations.manage", "governance.succession"];
+/** Keys whose use needs a second factor: handing out rights, leadership, publishing the page. */
+const SENSITIVE_KEYS = [
+  "positions.manage",
+  "positions.assign",
+  "delegations.manage",
+  "governance.succession",
+  "organization.page.publish",
+];
+
+/** Keys that open the public page's editor or its image library. */
+const PAGE_KEYS = ["organization.settings.update", "organization.page.publish", "media.manage"];
 
 /**
  * /manage/[asso] — the person's desk in this association: their positions
  * and mandates, what they can do here (and what is still to come), what
  * waits for them, and, for those who may see it, the team and leadership at
  * a glance. Every number is a real count from the database.
+ *
+ * Phase 5: where the public page stands (for its team), and every member's
+ * own choice of how they appear on it.
  */
 export default async function ManageHomePage({ params }: { params: Params }) {
   const { asso } = await params;
@@ -49,11 +64,14 @@ export default async function ManageHomePage({ params }: { params: Params }) {
   if (!ctx) return null;
 
   const { organization, membership, can } = ctx;
-  const [catalog, team, governance, inbox] = await Promise.all([
+  const [catalog, team, governance, inbox, editor, myPublic, myProfile] = await Promise.all([
     getPermissionCatalog(),
     can("members.view") ? getOrganizationTeam(organization.id) : null,
     can("governance.view") ? getOrganizationGovernance(organization.id) : null,
     getGovernanceInbox(),
+    PAGE_KEYS.some(can) ? getAssociationEditor(organization.id) : null,
+    getMyPublicProfile(membership.membership_id),
+    getMyProfile(),
   ]);
 
   const held = new Set(membership.permissions);
@@ -123,7 +141,7 @@ export default async function ManageHomePage({ params }: { params: Params }) {
       {(readOnly || needsMfa || waiting.length > 0) && (
         <div className="flex flex-col gap-3">
           {readOnly && <ReadOnlyNotice reason={readOnly} />}
-          {needsMfa && <MfaNotice what="Attribuer des postes, modifier les droits ou préparer une passation" />}
+          {needsMfa && <MfaNotice what="Attribuer des postes, modifier les droits, préparer une passation ou publier la page" />}
           {waiting.map((w) => (
             <Notice
               key={w.key}
@@ -156,6 +174,29 @@ export default async function ManageHomePage({ params }: { params: Params }) {
           />
         </StatGroup>
       )}
+
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+        {editor?.ok && (
+          <ManageSection
+            title="Page publique"
+            action={<SectionLink href={routes.manageSettings(asso)}>Éditeur</SectionLink>}
+          >
+            <PageCard editor={editor.data} />
+          </ManageSection>
+        )}
+        <ManageSection
+          title="Ta présentation publique"
+          description="Comment tu apparais dans l'équipe, sur la page de l'asso."
+          className={editor?.ok ? undefined : "lg:col-span-2"}
+        >
+          <MyPublicProfileCard
+            membershipId={membership.membership_id}
+            profile={myPublic}
+            holdsPosition={membership.positions.length > 0}
+            hasPhoto={Boolean(myProfile?.avatarPath)}
+          />
+        </ManageSection>
+      </div>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-12">
         <ManageSection

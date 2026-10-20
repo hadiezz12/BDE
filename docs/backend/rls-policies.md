@@ -96,6 +96,41 @@ The Supabase security advisor lists each of these as "authenticated can execute 
 function". That is the intended API (decision D21): every one checks authority itself, and the
 pgTAP suite calls each as unauthorized users to prove the refusal.
 
+## Phase 5: association pages
+
+Tables (`association_categories`, `association_pages`, `association_profiles`,
+`association_gallery_items`, `association_team_entries`, `association_media`,
+`membership_public_profiles`, `organization_slug_history`) are read-only for the API roles too.
+
+| Table | Who reads what |
+| --- | --- |
+| `association_categories` | everyone (`anon` too): active categories; BDE leadership (`platform.organizations.manage`): all. |
+| `association_pages` | the page team (`private.my_page_organization_ids()`: holders of `organization.settings.update`, `organization.page.publish` or `media.manage` there, now); platform governance. |
+| `association_profiles`, `association_gallery_items`, `association_team_entries`, `association_media` | the page team only (draft and published rows). |
+| `membership_public_profiles` | the member themself; the page team. |
+| `organization_slug_history` | nobody directly (functions only). |
+
+Each has the restrictive `_require_mfa_when_enrolled` policy. Visitors never read these tables:
+`public_associations`, `public_association(slug)`, `public_association_categories` and
+`public_portrait_path` (granted to `anon`) return only published, public fields of public pages.
+
+Storage, bucket `association-media` (private): insert by `media.manage` holders into their
+organization's folder; select by the page team, or by anyone when
+`private.association_media_object_is_public(name)` (a public page uses the image); delete only a
+file whose library row is removed or missing. `avatars` gains a select policy for portraits a
+member agreed to show on a public team (`private.portrait_object_is_public`). Those two helpers and
+`private.association_media_organization` are the only private functions `anon` may execute
+(`grant usage on schema private to anon`), checked by `foundation.test.sql`.
+
+New RPCs (same pattern as above, details in [association-pages.md](association-pages.md#who-may-do-what)):
+`save_association_draft`, `set_association_gallery`, `set_association_team_presentation`,
+`publish_association_page` (aal2), `unpublish_association_page`, `change_organization_slug` (aal2),
+`withhold_association_page` / `release_association_page` (aal2), `register_association_media`,
+`update_association_media`, `remove_association_media`, `set_my_public_team_profile`,
+`renew_invitation`, `create_association_category` / `update_association_category` (aal2), and the
+reads `association_editor`, `association_preview`. `create_organization` and
+`platform_organizations` were redefined (category goes to the draft; page status in the list).
+
 ## Performance (brief §61)
 
 - Policies call the helpers through `(select …)` subqueries (initPlan, once per statement).

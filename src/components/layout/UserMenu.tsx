@@ -73,7 +73,10 @@ export function UserMenu({ session, managed }: Props) {
         className="flex min-h-10 items-center gap-2.5 rounded-sm py-1 pl-1 pr-2 hover:bg-fg/8"
       >
         <Avatar name={accountName(user)} photo={user.avatar} src={user.avatarUrl} accent="rose" size={32} />
-        <span className="sr-only text-[0.9rem] font-bold min-[90rem]:not-sr-only">{accountShortName(user)}</span>
+        {/* Named for screen readers; on screen the avatar is enough (the header has no room for a long name next to Gérer). */}
+        <span className="sr-only">
+          {accountShortName(user)}
+        </span>
         <Icon name="chevron-down" size={16} className={cx("transition-transform", open && "rotate-180")} />
       </button>
       <div

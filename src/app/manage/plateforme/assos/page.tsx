@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { routes } from "@/lib/routes";
 import { formatDateLong, plural } from "@/lib/format";
 import { ACCENTS, ACCENT_KEYS } from "@/lib/accents";
-import { ASSOCIATION_CATEGORY_LABEL } from "@/lib/format";
+import { getCategoryCatalog } from "@/lib/associations/categories";
 import { getPlatformOrganizations } from "@/lib/governance/queries";
 import { getMyAccess } from "@/lib/governance/access";
 import { defaultMandateEnd, ORGANIZATION_STATUS_LABEL, toDateInput, TRANSITION_KIND_LABEL } from "@/lib/governance/labels";
@@ -12,6 +14,7 @@ import {
   proposeAssociationAppointment,
   setOrganizationStatus,
 } from "@/app/actions/governance";
+import { releasePage, withholdPage } from "@/app/actions/association-page";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { StatusBadge, type StatusTone } from "@/components/ui/StatusBadge";
 import { AssociationLogo } from "@/components/associations/AssociationLogo";
@@ -42,6 +45,15 @@ const NEXT_STATUS: Record<PlatformOrganization["status"], { value: string; label
   archived: [{ value: "active", label: "Active (de nouveau)" }],
 };
 
+/** The public page, separate from the association's own status. */
+function pageBadge(page: PlatformOrganization["page"]): { tone: StatusTone; label: string } {
+  if (page.withheld_at) return { tone: "danger", label: "Page retirée par le BDE" };
+  if (page.is_public) return { tone: "ok", label: "Page en ligne" };
+  if (page.status === "published") return { tone: "warn", label: "Page publiée, asso non active" };
+  if (page.status === "unpublished") return { tone: "neutral", label: "Page retirée par l'asso" };
+  return { tone: "info", label: "Page en brouillon" };
+}
+
 const STATUS_TONE: Record<PlatformOrganization["status"], StatusTone> = {
   active: "ok",
   setup: "info",
@@ -55,10 +67,15 @@ const STATUS_TONE: Record<PlatformOrganization["status"], StatusTone> = {
  * suspend or archive it, name a president when there is none, or end a
  * presidency in an emergency. Each action is a database function checking
  * the BDE platform rights, a second factor and (for emergencies) a reason.
+ *
+ * Pages (Phase 5): the BDE sees whether each page is online and can withhold
+ * one that breaks the rules (with a reason the association sees), then
+ * release it. It never edits an association's page and has no access to its
+ * drafts: moderation is the only content power here.
  */
 export default async function PlatformOrganizationsPage({ searchParams }: { searchParams: Search }) {
   const { cree } = await searchParams;
-  const [list, access] = await Promise.all([getPlatformOrganizations(), getMyAccess()]);
+  const [list, access, catalog] = await Promise.all([getPlatformOrganizations(), getMyAccess(), getCategoryCatalog()]);
   if (!list.ok) {
     return (
       <Notice tone="danger" icon="alert" title="La liste des assos n'a pas pu être chargée.">
@@ -99,14 +116,15 @@ export default async function PlatformOrganizationsPage({ searchParams }: { sear
                     <Input id={id} aria-describedby={describedBy} name="slug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={80} spellCheck={false} />
                   )}
                 </Field>
-                <Field label="Catégorie">
+                <Field label="Catégorie" optional hint="L'asso pourra en choisir jusqu'à trois dans sa page.">
                   {({ id, describedBy }) => (
-                    <Select id={id} aria-describedby={describedBy} name="category" defaultValue="autre">
-                      {Object.entries(ASSOCIATION_CATEGORY_LABEL)
-                        .filter(([key]) => key !== "bde")
-                        .map(([key, label]) => (
-                          <option key={key} value={key}>
-                            {label}
+                    <Select id={id} aria-describedby={describedBy} name="category" defaultValue="">
+                      <option value="">Elle choisira elle-même</option>
+                      {catalog
+                        .filter((c) => !c.archived)
+                        .map((c) => (
+                          <option key={c.slug} value={c.slug}>
+                            {c.label}
                           </option>
                         ))}
                     </Select>
@@ -149,7 +167,10 @@ export default async function PlatformOrganizationsPage({ searchParams }: { sear
                       </p>
                     </div>
                   </div>
-                  <StatusBadge tone={STATUS_TONE[o.status]}>{ORGANIZATION_STATUS_LABEL[o.status]}</StatusBadge>
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge tone={STATUS_TONE[o.status]}>{ORGANIZATION_STATUS_LABEL[o.status]}</StatusBadge>
+                    <StatusBadge tone={pageBadge(o.page).tone}>{pageBadge(o.page).label}</StatusBadge>
+                  </div>
                 </div>
                 <p className="mt-3 type-small">
                   {o.president ? (
@@ -161,6 +182,18 @@ export default async function PlatformOrganizationsPage({ searchParams }: { sear
                   )}
                 </p>
                 {o.status_reason && <p className="type-meta text-subtle">Motif du statut&nbsp;: {o.status_reason}</p>}
+                {o.page.withheld_at && (
+                  <p className="type-meta text-subtle">
+                    Page retirée le {formatDateLong(o.page.withheld_at)}&nbsp;: {o.page.withheld_reason}
+                  </p>
+                )}
+                {o.page.is_public && (
+                  <p className="mt-1 type-small">
+                    <Link href={routes.association(o.slug)} className="link font-semibold">
+                      Voir la page publique
+                    </Link>
+                  </p>
+                )}
 
                 <div className="mt-4 flex flex-col gap-2">
                     {o.status !== "archived" && !o.president && !o.open_transition && can("platform.associations.intervene") && (
@@ -189,6 +222,32 @@ export default async function PlatformOrganizationsPage({ searchParams }: { sear
                           <p className="type-small text-muted">
                             Pour un compte compromis, un abandon de poste ou une décision du BDE. Le poste devient vacant tout de suite&nbsp;;
                             nomme ensuite une nouvelle présidence.
+                          </p>
+                          <Field label="Raison" hint="Obligatoire, gardée dans l'historique.">
+                            {({ id, describedBy }) => <Textarea id={id} aria-describedby={describedBy} name="reason" required minLength={3} maxLength={500} className="min-h-20" />}
+                          </Field>
+                        </ActionForm>
+                      </Disclosure>
+                    )}
+                    {can("platform.content.moderate") && !o.page.withheld_at && o.page.status === "published" && (
+                      <Disclosure summary="Retirer la page du site (modération)" icon="eye" tone="danger">
+                        <ActionForm action={withholdPage} hidden={{ organization_id: o.id }} submitLabel="Retirer la page" variant="danger">
+                          <p className="type-small text-muted">
+                            Pour un contenu qui enfreint les règles du site. La page disparaît tout de suite&nbsp;; l&apos;asso
+                            voit ta raison dans ses réglages et ne peut plus publier tant que tu ne l&apos;as pas rétablie.
+                            Tu ne modifies rien de son contenu.
+                          </p>
+                          <Field label="Raison" hint="Obligatoire. L'asso la lit, et elle reste dans l'historique.">
+                            {({ id, describedBy }) => <Textarea id={id} aria-describedby={describedBy} name="reason" required minLength={3} maxLength={500} className="min-h-20" />}
+                          </Field>
+                        </ActionForm>
+                      </Disclosure>
+                    )}
+                    {can("platform.content.moderate") && o.page.withheld_at && (
+                      <Disclosure summary="Rétablir la page" icon="check" tone="primary">
+                        <ActionForm action={releasePage} hidden={{ organization_id: o.id }} submitLabel="Rétablir">
+                          <p className="type-small text-muted">
+                            La page revient en ligne si l&apos;asso ne l&apos;a pas retirée entre-temps, et l&apos;asso peut de nouveau publier.
                           </p>
                           <Field label="Raison" hint="Obligatoire, gardée dans l'historique.">
                             {({ id, describedBy }) => <Textarea id={id} aria-describedby={describedBy} name="reason" required minLength={3} maxLength={500} className="min-h-20" />}

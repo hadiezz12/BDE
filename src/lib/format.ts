@@ -1,5 +1,5 @@
 import { CAMPUS_TZ, dayDiff, parisWeekday } from "./time";
-import type { CampaignStatus, EventCategory, RegistrationStatus, AssociationCategory, ApplicationStatus } from "./types";
+import type { CampaignStatus, EventCategory, RegistrationStatus, ApplicationStatus } from "./types";
 
 /**
  * French, Paris-time formatting. Every visible date goes through here so the
@@ -138,19 +138,6 @@ export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
   culture: "Culture",
   solidarite: "Solidarité",
   "week-end": "Week-ends",
-};
-
-export const ASSOCIATION_CATEGORY_LABEL: Record<AssociationCategory, string> = {
-  bde: "BDE",
-  sport: "Sport",
-  culture: "Culture",
-  pro: "Pro",
-  entrepreneuriat: "Entrepreneuriat",
-  solidarite: "Solidarité",
-  international: "International",
-  arts: "Arts",
-  media: "Médias",
-  autre: "Autres",
 };
 
 export const REGISTRATION_LABEL: Record<RegistrationStatus, string> = {

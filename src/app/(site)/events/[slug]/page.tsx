@@ -140,7 +140,7 @@ async function EditionPage({ event }: { event: EventItem }) {
     canSave,
     loginHref,
     recap,
-    bdeEvent: event.association.category === "bde",
+    bdeEvent: event.association.isBde,
     now,
   };
 

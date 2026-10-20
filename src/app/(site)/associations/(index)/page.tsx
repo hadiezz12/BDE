@@ -2,14 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { Association } from "@/lib/types";
 import { routes } from "@/lib/routes";
-import { ASSOCIATION_CATEGORY_LABEL, plural } from "@/lib/format";
+import { plural } from "@/lib/format";
 import { getSession } from "@/lib/session";
+import { getMyAccess } from "@/lib/governance/access";
 import {
-  getAssociationCategoryCounts,
   getAssociations,
-  getAssociationsByIds,
+  getPublicAssociations,
+  getPublicCategories,
+  legacyId,
   toRef,
+  type AssociationSort,
 } from "@/lib/data/associations";
+import { cleanQuery } from "@/lib/associations/search";
 import { getCampaigns } from "@/lib/data/recruitment";
 import { getMemberCardOffer } from "@/lib/data/member-card";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -18,7 +22,7 @@ import { AssociationRow } from "@/components/associations/AssociationRow";
 import { AssociationTile } from "@/components/associations/AssociationTile";
 import {
   associationCategoryOptions,
-  parseAssociationCategory,
+  parseCategory,
   recruitingSticker,
 } from "@/components/associations/association-facts";
 import { ButtonLink } from "@/components/ui/Button";
@@ -32,74 +36,81 @@ import { TILE_GRID, tileLayout } from "../_components/tile-layout";
 export const metadata: Metadata = {
   title: "Associations",
   description:
-    "Les associations de GEM Alpine Business School à Paris. Le Very Pink Club, le BDE, a sa page ; chaque présidente ou président d'asso créera la sienne.",
+    "Les associations de GEM Alpine Business School à Paris : le Very Pink Club, le BDE, et chaque asso qui a publié sa page.",
+  alternates: { canonical: routes.associations },
 };
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
-function parseQuery(value: string | string[] | undefined): string {
-  const v = Array.isArray(value) ? value[0] : value;
-  return (v ?? "").trim().slice(0, 60);
+function parseSort(value: string | string[] | undefined): AssociationSort {
+  return (Array.isArray(value) ? value[0] : value) === "recentes" ? "recentes" : "nom";
 }
 
 /**
- * /associations — the index. The BDE gets its own band first; every other
- * association is a poster on an asymmetric wall. Filters live in the URL
- * (?categorie=…&q=…): shareable, back-button friendly, no JS needed.
+ * /associations — the directory, read from the database: every published
+ * page of an active association, never a placeholder. The BDE gets its own
+ * band first; every other association is a poster on an asymmetric wall.
+ * Filters live in the URL (?categorie=…&q=…&tri=recentes): shareable,
+ * back-button friendly, no JS needed. Categories come from the catalog the
+ * BDE maintains, and only those with a public page become chips.
  *
- * Only associations that exist are listed, never placeholders. While the BDE
- * is the only one, the wall is a designed empty state saying who will add
- * the others, and the search and category chips stay hidden (nothing to
- * filter); they come back on their own once there are more associations.
+ * While the BDE is the only page, the wall is a designed empty state saying
+ * who will add the others, and search, chips and order stay hidden (nothing
+ * to filter); they come back on their own.
  */
 export default async function AssociationsPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
-  const category = parseAssociationCategory(sp.categorie);
-  const q = parseQuery(sp.q);
-  const session = await getSession();
+  const [catalog, all, session] = await Promise.all([getPublicCategories(), getPublicAssociations(), getSession()]);
+  const category = parseCategory(sp.categorie, catalog);
+  const q = cleanQuery(sp.q);
+  const sort = parseSort(sp.tri);
   const user = session.user;
-  const memberships = user?.memberships ?? [];
-  // The student's associations: the ones they belong to, then the ones they run.
-  const mineIds = [
-    ...new Set([...memberships.map((m) => m.associationId), ...(user?.managedAssociationIds ?? [])]),
-  ];
 
-  const [list, counts, openCampaigns, mine] = await Promise.all([
-    getAssociations({ category: category ?? undefined, q: q || undefined }),
-    getAssociationCategoryCounts(),
+  const [list, openCampaigns, access] = await Promise.all([
+    getAssociations({ category, q: q || undefined, sort }),
     getCampaigns({ scope: "open" }),
-    getAssociationsByIds(mineIds),
+    user ? getMyAccess() : Promise.resolve(null),
   ]);
 
+  // The student's associations that have a public page, with their role there.
+  const mine = (access?.organizations ?? [])
+    .map((o) => ({ org: o, page: all.find((a) => a.id === o.id) }))
+    .filter((m): m is { org: (typeof m)["org"]; page: Association } => Boolean(m.page));
+  const roleOf = (o: (typeof mine)[number]["org"]) => {
+    const titles = [...new Set(o.positions.map((p) => p.title))];
+    return titles.length > 0 ? titles.join(" · ") : "Membre";
+  };
+
+  // Recruitment still comes from the Phase 1 layer (BDE only), keyed by mock id.
   const seatsByAssociation = new Map<string, number>();
   for (const c of openCampaigns) {
     seatsByAssociation.set(c.associationId, (seatsByAssociation.get(c.associationId) ?? 0) + c.seats);
   }
   const stickerFor = (a: Association) => {
-    const seats = seatsByAssociation.get(a.id);
+    const seats = seatsByAssociation.get(legacyId(a));
     return seats === undefined ? undefined : recruitingSticker(seats);
   };
 
-  const bde = list.find((a) => a.category === "bde");
-  const others = list.filter((a) => a.category !== "bde");
-  const offer = bde ? await getMemberCardOffer(bde.id) : null;
-  const total = Object.values(counts).reduce((n, c) => n + (c ?? 0), 0);
+  const bde = list.find((a) => a.isBde);
+  const others = list.filter((a) => !a.isBde);
+  const offer = bde ? await getMemberCardOffer(legacyId(bde)) : null;
+  const total = all.length;
   /** Associations other than the BDE, whatever the filter. */
-  const othersTotal = total - (counts.bde ?? 0);
+  const othersTotal = all.filter((a) => !a.isBde).length;
   const filtered = Boolean(category || q);
-  const roleOf = (id: string) =>
-    memberships.find((m) => m.associationId === id)?.role ??
-    (user?.managedAssociationIds.includes(id) ? "Tu gères sa page" : undefined);
+  const categoryLabel = catalog.find((c) => c.slug === category)?.label;
 
   // Filters only when there is something to filter: a chip per non-empty category, beyond "Toutes".
-  const categoryOptions = associationCategoryOptions(counts);
+  const categoryOptions = associationCategoryOptions(catalog, total);
   const showSearch = total > 1;
   const showChips = categoryOptions.length > 2;
+  const showSort = others.length > 1;
+  const keep = { q: q || undefined, categorie: category ?? undefined, tri: sort === "recentes" ? sort : undefined };
 
   let index = 0;
   const nextIndex = () => String(++index).padStart(2, "0");
 
-  const othersTitle = category ? ASSOCIATION_CATEGORY_LABEL[category] : filtered ? "Résultats" : "Toutes les assos";
+  const othersTitle = categoryLabel ?? (filtered ? "Résultats" : "Toutes les assos");
   const othersKicker = [plural(others.length, "asso"), q ? `« ${q} »` : null].filter(Boolean).join(" · ");
 
   return (
@@ -120,13 +131,20 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
         }
         intro={
           othersTotal > 0
-            ? `${plural(total, "asso")} sur la plateforme. Chacune tient sa page : présentation, rendez-vous et recrutements.`
-            : "Le Very Pink Club, le BDE, ouvre la marche. Les autres associations arrivent : chaque présidente ou président créera la page de son asso."
+            ? `${plural(total, "asso")} sur la plateforme. Chacune tient sa page : présentation, équipe, réseaux.`
+            : "Le Very Pink Club, le BDE, ouvre la marche. Les autres associations arrivent : chaque présidente ou président publiera la page de son asso."
         }
       >
         {(showSearch || showChips) && (
           <div className="flex flex-col gap-5">
-            {showSearch && <AssociationSearchForm query={q} category={category} className="max-w-xl" />}
+            {showSearch && (
+              <AssociationSearchForm
+                query={q}
+                category={category}
+                sort={keep.tri}
+                className="max-w-xl"
+              />
+            )}
             {showChips && (
               <FilterChips
                 label="Filtrer par catégorie"
@@ -134,7 +152,7 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
                 options={categoryOptions}
                 current={category}
                 basePath={routes.associations}
-                params={{ q: q || undefined }}
+                params={keep}
               />
             )}
           </div>
@@ -154,15 +172,9 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
                   aria-labelledby="tes-assos"
                   className="rail -my-1 py-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
                 >
-                  {mine.map((a) => (
-                    <li key={a.id} className="w-[16.5rem]">
-                      <AssociationRow
-                        association={toRef(a)}
-                        detail={roleOf(a.id)}
-                        as="p"
-                        size="sm"
-                        boxed
-                      />
+                  {mine.map((m) => (
+                    <li key={m.org.id} className="w-[16.5rem]">
+                      <AssociationRow association={toRef(m.page)} detail={roleOf(m.org)} as="p" size="sm" boxed />
                     </li>
                   ))}
                 </ul>
@@ -177,9 +189,7 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
               <p className="flex items-start gap-3">
                 <Icon name="lock" size={20} className="mt-0.5 shrink-0 text-muted" />
-                <span>
-                  Tout se lit sans compte. Connecte-toi pour retrouver tes assos et ton rôle dans chacune.
-                </span>
+                <span>Tout se lit sans compte. Connecte-toi pour retrouver tes assos et ton rôle dans chacune.</span>
               </p>
               <ButtonLink href={routes.login} variant="secondary" size="sm" icon="arrow-right" className="self-start">
                 Se connecter
@@ -191,12 +201,15 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
 
       {filtered && list.length > 0 && (
         <p className="wrap flex flex-wrap items-baseline gap-x-4 gap-y-2 pt-8 type-meta text-muted">
-          <span>
+          <span role="status">
             {plural(list.length, "asso trouvée", "assos trouvées")}
             {q && <> pour « {q} »</>}
-            {category && <> en {ASSOCIATION_CATEGORY_LABEL[category]}</>}
+            {categoryLabel && <> en {categoryLabel}</>}
           </span>
-          <Link href={routes.associations} className="inline-flex min-h-10 items-center gap-1.5 type-label text-fg hover:text-accent-text">
+          <Link
+            href={routes.associations}
+            className="inline-flex min-h-10 items-center gap-1.5 type-label text-fg hover:text-accent-text"
+          >
             <Icon name="close" size={14} />
             Tout effacer
           </Link>
@@ -206,27 +219,37 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
       {list.length === 0 && (
         <div className="wrap pt-12">
           <EmptyState
-            title={q ? `Aucune asso pour « ${q} »` : "Aucune asso dans cette catégorie"}
+            title={
+              total === 0
+                ? "Les pages arrivent"
+                : q
+                  ? `Aucune asso pour « ${q} »`
+                  : "Aucune asso dans cette catégorie"
+            }
             actions={
-              <>
-                {q && category && (
-                  <ButtonLink
-                    href={`${routes.associations}?categorie=${category}`}
-                    variant="secondary"
-                    icon="arrow-right"
-                  >
-                    Garder {ASSOCIATION_CATEGORY_LABEL[category]}, sans le mot
+              total > 0 && (
+                <>
+                  {q && category && (
+                    <ButtonLink
+                      href={`${routes.associations}?categorie=${category}`}
+                      variant="secondary"
+                      icon="arrow-right"
+                    >
+                      Garder {categoryLabel}, sans le mot
+                    </ButtonLink>
+                  )}
+                  <ButtonLink href={routes.associations} icon="arrow-right">
+                    {total > 1 ? `Voir les ${total} assos` : "Voir les associations"}
                   </ButtonLink>
-                )}
-                <ButtonLink href={routes.associations} icon="arrow-right">
-                  {total > 1 ? `Voir les ${total} assos` : "Voir les associations"}
-                </ButtonLink>
-              </>
+                </>
+              )
             }
           >
-            {q
-              ? "Essaie un mot plus court : la recherche lit le nom, la présentation et l'accroche de chaque asso."
-              : "Les associations arrivent au fur et à mesure : chaque présidente ou président crée la page de son asso."}
+            {total === 0
+              ? "Aucune page n'est publiée pour l'instant. Chaque présidente ou président publiera la page de son asso."
+              : q
+                ? "Essaie un mot plus court : la recherche lit le nom, l'accroche, la présentation et les catégories de chaque asso."
+                : "Les associations arrivent au fur et à mesure : chaque présidente ou président publie la page de son asso."}
           </EmptyState>
         </div>
       )}
@@ -247,7 +270,10 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
               {bde.highlights && bde.highlights.length > 0 && (
                 <ol aria-label="À savoir sur le BDE" className="border-b border-line">
                   {bde.highlights.map((h, i) => (
-                    <li key={h} className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-3 border-t border-line py-3.5">
+                    <li
+                      key={`${i}-${h}`}
+                      className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-3 border-t border-line py-3.5"
+                    >
                       <span aria-hidden className="type-numeral text-[1.9rem] text-accent-text">
                         {i + 1}
                       </span>
@@ -273,7 +299,23 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
 
       {others.length > 0 && (
         <section aria-labelledby="les-assos" className="wrap pt-16 sm:pt-20">
-          <SectionHeader id="les-assos" index={nextIndex()} kicker={othersKicker} title={othersTitle} />
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <SectionHeader id="les-assos" index={nextIndex()} kicker={othersKicker} title={othersTitle} />
+            {showSort && (
+              <FilterChips
+                label="Ordre"
+                param="tri"
+                options={[
+                  { value: null, label: "De A à Z" },
+                  { value: "recentes", label: "Les plus récentes" },
+                ]}
+                current={sort === "recentes" ? "recentes" : null}
+                basePath={routes.associations}
+                params={keep}
+                className="shrink-0"
+              />
+            )}
+          </div>
           <ul className={`mt-8 ${TILE_GRID}`}>
             {others.map((a, i) => {
               const layout = tileLayout(i, others.length);
@@ -288,11 +330,11 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
       )}
 
       {/* No other association yet: say so, and who will add them. */}
-      {!filtered && othersTotal === 0 && (
+      {!filtered && othersTotal === 0 && total > 0 && (
         <section aria-label="Les autres associations" className="wrap pt-16 sm:pt-20">
           <EmptyState mark={<Icon name="users" size={44} />} title="Les autres associations arrivent">
-            Chaque présidente ou président d&apos;asso créera la page de son asso : présentation, rendez-vous et
-            recrutements. Elles s&apos;afficheront ici au fur et à mesure.
+            Chaque présidente ou président d&apos;asso publiera la page de son asso : présentation, équipe, réseaux.
+            Elles s&apos;afficheront ici au fur et à mesure.
           </EmptyState>
         </section>
       )}

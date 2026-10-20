@@ -67,7 +67,7 @@ export function featuredEvent(upcoming: EventItem[], shown: Set<string>, now: Da
   const candidates = upcoming.filter((e) => !shown.has(e.id) && eventPhase(e, now) === "upcoming");
   return (
     candidates.find((e) => e.featured) ??
-    candidates.find((e) => e.emblem && e.association.category === "bde") ??
+    candidates.find((e) => e.emblem && e.association.isBde) ??
     null
   );
 }

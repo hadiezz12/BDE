@@ -8,21 +8,26 @@ import { Icon } from "@/components/ui/Icon";
 /**
  * Text filter of the associations index: a plain GET form on the same page
  * (works without JavaScript; next/form adds client-side navigation). The
- * active category rides along as a hidden field so typing never resets it.
+ * active category and order ride along as hidden fields so typing never
+ * resets them.
  * Keyed on the query so the field follows the URL after "Tout effacer".
  */
 export function AssociationSearchForm({
   query,
   category,
+  sort,
   className,
 }: {
   query: string;
   category: string | null;
+  /** "recentes" when that order is chosen (the default, by name, adds nothing). */
+  sort?: string;
   className?: string;
 }) {
   return (
     <Form action={routes.associations} role="search" className={cx("flex items-stretch gap-2", className)}>
       {category && <input type="hidden" name="categorie" value={category} />}
+      {sort && <input type="hidden" name="tri" value={sort} />}
       <div className="relative min-w-0 flex-1">
         <label htmlFor="assos-q" className="sr-only">
           Chercher une association par nom ou par activité

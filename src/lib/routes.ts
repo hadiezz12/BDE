@@ -8,6 +8,8 @@ export const routes = {
   event: (slug: string) => `/events/${slug}`,
   associations: "/associations",
   association: (slug: string) => `/associations/${slug}`,
+  /** The draft of a page, for its team only (never indexed). */
+  associationPreview: (slug: string) => `/associations/${slug}/apercu`,
   recruitment: "/recruitment",
   campaign: (slug: string) => `/recruitment/${slug}`,
   campus: "/campus",
@@ -51,7 +53,14 @@ export const routes = {
   manageRecruitment: (asso: string) => `/manage/${asso}/recruitment`,
   manageMedia: (asso: string) => `/manage/${asso}/media`,
   manageAnalytics: (asso: string) => `/manage/${asso}/analytics`,
+  /** The public page editor: content (index), then the tabs below. */
   manageSettings: (asso: string) => `/manage/${asso}/settings`,
+  managePageAppearance: (asso: string) => `/manage/${asso}/settings/apparence`,
+  managePageGallery: (asso: string) => `/manage/${asso}/settings/galerie`,
+  managePageTeam: (asso: string) => `/manage/${asso}/settings/equipe`,
+  managePagePublication: (asso: string) => `/manage/${asso}/settings/publication`,
+  /** First-time setup of the page, step by step. */
+  manageSetup: (asso: string) => `/manage/${asso}/demarrer`,
 
   /**
    * BDE control center (BDE president and vice-president) and the
@@ -60,6 +69,8 @@ export const routes = {
    */
   managePlatform: "/manage/plateforme",
   managePlatformOrganizations: "/manage/plateforme/assos",
+  /** The directory's category catalog (BDE leadership). */
+  managePlatformCategories: "/manage/plateforme/categories",
   managePlatformHistory: "/manage/plateforme/historique",
   manageContinuity: "/manage/continuite",
 } as const;
