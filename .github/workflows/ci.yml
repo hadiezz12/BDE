@@ -49,7 +49,18 @@ jobs:
       - name: Rebuild it from the migrations and the seed
         run: supabase db reset
       - name: Database tests (pgTAP)
-        run: supabase test db
+        run: |
+          set -o pipefail
+          supabase test db 2>&1 | tee "$RUNNER_TEMP/pgtap.txt"
+      - name: pgTAP failures as annotations
+        # The job log needs a GitHub session; the failing lines (fictional seed
+        # data only) are also published as a notice, readable without one.
+        if: failure()
+        run: |
+          test -f "$RUNNER_TEMP/pgtap.txt" || exit 0
+          encode() { tr -d '\015' | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}'; }
+          grep -E -A3 "not ok|ERROR|Failed|Looks like|Result:|\.sql \.\." "$RUNNER_TEMP/pgtap.txt" | head -c 3500 > "$RUNNER_TEMP/pgtap-failures.txt" || true
+          echo "::notice title=pgTAP failures::$(encode < "$RUNNER_TEMP/pgtap-failures.txt")"
       - name: Database lint (plpgsql_check)
         run: supabase db lint --fail-on error
       - uses: actions/setup-node@v5
