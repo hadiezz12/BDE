@@ -1394,6 +1394,7 @@ export type Database = {
           review_mode?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          search?: never
           status?: string
           submitted_at?: string | null
           submitted_by?: string | null
@@ -1420,6 +1421,7 @@ export type Database = {
           review_mode?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          search?: never
           status?: string
           submitted_at?: string | null
           submitted_by?: string | null
