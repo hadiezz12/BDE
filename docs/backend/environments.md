@@ -41,6 +41,9 @@ runs the full local stack from scratch on every push (see
 - Receives reviewed migrations (and optionally the seed) before production.
 - Free plan: no automatic backups, no branching, and the project pauses after about a week
   without activity (restore it from the dashboard; nothing is lost).
+- Scheduled posts (Phase 6) need the `pg_cron` extension: the migration creates the job
+  `publish-scheduled-posts` (every minute) where it exists. It is enabled here; check it on any
+  new environment ([publishing.md](publishing.md#scheduling)).
 - Its legacy `anon` / `service_role` keys are still active next to the new
   publishable/secret keys. Nothing uses them: disable them in Dashboard → Settings → API Keys.
 
@@ -80,6 +83,8 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
   ([governance.md](governance.md#bootstrap-first-bde-leadership)). Never with test accounts, never
   invented people. Until then, nobody manages anything in production.
 - `AUTH_TEST_ACCOUNTS` is never set in production.
+- Enable the `pg_cron` extension before applying the Phase 6 migrations, or scheduled posts never
+  go out (the job `publish-scheduled-posts` is created only where the extension exists).
 
 ## Variables
 

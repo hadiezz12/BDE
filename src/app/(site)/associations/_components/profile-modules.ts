@@ -7,14 +7,15 @@ import { legacyId } from "@/lib/data/associations";
 import { getEventSeries } from "@/lib/data/event-series";
 import { getEvents } from "@/lib/data/events";
 import { getMemberCardOffer } from "@/lib/data/member-card";
-import { getPosts } from "@/lib/data/posts";
+import { getAssociationPosts } from "@/lib/data/posts";
 import { getCampaigns } from "@/lib/data/recruitment";
 import { getApplications } from "@/lib/data/users";
 import type { ProfileViewer } from "./AssociationProfile";
 
 /**
  * What an association page shows besides its own profile: the events of its
- * year, the carte cotisante, dated events, recruitment and posts. Those
+ * year, the carte cotisante, dated events, recruitment and posts. Posts are
+ * real (Phase 6: its published posts, pinned first). The other
  * modules still read the Phase 1 data layer (their own phases replace it),
  * keyed by the mock id of the BDE (legacyId); every other association has
  * none yet, so these sections stay out of its page.
@@ -25,7 +26,7 @@ export async function loadProfileModules(association: Association, userId?: stri
     getEvents({ associationId: id }),
     getEventSeries({ associationId: id }),
     getCampaigns({ associationId: id }),
-    getPosts({ associationId: id, limit: 4 }),
+    getAssociationPosts(association.slug, 4),
     getMemberCardOffer(id),
     userId ? getApplications(userId) : Promise.resolve<ApplicationItem[]>([]),
   ]);

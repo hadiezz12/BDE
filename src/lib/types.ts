@@ -184,24 +184,39 @@ export interface CampusEvent {
   publication: PublicationStatus;
 }
 
-export type PostKind = "annonce" | "recap" | "interview" | "edito" | "breve";
+/**
+ * The kinds of post (Phase 6): one content model, four presentations.
+ * Featured stories and important BDE notices are a prominence, not a kind.
+ */
+export type PostKind = "article" | "annonce" | "recap" | "breve";
 
-export interface CampusPost {
+/**
+ * A published post as lists show it (no body). Built from the database's
+ * public read model (src/lib/posts/model.ts); never from client input.
+ */
+export interface PostItem {
   id: string;
   slug: string;
   kind: PostKind;
   title: string;
-  associationId: string;
-  authorName: string;
-  publishedAt: string;
+  /** The introduction (standfirst). */
   excerpt: string;
-  body: string[];
   cover?: Photo;
+  /** First publication: the feed's order, never moved by later edits. */
+  publishedAt: string;
+  /** Last republication, when it came later. */
+  updatedAt?: string;
   readingMinutes: number;
-  relatedEventId?: string;
-  publication: PublicationStatus;
-  /** Only for programmed posts. */
-  scheduledFor?: string;
+  /** Only where the association shows its authors (and the author agreed). */
+  authorName?: string;
+  association: AssociationRef;
+  category?: CategoryRef;
+  tags: string[];
+  prominence: "normal" | "featured" | "important";
+  /** Pinned on its association's page. */
+  pinned: boolean;
+  /** Archived: readable at its address, off the feeds. */
+  archived: boolean;
 }
 
 export type CampaignStatus = "a-venir" | "ouverte" | "derniere-chance" | "cloturee";
@@ -419,8 +434,6 @@ export type AssociationRef = Pick<
 >;
 
 export type EventItem = CampusEvent & { association: AssociationRef };
-
-export type PostItem = CampusPost & { association: AssociationRef };
 
 export type CampaignItem = RecruitmentCampaign & {
   association: AssociationRef;

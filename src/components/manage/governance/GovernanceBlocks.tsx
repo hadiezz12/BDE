@@ -204,6 +204,14 @@ export function TransitionHistory({ history }: { history: PastTransition[] }) {
   );
 }
 
+/** Who did it: a person, or, with no person, the scheduled publisher, a report (never its author), or the set-up. */
+function actorOf(e: GovernanceEvent): string {
+  if (e.actor_name) return e.actor_name;
+  if (e.authority === "scheduler") return "La programmation";
+  if (e.action === "content_reported") return "Un article";
+  return "La mise en place";
+}
+
 /** The append-only governance history, one sentence per event. */
 export function AuditList({ events, showOrganization = false }: { events: GovernanceEvent[]; showOrganization?: boolean }) {
   if (events.length === 0) {
@@ -218,7 +226,7 @@ export function AuditList({ events, showOrganization = false }: { events: Govern
       {events.map((e) => (
         <li key={e.id} className="flex flex-col gap-0.5 px-4 py-2.5">
           <span className="type-small">
-            <span className="font-semibold">{e.actor_name ?? "La mise en place"}</span>{" "}
+            <span className="font-semibold">{actorOf(e)}</span>{" "}
             {AUDIT_ACTION_LABEL[e.action] ?? e.action}
             {e.subject_name && e.subject_name !== e.actor_name && <> · {e.subject_name}</>}
             {showOrganization && e.organization && <> · {e.organization.name}</>}

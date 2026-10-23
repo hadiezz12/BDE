@@ -1,7 +1,5 @@
-import Link from "next/link";
-import type { CampusEvent, EventItem, PostItem } from "@/lib/types";
+import type { CampusEvent, EventItem } from "@/lib/types";
 import { cx } from "@/lib/cx";
-import { routes } from "@/lib/routes";
 import { dateParts, formatDayShort } from "@/lib/format";
 import { EventFacts } from "@/components/events/EventFacts";
 import { eventPhase, isLit, isMultiDay, relativeWords } from "@/components/events/event-facts";
@@ -63,24 +61,6 @@ export function EventPublicationCell({ event }: { event: EventItem }) {
             ? "Pas encore dans l'agenda"
             : "Visible du bureau seulement"}
       </span>
-    </div>
-  );
-}
-
-/** Past events: is there a recap in the fil, and where is it at? */
-export function RecapCell({ recap }: { recap: PostItem | undefined }) {
-  if (!recap) return <span className="type-small text-subtle">Pas de récap</span>;
-  if (recap.publication === "publie") {
-    return (
-      <Link href={routes.post(recap.slug)} className="link type-small font-semibold">
-        Récap en ligne
-      </Link>
-    );
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      <PublicationStatusBadge status={recap.publication} scheduledFor={recap.scheduledFor} />
-      <span className="type-small text-subtle">Récap pas encore en ligne</span>
     </div>
   );
 }

@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import type { ApplicationItem, Association, EventItem } from "@/lib/types";
+import type { ApplicationItem, Association, EventItem, PostItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { getSession } from "@/lib/session";
 import { getEvents, getEventsByIds } from "@/lib/data/events";
 import { getEventSeries } from "@/lib/data/event-series";
 import { getAssociations, getAssociationsByIds, getBde, legacyId } from "@/lib/data/associations";
 import { getCampaigns } from "@/lib/data/recruitment";
-import { getPosts } from "@/lib/data/posts";
+import { getFeaturedPosts, getFeed } from "@/lib/data/posts";
 import { getSafetyDirectory } from "@/lib/data/safety";
 import { getMemberCardOffer } from "@/lib/data/member-card";
 import { getApplications } from "@/lib/data/users";
@@ -70,7 +70,7 @@ async function HomeContent() {
   const now = new Date();
   const user = session.user;
 
-  const [series, today, week, upcoming, campaigns, associations, posts, safety, bde, applications, registered, managed] =
+  const [series, today, week, upcoming, campaigns, associations, fil, highlights, safety, bde, applications, registered, managed] =
     await Promise.all([
       getEventSeries(),
       getEvents({ when: "today" }),
@@ -78,7 +78,9 @@ async function HomeContent() {
       getEvents({ when: "upcoming" }),
       getCampaigns({ scope: "open" }),
       getAssociations(),
-      getPosts({ limit: 6 }),
+      // The fil is one block among many: the front door still opens if it cannot be read.
+      getFeed({ limit: 8 }).catch(() => ({ items: [] as PostItem[], next: null })),
+      getFeaturedPosts().catch(() => ({ featured: [] as PostItem[], important: [] as PostItem[] })),
       getSafetyDirectory(),
       getBde(),
       user ? getApplications(user.id) : Promise.resolve<ApplicationItem[]>([]),
@@ -182,7 +184,9 @@ async function HomeContent() {
         <AssociationsRail associations={associations} recruitingSeats={recruitingSeats} index={next()} />
       )}
 
-      {posts.length > 0 && <HomeCampus posts={posts} index={next()} />}
+      {(fil.items.length > 0 || highlights.important.length > 0) && (
+        <HomeCampus posts={fil.items} featured={highlights.featured} important={highlights.important} index={next()} />
+      )}
 
       <SafetyTeaser emergency={safety.emergency} />
     </>

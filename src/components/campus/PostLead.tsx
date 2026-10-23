@@ -53,7 +53,7 @@ export function PostLead({
             {post.title}
           </Link>
         </h2>
-        <p className="max-w-3xl type-lead text-muted">{post.excerpt}</p>
+        {post.excerpt && <p className="max-w-3xl type-lead text-muted">{post.excerpt}</p>}
         <Byline post={post} linkAssociation={false} className="mt-1" />
       </div>
     </article>

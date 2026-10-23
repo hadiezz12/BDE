@@ -1,14 +1,17 @@
 import "server-only";
 import { routes } from "@/lib/routes";
-import type { SearchEntry } from "@/lib/types";
+import type { PostItem, SearchEntry } from "@/lib/types";
+import { POST_KIND_LABEL } from "@/components/campus/labels";
 import { getAssociations } from "./associations";
 import { getEventSeries } from "./event-series";
-import { getPosts } from "./posts";
+import { getLatestPosts } from "./posts";
 import { getCampaigns } from "./recruitment";
 
 /**
- * Phase 1 search runs on a small local index shipped to the client.
- * Later this becomes a Postgres full-text query behind the same shape.
+ * The small local index shipped to the client for the ⌘K dialog (and the
+ * /search page's associations, events and recruitment). Articles are only
+ * the 30 latest here: the /search page asks the database's full-text search
+ * for them instead (public_posts), so older articles are found too.
  *
  * Events are indexed as the BDE's eight recurring events (one page each), not
  * as dated editions: no edition date is known yet.
@@ -18,7 +21,8 @@ export async function getSearchIndex(): Promise<SearchEntry[]> {
     getAssociations(),
     getEventSeries(),
     getCampaigns({ scope: "all" }),
-    getPosts({ limit: 30 }),
+    // Same memoised read as the article page's "Ailleurs sur le campus"; the site still works without it.
+    getLatestPosts(30).catch(() => [] as PostItem[]),
   ]);
   const producers = new Map(associations.map((a) => [a.id, a.name]));
 
@@ -52,14 +56,24 @@ export async function getSearchIndex(): Promise<SearchEntry[]> {
         accent: c.association.accent,
         keywords: c.positions.map((p) => `${p.title} ${p.team ?? ""}`).join(" "),
       })),
-    ...posts.map<SearchEntry>((p) => ({
-      kind: "article",
-      id: p.id,
-      title: p.title,
-      context: p.association.shortName ?? p.association.name,
-      href: routes.post(p.slug),
-      accent: p.association.accent,
-      keywords: p.excerpt,
-    })),
+    ...posts.map(postSearchEntry),
   ];
+}
+
+/**
+ * A published post as a search result: its kind and association on the
+ * context line; its introduction, tags, rubrique and kind as words that
+ * match without being shown.
+ */
+export function postSearchEntry(p: PostItem): SearchEntry {
+  const kind = POST_KIND_LABEL[p.kind];
+  return {
+    kind: "article",
+    id: p.id,
+    title: p.title,
+    context: `${kind} · ${p.association.shortName ?? p.association.name}`,
+    href: routes.post(p.slug),
+    accent: p.association.accent,
+    keywords: [p.excerpt, ...p.tags, p.category?.label, kind, p.association.name].filter(Boolean).join(" "),
+  };
 }

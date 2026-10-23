@@ -310,3 +310,135 @@ foundational choice.
 - **Decision:** absolute URLs (Open Graph, canonical, sitemap) use the server setting `SITE_URL`;
   empty in production until the BDE buys its domain, and the sitemap is then empty.
 - **Reason:** the domain is the client's decision; a guessed one would leak into shared previews.
+
+## D33. A post is an identity plus revisions frozen at submission (Phase 6)
+
+- **Decision:** `posts` holds the identity and the state (address, publication, schedule,
+  moderation); `post_revisions` holds numbered content snapshots. Only a draft changes; from
+  submission on, a trigger freezes the revision for every role. Editing frozen content opens a new
+  revision; publishing moves `published_revision_id`.
+- **Reason:** the live article must not change while someone edits it, an approval must apply to
+  exactly what was read, and history and restoring come with the model.
+- **Rejected:** Phase 5's draft and published stages (D26), which keep no history and give an
+  approval nothing fixed to bind to; one JSON snapshot column on `posts` (uncontrolled, hard to
+  validate and to search).
+- **Consequence:** every edit of a live post is reviewed and published again; storage grows with
+  each version (whole snapshots, no diffs).
+
+## D34. An approval belongs to one frozen revision (Phase 6)
+
+- **Decision:** approving sets the status of that revision and records a `post_reviews` row with
+  the md5 hash of its content; publishing checks the status of the exact revision named. A new
+  revision never inherits an approval, and changing the policy neither grants nor revokes one.
+- **Reason:** the brief's "approval cannot be reused for altered content"; the freeze enforces it,
+  the hash lets anyone verify it afterwards.
+- **Rejected:** approving the post (any later edit would ride on it); checking a hash only at
+  publication (it would protect nothing if the content could still change).
+- **Consequence:** in approval mode, fixing a typo in a live article needs a new approval.
+
+## D35. The editorial policy belongs to each association, direct by default (Phase 6)
+
+- **Decision:** `organization_editorial_settings.review_mode` is `direct` (publishers publish
+  alone) or `approval` (a second person with `posts.approve` approves, never their own writing),
+  chosen with `posts.settings` and the second factor. New organizations start in `direct`.
+- **Reason:** many associations start with one or two people holding content keys; approval with
+  self-review refused would leave them unable to publish. Teams that want a second reading turn it
+  on.
+- **Consequence:** the BDE cannot impose approval on an association; its oversight is moderation
+  (D39). Direct publications still leave an approval record (`published_directly`).
+
+## D36. The article body is a validated JSON document, never HTML (Phase 6)
+
+- **Decision:** a small subset of the Tiptap / ProseMirror document (paragraphs, two heading
+  levels, lists, quotes, rules, line breaks, library images; bold, italic, links), checked by a
+  column constraint, normalized by the server and rendered element by element (`RichText`).
+- **Reason:** no HTML sanitizer to trust and keep up to date, nothing ever printed as markup;
+  revisions stay comparable; the renderer can change without migrating content; images as library
+  references keep the media rules (privacy, removal) enforceable.
+- **Rejected:** sanitized HTML (bypasses, `dangerouslySetInnerHTML`); Markdown (raw HTML
+  passthrough and link edge cases, hard to validate in SQL).
+- **Consequence:** a new kind of content (an embed, a table) needs the constraint, the normalizer
+  and the renderer changed together, in a migration and a release.
+
+## D37. Scheduled publishing runs in the database, authorized by the approval (Phase 6)
+
+- **Decision:** a schedule names one approved revision and one instant; a pg_cron job calls
+  `private.run_scheduled_publications()` every minute, which claims due posts with `skip locked`,
+  re-checks moderation, the association, its page and the images, and publishes or records a
+  failure code. The scheduler's own rights are not re-checked at execution. No automatic retry.
+- **Reason:** nothing in the browser or the app server has to be awake; each post is one
+  transaction and a second run finds nothing to do; an approved announcement must not vanish
+  because a mandate ended in between, while cancellation, moderation, suspension or an offline
+  page still stop it.
+- **Rejected:** an app cron calling an endpoint with the secret key (a privileged HTTP surface and
+  a second scheduler); an Edge Function through `pg_net` (more parts, same result); retries (a
+  refused publication needs a person's decision).
+- **Consequence:** every environment needs `pg_cron` (the migration creates the job where the
+  extension exists); failures show on the desk with their reason and in the audit log.
+
+## D38. Feed order is the first publication, with keyset pagination (Phase 6)
+
+- **Decision:** `first_published_at` is set once; republishing, unarchiving or editing never moves
+  a post. Pages are cut on `(first_published_at, id)`.
+- **Reason:** a corrected typo must not push an old article to the top, and new posts must not
+  shift or repeat what a reader is scrolling through.
+- **Consequence:** bringing something back to attention is the BDE's prominence (D40), not a
+  republication.
+
+## D39. Moderation hides posts; reports stay anonymous (Phase 6)
+
+- **Decision:** like pages (D31), the BDE hides a post with a reason and the second factor and can
+  restore it; it reads only what was public, never drafts. A hide overrides publication: nothing
+  the association does shows the post again. Reports keep the reporter for abuse handling only;
+  their audit line has no actor and no organization.
+- **Reason:** the brief's oversight without routine access to associations' work; students must
+  be able to report without the association learning who did.
+- **Consequence:** the association sees the hide and its reason, never the reports. Moderators
+  cannot see the images of a hidden post (they stop being public).
+
+## D40. Site-wide prominence is the BDE's, pins are the association's (Phase 6)
+
+- **Decision:** `platform.content.feature` (BDE offices, not grantable) sets up to three
+  `featured` posts from any association and up to two `important` ones, BDE posts only, with an
+  optional end within 60 days. `posts.publish` pins up to three posts on its own association
+  page.
+- **Reason:** the campus front is the BDE's editorial space, an association's page is its own;
+  only the BDE may look like an official notice.
+- **Consequence:** expiry is read at query time (no job); hiding, unpublishing and archiving
+  reset both, and the limits count only posts on display (fixed forward on 2026-10-23, see D43).
+
+## D41. Post images live in the association's library (Phase 6)
+
+- **Decision:** no new bucket: posts reference `association_media` by id (cover and inline), each
+  revision's images are recorded in `post_revision_media`, authors with `posts.create` may upload,
+  and an image any revision uses is never removed.
+- **Reason:** one place for re-encoding, alt text, quotas and the public/private rule (D28); old
+  versions must stay restorable and the live one must never lose an image.
+- **Consequence:** an image becomes public only while a public post's live revision (or a public
+  page) uses it; an image that any version of a post uses can never be removed, so the library
+  (quota 300) keeps every image of every post's history (deleting a never-published draft frees
+  its images).
+
+## D42. Publishing notifications are in-app states and audit events (Phase 6)
+
+- **Decision:** no e-mail or push: the desk and the editor show reviews, notes, failed schedules
+  and hides; every step is an audit action.
+- **Reason:** as D25, the notification engine is Phase 10, and no publishing rule depends on a
+  message arriving.
+- **Consequence:** Phase 10 subscribes to the audit actions listed in
+  [publishing.md](publishing.md#notifications) (`post_submitted`, `post_approved`,
+  `post_changes_requested`, `post_schedule_failed`, `post_hidden`…).
+
+## D43. Leaving the site settles what was planned for a post (Phase 6, fix forward)
+
+- **Decision:** `unpublish_post` and `archive_post` also cancel a pending or failed schedule and
+  reset the BDE's prominence; the featured/important limits count only posts the site shows;
+  `set_post_pin` refuses a hidden post; a bad prominence end date has its own refusal
+  (`prominence_period`). Migrations `20261023084644_release_post_prominence` and
+  `20261023085021_settle_post_schedule_and_pins`.
+- **Reason:** found while building the screens: a scheduled update brought an unpublished or
+  archived post back online, and a featured post that left the site kept a slot nobody could
+  see or free.
+- **Consequence:** taking a post off the site is final until someone publishes it again; the
+  audit line of the unpublication or archiving records whether a schedule or a prominence went
+  with it.

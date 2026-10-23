@@ -12,17 +12,21 @@ import { POST_KIND_LABEL } from "./labels";
  *  - md : photo on top (optional), title, excerpt — the secondary stories
  *  - sm : title + byline, optional thumbnail on the right — archive lists
  * The whole story is one link (stretched title), no nested controls.
+ * On its association's page, a pinned story says so in its kicker.
  */
 export function PostItem({
   post,
   size = "md",
   withImage = false,
+  showPinned = false,
   as: Heading = "h3",
   className,
 }: {
   post: Post;
   size?: "md" | "sm";
   withImage?: boolean;
+  /** Mark the story when its association pinned it (that association's page only). */
+  showPinned?: boolean;
   as?: "h2" | "h3" | "h4";
   className?: string;
 }) {
@@ -47,7 +51,7 @@ export function PostItem({
     return (
       <article className={cx("group relative flex items-start gap-4", className)}>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <PostKicker post={post} />
+          <PostKicker post={post} pinned={showPinned && post.pinned} />
           {title}
           <Byline post={post} variant="compact" />
         </div>
@@ -78,9 +82,9 @@ export function PostItem({
           imgClassName="transition-transform duration-500 ease-out group-hover:scale-[1.03]"
         />
       )}
-      <PostKicker post={post} />
+      <PostKicker post={post} pinned={showPinned && post.pinned} />
       {title}
-      <p className="text-muted">{post.excerpt}</p>
+      {post.excerpt && <p className="text-muted">{post.excerpt}</p>}
       <Byline post={post} variant="compact" className="mt-auto pt-1" />
     </article>
   );

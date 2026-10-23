@@ -13,7 +13,17 @@ export const routes = {
   recruitment: "/recruitment",
   campaign: (slug: string) => `/recruitment/${slug}`,
   campus: "/campus",
+  /** The fil filtered to one association. */
+  campusFor: (asso: string) => `/campus?asso=${encodeURIComponent(asso)}`,
+  /** RSS of the latest articles (only once SITE_URL is set). */
+  campusRss: "/campus/rss",
   post: (slug: string) => `/campus/${slug}`,
+  /**
+   * A post as it will look, for its association's content team only (never
+   * indexed). "apercu" is a reserved post slug, so no article can take it.
+   */
+  postPreview: (postId: string, revisionId?: string) =>
+    `/campus/apercu/${postId}${revisionId ? `?version=${revisionId}` : ""}`,
   search: "/search",
   safety: "/vss",
   login: "/login",
@@ -42,6 +52,12 @@ export const routes = {
    */
   manageHome: (asso: string) => `/manage/${asso}`,
   manageContent: (asso: string) => `/manage/${asso}/content`,
+  manageContentNew: (asso: string) => `/manage/${asso}/content/new`,
+  /** One post in the editor (by id: drafts have no address yet). */
+  manageContentPost: (asso: string, postId: string) => `/manage/${asso}/content/${postId}`,
+  manageContentHistory: (asso: string, postId: string) => `/manage/${asso}/content/${postId}/historique`,
+  /** The association's publishing rules (approval or direct, authors shown). */
+  manageContentSettings: (asso: string) => `/manage/${asso}/content/reglages`,
   manageEvents: (asso: string) => `/manage/${asso}/events`,
   manageTeam: (asso: string) => `/manage/${asso}/team`,
   /** One member: positions, mandates and the permission inspector. */
@@ -72,5 +88,9 @@ export const routes = {
   /** The directory's category catalog (BDE leadership). */
   managePlatformCategories: "/manage/plateforme/categories",
   managePlatformHistory: "/manage/plateforme/historique",
+  /** Reports, hidden posts and the moderation history (BDE). */
+  managePlatformModeration: "/manage/plateforme/moderation",
+  /** What the BDE puts "à la une" or marks important, campus-wide. */
+  managePlatformFeatured: "/manage/plateforme/une",
   manageContinuity: "/manage/continuite",
 } as const;

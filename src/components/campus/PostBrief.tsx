@@ -38,7 +38,7 @@ export function PostBrief({
           {post.title}
         </Link>
       </Heading>
-      {excerpt !== "none" && (
+      {excerpt !== "none" && post.excerpt && (
         <p className={cx("text-muted", excerpt === "wide" && "hidden lg:block")}>{post.excerpt}</p>
       )}
     </article>

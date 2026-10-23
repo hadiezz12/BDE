@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { routes } from "@/lib/routes";
-import { formatDateLong } from "@/lib/format";
+import { formatDateLong, plural } from "@/lib/format";
 import { getManageContext, getManageGate } from "@/lib/data/manage";
 import {
   getGovernanceInbox,
@@ -22,12 +22,15 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ManagePageHeader, ManageSection } from "@/components/manage/ManagePageHeader";
 import { ManageEmpty } from "@/components/manage/ManageEmpty";
 import { StatGroup, StatTile } from "@/components/manage/StatTile";
-import { MANAGE_SECTIONS } from "@/components/manage/sections";
+import { MANAGE_SECTIONS, canOpenSection } from "@/components/manage/sections";
 import { SectionLink } from "@/components/manage/home/SectionLink";
 import { MfaNotice, Notice, ReadOnlyNotice } from "@/components/manage/governance/Notices";
 import { getAssociationEditor, getMyPublicProfile } from "@/lib/associations/editor";
 import { getMyProfile } from "@/lib/data/profile";
 import { MyPublicProfileCard, PageCard } from "@/components/manage/page-editor/HomeCards";
+import { getContentDashboard } from "@/lib/posts/editor";
+import { contentTasks } from "@/components/manage/content/desk";
+import { ContentTasks } from "@/components/manage/content/ContentTasks";
 
 type Params = Promise<{ asso: string }>;
 
@@ -37,14 +40,30 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: gate ? `Accueil · ${gate.organization.name}` : "Association introuvable" };
 }
 
-/** Keys whose use needs a second factor: handing out rights, leadership, publishing the page. */
-const SENSITIVE_KEYS = [
-  "positions.manage",
-  "positions.assign",
-  "delegations.manage",
-  "governance.succession",
-  "organization.page.publish",
+/**
+ * Keys whose use needs a second factor, with what they do in words: handing
+ * out rights, leadership, publishing the page, and (Phase 6) putting an
+ * article online, approving one or changing the publishing rules.
+ */
+const SENSITIVE_ACTIONS: { keys: string[]; label: string }[] = [
+  { keys: ["positions.manage", "positions.assign", "delegations.manage"], label: "attribuer des postes, modifier les droits" },
+  { keys: ["governance.succession"], label: "préparer une passation" },
+  { keys: ["organization.page.publish"], label: "publier la page" },
+  { keys: ["posts.publish"], label: "mettre un article en ligne" },
+  { keys: ["posts.approve"], label: "approuver un article" },
+  { keys: ["posts.settings"], label: "changer les règles de publication" },
 ];
+
+/** "Attribuer des postes, modifier les droits ou publier la page" — only what this person holds. */
+function sensitiveWhat(held: Set<string>): string | null {
+  const parts = SENSITIVE_ACTIONS.filter((a) => a.keys.some((k) => held.has(k))).map((a) => a.label);
+  if (parts.length === 0) return null;
+  const text = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} ou ${parts[parts.length - 1]}`;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** Content lines shown on the home; the desk lists them all. */
+const HOME_TASKS = 5;
 
 /** Keys that open the public page's editor or its image library. */
 const PAGE_KEYS = ["organization.settings.update", "organization.page.publish", "media.manage"];
@@ -57,6 +76,10 @@ const PAGE_KEYS = ["organization.settings.update", "organization.page.publish", 
  *
  * Phase 5: where the public page stands (for its team), and every member's
  * own choice of how they appear on it.
+ *
+ * Phase 6: for the content team (any posts.* key), the posts that wait for
+ * someone: hidden by the BDE, failed schedules, versions to review (never
+ * one's own), one's own posts sent back with changes requested.
  */
 export default async function ManageHomePage({ params }: { params: Params }) {
   const { asso } = await params;
@@ -64,7 +87,7 @@ export default async function ManageHomePage({ params }: { params: Params }) {
   if (!ctx) return null;
 
   const { organization, membership, can } = ctx;
-  const [catalog, team, governance, inbox, editor, myPublic, myProfile] = await Promise.all([
+  const [catalog, team, governance, inbox, editor, myPublic, myProfile, content] = await Promise.all([
     getPermissionCatalog(),
     can("members.view") ? getOrganizationTeam(organization.id) : null,
     can("governance.view") ? getOrganizationGovernance(organization.id) : null,
@@ -72,6 +95,7 @@ export default async function ManageHomePage({ params }: { params: Params }) {
     PAGE_KEYS.some(can) ? getAssociationEditor(organization.id) : null,
     getMyPublicProfile(membership.membership_id),
     getMyProfile(),
+    canOpenSection("content", membership.permissions) ? getContentDashboard(organization.id) : null,
   ]);
 
   const held = new Set(membership.permissions);
@@ -88,7 +112,7 @@ export default async function ManageHomePage({ params }: { params: Params }) {
         : organization.status === "archived"
           ? "organization_archived"
           : null;
-  const needsMfa = ctx.aal !== "aal2" && SENSITIVE_KEYS.some((k) => held.has(k));
+  const mfaWhat = ctx.aal !== "aal2" ? sensitiveWhat(held) : null;
 
   const waiting = inbox.ok
     ? [
@@ -106,6 +130,8 @@ export default async function ManageHomePage({ params }: { params: Params }) {
   const transition = governance?.ok ? governance.data.transition : null;
   const president = governance?.ok ? governance.data.offices[0]?.holder : null;
   const soon = MANAGE_SECTIONS.filter((s) => s.soon && ctx.workspace.sections.includes(s.key));
+  const contentData = content?.ok ? content.data : null;
+  const tasks = contentData ? contentTasks(contentData, ctx.userId) : [];
 
   return (
     <div className="flex flex-col gap-10">
@@ -138,10 +164,10 @@ export default async function ManageHomePage({ params }: { params: Params }) {
         }
       />
 
-      {(readOnly || needsMfa || waiting.length > 0) && (
+      {(readOnly || mfaWhat || waiting.length > 0) && (
         <div className="flex flex-col gap-3">
           {readOnly && <ReadOnlyNotice reason={readOnly} />}
-          {needsMfa && <MfaNotice what="Attribuer des postes, modifier les droits, préparer une passation ou publier la page" />}
+          {mfaWhat && <MfaNotice what={mfaWhat} />}
           {waiting.map((w) => (
             <Notice
               key={w.key}
@@ -173,6 +199,25 @@ export default async function ManageHomePage({ params }: { params: Params }) {
             tone={expiring.length ? "danger" : "neutral"}
           />
         </StatGroup>
+      )}
+
+      {contentData && tasks.length > 0 && (
+        <ManageSection
+          title="Contenus à traiter"
+          count={tasks.length}
+          action={<SectionLink href={routes.manageContent(asso)}>Tous les contenus</SectionLink>}
+        >
+          <ContentTasks tasks={tasks.slice(0, HOME_TASKS)} asso={asso} can={contentData.can} />
+          {tasks.length > HOME_TASKS && (
+            <p className="type-small text-muted">
+              Et {plural(tasks.length - HOME_TASKS, "autre")} dans{" "}
+              <Link href={routes.manageContent(asso)} className="link">
+                Contenus
+              </Link>
+              .
+            </p>
+          )}
+        </ManageSection>
       )}
 
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">

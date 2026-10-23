@@ -5,16 +5,14 @@ import { notFound } from "next/navigation";
 import type { CampusEvent, EventItem, EventSeries, UserProfile } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
-import { EVENT_CATEGORY_LABEL, dateParts, formatDayFull, formatPrice, plural } from "@/lib/format";
+import { EVENT_CATEGORY_LABEL, dateParts, formatDayFull, formatPrice } from "@/lib/format";
 import { parisDateKey } from "@/lib/time";
 import { getSession } from "@/lib/session";
 import { getEvent, getEvents, getRelatedEvents } from "@/lib/data/events";
 import { getEventSeries, getEventSeriesById, getEventSeriesBySlug } from "@/lib/data/event-series";
 import { getAssociationById } from "@/lib/data/associations";
 import { getMemberCardOffer } from "@/lib/data/member-card";
-import { getPosts } from "@/lib/data/posts";
 import { AssociationIdentity } from "@/components/associations/AssociationIdentity";
-import { PostBrief } from "@/components/campus/PostBrief";
 import { Breadcrumbs } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { MediaFrame } from "@/components/media/MediaFrame";
@@ -108,11 +106,10 @@ function personalMarks(user: UserProfile | null) {
  */
 async function EditionPage({ event }: { event: EventItem }) {
   const now = new Date();
-  const [session, association, related, posts, series] = await Promise.all([
+  const [session, association, related, series] = await Promise.all([
     getSession(),
     getAssociationById(event.associationId),
     getRelatedEvents(event, 3),
-    getPosts(),
     event.seriesId ? getEventSeriesById(event.seriesId) : Promise.resolve(null),
   ]);
 
@@ -125,8 +122,8 @@ async function EditionPage({ event }: { event: EventItem }) {
   const past = phase === "past";
   const canSave = Boolean(user) && !registered && (phase === "upcoming" || (phase === "live" && isMultiDay(event)));
   const showBar = action.kind !== "none" || canSave;
-  const about = posts.filter((p) => p.relatedEventId === event.id);
-  const recap = about.find((p) => p.kind === "recap") ?? null;
+  // Articles of the fil are not linked to events yet (the events phase adds the link).
+  const recap = null;
   const accent = eventAccent(event);
   const sticker = eventSticker(event, now);
   const loginHref = `${routes.login}?next=${encodeURIComponent(routes.event(event.slug))}`;
@@ -235,25 +232,6 @@ async function EditionPage({ event }: { event: EventItem }) {
                   title="Infos pratiques"
                 />
                 <PracticalList items={event.practical} className="mt-6 max-w-[44rem]" />
-              </section>
-            )}
-
-            {about.length > 0 && (
-              <section aria-labelledby="sur-le-fil">
-                <SectionHeader
-                  id="sur-le-fil"
-                  index={nextIndex()}
-                  kicker={plural(about.length, "article")}
-                  title="Sur le fil"
-                  action={{ href: routes.campus, label: "Le fil du campus" }}
-                />
-                <ul className="mt-2 max-w-[44rem] divide-y divide-line">
-                  {about.map((post) => (
-                    <li key={post.id}>
-                      <PostBrief post={post} excerpt="always" />
-                    </li>
-                  ))}
-                </ul>
               </section>
             )}
 

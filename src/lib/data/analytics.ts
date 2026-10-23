@@ -9,7 +9,6 @@ import type {
   RecruitmentPosition,
 } from "@/lib/types";
 import { getEvents } from "./events";
-import { getPosts } from "./posts";
 import { getCampaigns } from "./recruitment";
 import { getApplicants } from "./users";
 
@@ -109,11 +108,6 @@ function dayRange(fromKey: string, toKey: string): string[] {
   return keys;
 }
 
-function nextMonth(monthKey: string): string {
-  const [y, m] = monthKey.split("-").map(Number);
-  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
-}
-
 const noon = (key: string) => parisISO(key, "12:00");
 
 /* ---- Derivations ---------------------------------------------------------- */
@@ -139,10 +133,9 @@ export async function getAssociationAnalytics(associationId: string, now = new D
     return k >= season.startKey && k < season.endKey;
   };
 
-  const [upcoming, past, posts, campaigns] = await Promise.all([
+  const [upcoming, past, campaigns] = await Promise.all([
     getEvents({ associationId, includeUnpublished: true, when: "upcoming" }),
     getEvents({ associationId, includeUnpublished: true, when: "past" }),
-    getPosts({ associationId, includeUnpublished: true }),
     getCampaigns({ associationId, scope: "all" }),
   ]);
   // Unsent applications never reach the bureau, so they are not counted.
@@ -174,12 +167,8 @@ export async function getAssociationAnalytics(associationId: string, now = new D
       const days = s.days
         .map((d) => ({ key: parisDateKey(d.day), iso: d.day, count: d.count }))
         .filter((d) => d.key <= todayKey);
-      const keys = new Set(days.map((d) => d.key));
-      const related = posts
-        .filter((p) => p.relatedEventId === event.id && p.publication === "publie")
-        .map((p) => ({ key: parisDateKey(p.publishedAt), title: p.title }))
-        .filter((p) => keys.has(p.key));
-      return { event, days, total: days.reduce((n, d) => n + d.count, 0), posts: related };
+      // Posts are not linked to events (Phase 6 has no such link): no markers.
+      return { event, days, total: days.reduce((n, d) => n + d.count, 0), posts: [] };
     })
     .filter((s) => s.days.length > 0);
 
@@ -205,35 +194,19 @@ export async function getAssociationAnalytics(associationId: string, now = new D
     return { campaign, total: mine.length, byStatus, byPosition, perDay };
   });
 
-  /* Posts per month of the season (published, then programmed). */
-  const published = posts.filter((p) => p.publication === "publie" && inSeason(p.publishedAt));
-  const scheduled = posts.filter((p) => p.publication === "programme" && p.scheduledFor && inSeason(p.scheduledFor));
-  const monthOf = (iso: string) => parisDateKey(iso).slice(0, 7);
-  let lastMonth = todayKey.slice(0, 7);
-  for (const p of scheduled) if (monthOf(p.scheduledFor!) > lastMonth) lastMonth = monthOf(p.scheduledFor!);
+  /*
+   * Posts per month: the publishing records now live in the database
+   * (Phase 6); their statistics come with the analytics phase. Until then the
+   * series is empty rather than derived from Phase 1 mock posts.
+   */
   const months: MonthCount[] = [];
-  for (let m = season.startKey.slice(0, 7); m <= lastMonth && months.length < 12; m = nextMonth(m)) {
-    months.push({
-      key: m,
-      iso: noon(`${m}-15`),
-      published: published.filter((p) => monthOf(p.publishedAt) === m).length,
-      scheduled: scheduled.filter((p) => monthOf(p.scheduledFor!) === m).length,
-    });
-  }
   const byKind: Partial<Record<PostKind, number>> = {};
-  for (const p of published) byKind[p.kind] = (byKind[p.kind] ?? 0) + 1;
 
   return {
     season: { label: season.label, startsAt: noon(season.startKey) },
     events: { counted, uncounted },
     sales,
     campaigns: campaignStats,
-    posts: {
-      months,
-      published: published.length,
-      scheduled: scheduled.length,
-      drafts: posts.filter((p) => p.publication === "brouillon").length,
-      byKind,
-    },
+    posts: { months, published: 0, scheduled: 0, drafts: 0, byKind },
   };
 }

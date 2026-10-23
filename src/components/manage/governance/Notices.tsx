@@ -23,21 +23,25 @@ export function Notice({
   return (
     <div
       className={cx(
-        "flex flex-col gap-3 rounded-md border bg-raised px-4 py-4 sm:flex-row sm:items-start sm:gap-4 sm:px-5",
+        // The action sits beside the text when the box is wide, below it when it is narrow (a
+        // side panel, a phone): the text never gets squeezed to one word per line.
+        "flex flex-wrap items-start gap-x-4 gap-y-3 rounded-md border bg-raised px-4 py-4 sm:px-5",
         tone === "info" && "border-info/40",
         tone === "warn" && "border-warn/50",
         tone === "danger" && "border-danger/50",
         className,
       )}
     >
-      <Icon
-        name={icon}
-        size={20}
-        className={cx("shrink-0", tone === "info" && "text-info", tone === "warn" && "text-warn", tone === "danger" && "text-danger")}
-      />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="font-bold">{title}</p>
-        {children && <div className="type-small text-muted">{children}</div>}
+      <div className="flex min-w-0 flex-1 basis-[18rem] items-start gap-3 sm:gap-4">
+        <Icon
+          name={icon}
+          size={20}
+          className={cx("shrink-0", tone === "info" && "text-info", tone === "warn" && "text-warn", tone === "danger" && "text-danger")}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="font-bold">{title}</p>
+          {children && <div className="type-small text-muted">{children}</div>}
+        </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>

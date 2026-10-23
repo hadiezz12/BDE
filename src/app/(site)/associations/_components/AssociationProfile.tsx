@@ -451,7 +451,7 @@ export function AssociationProfile({
         </section>
       )}
 
-      {/* ---- What they wrote ---- */}
+      {/* ---- What they wrote: pinned posts first (public_association_posts), marked as such ---- */}
       {leadPost && (
         <section aria-labelledby="fil" className="wrap pt-[var(--section)]">
           <SectionHeader
@@ -459,10 +459,15 @@ export function AssociationProfile({
             index={nextIndex()}
             kicker="Le fil du campus"
             title="Ce qu'on raconte"
-            action={{ href: routes.campus, label: "Tout le fil" }}
+            action={{ href: routes.campusFor(association.slug), label: "Tous ses articles" }}
           />
           <div className="mt-8 grid gap-x-12 gap-y-10 lg:grid-cols-12">
-            <PostItem post={leadPost} withImage className={morePosts.length > 0 ? "lg:col-span-5" : "lg:col-span-6"} />
+            <PostItem
+              post={leadPost}
+              withImage={leadPost.kind !== "breve"}
+              showPinned
+              className={morePosts.length > 0 ? "lg:col-span-5" : "lg:col-span-6"}
+            />
             {morePosts.length > 0 && <MorePosts posts={morePosts} />}
           </div>
         </section>
@@ -486,13 +491,13 @@ export function AssociationProfile({
   );
 }
 
-/** Archive lines next to the lead story, thumbnail on the right. */
+/** Archive lines next to the lead story, thumbnail on the right (brèves have none). */
 function MorePosts({ posts }: { posts: Post[] }) {
   return (
     <ul className="divide-y divide-line border-t border-line lg:col-span-6 lg:col-start-7">
       {posts.map((p) => (
         <li key={p.id} className="py-5">
-          <PostItem post={p} size="sm" withImage />
+          <PostItem post={p} size="sm" withImage={p.kind !== "breve"} showPinned />
         </li>
       ))}
     </ul>

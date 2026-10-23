@@ -57,8 +57,7 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     label: "Contenus",
     icon: "file",
     href: routes.manageContent,
-    requires: ["posts.create", "posts.edit", "posts.publish"],
-    soon: true,
+    requires: ["posts.create", "posts.edit", "posts.approve", "posts.publish", "posts.settings"],
   },
   {
     key: "events",

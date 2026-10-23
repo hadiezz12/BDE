@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import type { EventCategory, EventItem, PostItem, UserProfile } from "@/lib/types";
+import type { EventCategory, EventItem, UserProfile } from "@/lib/types";
 import type { EventWindow } from "@/lib/data/events";
 import { getEventCategoryCounts, getEvents } from "@/lib/data/events";
 import { getEventSeries } from "@/lib/data/event-series";
-import { getPosts } from "@/lib/data/posts";
 import { getSession } from "@/lib/session";
 import { routes } from "@/lib/routes";
 import { EVENT_CATEGORY_LABEL, formatDayFull, formatWhen, plural } from "@/lib/format";
@@ -80,7 +79,6 @@ export default async function EventsPage({ searchParams }: { searchParams: Searc
     getEventCategoryCounts(),
   ]);
   const hasDated = upcoming.length > 0 || past.length > 0;
-  const recaps = hasDated && when === "past" ? await getPosts({ kind: "recap" }) : [];
   const numbers = seriesNumbers(series);
   const tonight = upcoming.filter((e) => isTonight(e, now)).length;
 
@@ -134,7 +132,6 @@ export default async function EventsPage({ searchParams }: { searchParams: Searc
             user={session.user}
             lists={{ today, week, upcoming, past }}
             upcomingCounts={upcomingCounts}
-            recaps={recaps}
             now={now}
           />
         ) : (
@@ -159,7 +156,6 @@ function DatedAgenda({
   user,
   lists,
   upcomingCounts,
-  recaps,
   now,
 }: {
   when: EventWindow;
@@ -167,7 +163,6 @@ function DatedAgenda({
   user: UserProfile | null;
   lists: Record<EventWindow, EventItem[]>;
   upcomingCounts: Partial<Record<EventCategory, number>>;
-  recaps: PostItem[];
   now: Date;
 }) {
   const inCategory = (list: EventItem[]) => (category ? list.filter((e) => e.category === category) : list);
@@ -224,7 +219,7 @@ function DatedAgenda({
       {list.length === 0 ? (
         <EmptyAgenda when={when} category={category} next={inCategory(lists.upcoming)[0] ?? null} pastCount={pastCount} now={now} />
       ) : when === "past" ? (
-        <Archive list={list} recaps={recaps} personalFor={personalFor} now={now} />
+        <Archive list={list} personalFor={personalFor} now={now} />
       ) : (
         groupByDay(list, now).map((group) => (
           <div key={group.bucket} className="pt-10 sm:pt-12">
@@ -373,22 +368,20 @@ function PersonalLine({ user, upcoming }: { user: UserProfile | null; upcoming: 
   );
 }
 
-/** ?when=past — what's over, newest first, by month, each with its récap when there is one. */
+/**
+ * ?when=past — what's over, newest first, by month. Récaps are articles of
+ * the fil (Phase 6) and are not linked to an event yet: the events phase
+ * brings that link back.
+ */
 function Archive({
   list,
-  recaps,
   personalFor,
   now,
 }: {
   list: EventItem[];
-  recaps: PostItem[];
   personalFor: (e: EventItem) => PersonalState | undefined;
   now: Date;
 }) {
-  const recapFor = new Map<string, PostItem>();
-  // Posts come newest first: keep the latest récap per event.
-  for (const p of recaps) if (p.relatedEventId && !recapFor.has(p.relatedEventId)) recapFor.set(p.relatedEventId, p);
-  const withRecap = list.filter((e) => recapFor.has(e.id)).length;
 
   return (
     <div className="pt-10 sm:pt-12">
@@ -396,7 +389,7 @@ function Archive({
         as="h3"
         size="headline"
         rule={false}
-        kicker={`${plural(list.length, "édition")} · ${plural(withRecap, "récap")}`}
+        kicker={plural(list.length, "édition")}
         title="Déjà passés"
       />
       <div className="mt-4 border-b border-line-strong">
@@ -410,7 +403,7 @@ function Archive({
               <PastEventRow
                 key={e.id}
                 event={e}
-                recap={recapFor.get(e.id) ?? null}
+                recap={null}
                 headingLevel={4}
                 personal={personalFor(e)}
                 now={now}

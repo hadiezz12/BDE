@@ -63,7 +63,7 @@ export const SEARCH_SECTIONS: {
     more: "Tout le fil",
     describe: (n) =>
       n > 0
-        ? plural(n, "article récent", "articles récents")
+        ? plural(n, "article publié", "articles publiés")
         : "Pas encore d'article : le bureau et les assos publieront ici.",
   },
 ];

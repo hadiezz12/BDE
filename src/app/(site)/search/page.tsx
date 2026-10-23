@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { SearchEntry, SearchKind } from "@/lib/types";
-import { getSearchIndex } from "@/lib/data/search";
-import { searchEntries, SEARCH_KIND_LABEL } from "@/lib/search";
+import { getSearchIndex, postSearchEntry } from "@/lib/data/search";
+import { getFeed, getPostFacets } from "@/lib/data/posts";
+import { normaliseQuery, searchEntries, SEARCH_KIND_LABEL } from "@/lib/search";
 import { routes } from "@/lib/routes";
 import { plural } from "@/lib/format";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -46,11 +47,45 @@ function countByKind(index: SearchEntry[]): Record<SearchKind, number> {
   return counts;
 }
 
-/** Groups keep the ranking: the kind holding the best match comes first. */
 function groupByKind(results: SearchEntry[]): [SearchKind, SearchEntry[]][] {
   const groups = new Map<SearchKind, SearchEntry[]>();
   for (const entry of results) groups.set(entry.kind, [...(groups.get(entry.kind) ?? []), entry]);
   return [...groups.entries()];
+}
+
+/** The local index's title ranking (src/lib/search.ts), to order the groups. */
+function titleScore(title: string, words: string[]): number {
+  const t = normaliseQuery(title);
+  return words.reduce((score, w) => score + (t.startsWith(w) || t.includes(` ${w}`) ? 3 : t.includes(w) ? 2 : 0), 0);
+}
+
+/**
+ * The kind holding the best title match comes first (index order on a tie).
+ * Inside a group the order stays: by relevance for the local index, newest
+ * first for articles.
+ */
+function rankGroups(groups: [SearchKind, SearchEntry[]][], query: string): [SearchKind, SearchEntry[]][] {
+  const words = normaliseQuery(query).split(/\s+/).filter(Boolean);
+  return groups
+    .map((group, i) => ({ group, i, best: Math.max(...group[1].map((e) => titleScore(e.title, words))) }))
+    .sort((a, b) => b.best - a.best || a.i - b.i)
+    .map(({ group }) => group);
+}
+
+/**
+ * Articles come from the database's full-text search (public_posts: French
+ * stemming, accents ignored, the association's name too), so the whole fil
+ * is searched, not only the 30 latest the index carries. Null when the index
+ * must answer instead: under two characters (the database would match
+ * everything) or when the search cannot be reached.
+ */
+async function searchArticlesInDatabase(q: string): Promise<SearchEntry[] | null> {
+  if (normaliseQuery(q).replace(/\s+/g, "").length < 2) return null;
+  try {
+    return (await getFeed({ q, limit: RESULTS_PER_KIND })).items.map(postSearchEntry);
+  } catch {
+    return null;
+  }
 }
 
 /** "Dans 1 association, 8 événements de l'année et les pages du site." — only what exists. */
@@ -108,18 +143,28 @@ function ResultGroup({
 
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const q = readQuery((await searchParams).q);
-  const index = await getSearchIndex();
+  const [index, facets, found] = await Promise.all([
+    getSearchIndex(),
+    getPostFacets().catch(() => null),
+    q ? searchArticlesInDatabase(q) : Promise.resolve(null),
+  ]);
+  // Associations, events and recruitment: the local index, as in the ⌘K dialog.
+  const others = index.filter((e) => e.kind !== "article");
+  const articles = q
+    ? (found ?? searchEntries(index.filter((e) => e.kind === "article"), q, RESULTS_PER_KIND))
+    : [];
 
-  const counts = countByKind(index);
-  const results = q ? searchEntries(index, q, RESULTS_PER_KIND) : [];
+  // The fil counts every published article, not just the ones the index carries.
+  const counts = { ...countByKind(index), ...(facets ? { article: facets.total } : {}) };
+  const results = q ? [...searchEntries(others, q, RESULTS_PER_KIND), ...articles] : [];
   const pages: SitePage[] = q ? matchPages(q) : [];
-  const groups = groupByKind(results);
+  const groups = rankGroups(groupByKind(results), q);
   const total = results.length + pages.length;
-  const suggestions: FilterOption[] = SUGGESTED_QUERIES.map((s) => ({
-    value: s,
-    label: s,
-    count: searchEntries(index, s, RESULTS_PER_KIND).length + matchPages(s).length,
-  })).filter((s) => (s.count ?? 0) > 0);
+  // Offered only when they lead somewhere. No number on these chips: the
+  // articles they would find are only known once the database is asked.
+  const suggestions: FilterOption[] = SUGGESTED_QUERIES.filter(
+    (s) => searchEntries(index, s, 1).length + matchPages(s).length > 0,
+  ).map((s) => ({ value: s, label: s }));
 
   const jumps = [
     ...groups.map(([kind, entries]) => ({

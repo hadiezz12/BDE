@@ -2,8 +2,10 @@
 
 Source of truth: `supabase/migrations/20261019140902_create_permissions_and_positions.sql`
 (`public.permissions`, `public.position_templates`, `public.position_template_permissions`,
-`public.positions`, `public.position_permissions`, `public.platform_role_permissions`). The
-catalog changes only by migration; nobody edits it from the site.
+`public.positions`, `public.position_permissions`, `public.platform_role_permissions`), amended
+by later phases (Phase 5: `20261020081522_create_association_profiles.sql`; Phase 6, the content
+keys: `20261021092120_create_posts.sql`). The catalog changes only by migration; nobody edits it
+from the site.
 
 ## Vocabulary
 
@@ -49,7 +51,11 @@ Database guards: an ordinary position may only carry grantable organization keys
 | `governance.succession` (propose one's successor) | governance | | | | ✓ |
 | `organization.settings.update` (prepare the page's draft) | settings | ✓ | ✓ | | ✓ (Phase 5) |
 | `organization.page.publish` (publish, unpublish, change the address) | settings | ✓ | | | ✓ (Phase 5) |
-| `posts.create`, `posts.edit`, `posts.publish` | content | ✓ | ✓ | | later |
+| `posts.create` (write one's own posts, send their images, submit them) | content | ✓ | ✓ | | ✓ (Phase 6) |
+| `posts.edit` (edit every post of the association, restore versions, delete drafts) | content | ✓ | ✓ | | ✓ (Phase 6) |
+| `posts.approve` (approve a submitted version or ask for changes, never one's own) | content | ✓ | ✓ | | ✓ (Phase 6) |
+| `posts.publish` (publish, schedule, unpublish, archive, pin, change an address) | content | ✓ | ✓ | | ✓ (Phase 6) |
+| `posts.settings` (the editorial policy: approval or direct, authors shown) | content | ✓ | | | ✓ (Phase 6) |
 | `events.create`, `events.edit`, `events.publish` | events | ✓ | ✓ | | later |
 | `media.manage` (the image library) | media | ✓ | ✓ | | ✓ (Phase 5) |
 | `recruitment.campaigns.manage`, `recruitment.questions.manage` | recruitment | ✓ | ✓ | | later |
@@ -64,11 +70,12 @@ lending them would let a borrower hand out rights the lender's position does not
 | Key | Held by |
 | --- | --- |
 | `platform.governance.view` | BDE president, BDE vice-president, guardian |
-| `platform.organizations.manage` (create, publish, suspend, archive) | BDE president, BDE vice-president |
+| `platform.organizations.manage` (create, publish, suspend, archive; the directory categories and the post rubriques) | BDE president, BDE vice-president |
 | `platform.associations.intervene` (appoint or end an association presidency in an emergency) | BDE president, BDE vice-president |
 | `platform.bde.succession` | BDE president, BDE vice-president |
 | `platform.audit.view` | BDE president, BDE vice-president |
-| `platform.content.moderate` (withhold and release an association page, Phase 5) | BDE president, BDE vice-president |
+| `platform.content.moderate` (withhold and release an association page, Phase 5; handle reports, hide and restore posts, Phase 6) | BDE president, BDE vice-president |
+| `platform.content.feature` (featured stories and important BDE announcements on the campus feed, Phase 6) | BDE president, BDE vice-president |
 | `platform.recovery` (restore a vacant BDE office, end a compromised one) | guardian only |
 
 The two BDE offices also carry every organization key **of the BDE organization itself**, so they
@@ -80,8 +87,8 @@ run the BDE's own team like any president. They get no key inside another associ
 | --- | --- |
 | Présidence (office) | every organization key, including `governance.succession` |
 | Présidence / Vice-présidence du BDE (offices) | every organization key except `governance.succession`, plus the BDE platform keys above |
-| Vice-présidence | members.view, members.invite, positions.assign, governance.view, audit.view, organization.settings.update, posts.*, events.*, media.manage, recruitment.campaigns.manage, recruitment.questions.manage, analytics.view |
-| Communication | members.view, posts.*, media.manage |
+| Vice-présidence | members.view, members.invite, positions.assign, governance.view, audit.view, organization.settings.update, posts.create, posts.edit, posts.approve, posts.publish, events.*, media.manage, recruitment.campaigns.manage, recruitment.questions.manage, analytics.view |
+| Communication | members.view, posts.create, posts.edit, posts.publish, media.manage |
 | Événements | members.view, events.*, media.manage |
 | Responsable recrutement | members.view, recruitment.* (including the three sensitive application keys) |
 | Évaluation des candidatures | recruitment.applications.view, recruitment.applications.review |
@@ -95,6 +102,31 @@ Phase 5 added `organization.page.publish` to the office templates and to every e
 position, and to nothing else: a team can prepare its page (Vice-présidence holds
 `organization.settings.update`; Communication and Événements hold `media.manage`) while putting it
 online stays with the presidency, unless the presidency creates a position that carries it.
+
+Phase 6 made the content keys work (`module_ready`), rewrote their descriptions after what they
+now do, relabelled `posts.edit` "Modifier tous les articles" (`posts.create` stays "Écrire des
+articles", `posts.publish` "Publier les articles"; the description of `platform.content.moderate`
+now covers reports and articles too), and added two organization keys, `posts.approve`
+("Approuver les articles", delegable) and `posts.settings` ("Régler la publication", not
+delegable), and one platform key, `platform.content.feature` ("Mettre à la une", not grantable).
+The two organization keys went to the office templates and to every existing
+office position; `posts.approve` also went to the Vice-présidence template, which only affects
+positions created from it from now on (templates are copied once); `platform.content.feature` went
+to the two BDE offices. Communication keeps `posts.create`, `posts.edit` and `posts.publish`: in an
+association that turns approval on, its articles are approved by the presidency or by another
+position that carries `posts.approve`. Who can do what with them, and the default policy:
+[publishing.md](publishing.md#editorial-policy).
+
+What each default position can do with posts:
+
+| Position | Write and edit | Approve | Publish, schedule, unpublish, archive, pin | Editorial policy |
+| --- | --- | --- | --- | --- |
+| Présidence (office) | every post | ✓ | ✓ | ✓ |
+| Présidence / Vice-présidence du BDE | every BDE post | ✓ (BDE) | ✓ (BDE) | ✓ (BDE); plus moderation and prominence site-wide |
+| Vice-présidence (created after Phase 6) | every post | ✓ | ✓ | |
+| Communication | every post | | ✓ | |
+| Événements | none (sends images to the library through `media.manage`) | | | |
+| Membre, Trésorerie, recruitment templates | | | | |
 
 ## Ceilings (no self-promotion, brief §20–21)
 

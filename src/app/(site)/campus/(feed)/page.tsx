@@ -1,122 +1,170 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { AssociationRef, PostItem as Post, PostKind } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { formatDayFull, plural } from "@/lib/format";
-import { getPosts } from "@/lib/data/posts";
+import { getFeaturedPosts, getFeed, getPostFacets } from "@/lib/data/posts";
 import { getAssociationsByIds, getBde, toRef } from "@/lib/data/associations";
+import { encodeFeedCursor, feedQuery, feedSlug, parseFeedCursor, type PostFacets } from "@/lib/posts/model";
 import { getSession } from "@/lib/session";
 import { SectionHeader } from "@/components/layout/SectionHeader";
-import { FilterChips, type FilterOption } from "@/components/ui/FilterChips";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { FeedHeader } from "@/components/campus/FeedHeader";
+import { FeedFilters, type FeedFilterValues } from "@/components/campus/FeedFilters";
+import { ImportantBand } from "@/components/campus/ImportantBand";
 import { PostLead } from "@/components/campus/PostLead";
 import { PostItem } from "@/components/campus/PostItem";
 import { PostBrief } from "@/components/campus/PostBrief";
-import { EditoBand } from "@/components/campus/EditoBand";
 import { WeekSection } from "@/components/campus/WeekSection";
 import { FilColophon } from "@/components/campus/FilColophon";
-import {
-  POST_KINDS,
-  POST_KIND_NONE,
-  POST_KIND_PLURAL,
-  groupByWeek,
-  parsePostKind,
-} from "@/components/campus/labels";
+import { campusRssAlternate } from "@/components/campus/campus-rss";
+import { POST_KIND_NONE, POST_KIND_PLURAL, groupByWeek, parsePostKind } from "@/components/campus/labels";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+const PAGE_SIZE = 24;
+
 const DESCRIPTION =
-  "Les annonces, récaps, interviews et brèves du Very Pink Club et des associations de GEM Alpine Business School — Paris.";
+  "Les articles, annonces, récaps et brèves du Very Pink Club et des associations de GEM Alpine Business School — Paris.";
+
+function readFilters(sp: Record<string, string | string[] | undefined>): FeedFilterValues {
+  return {
+    kind: parsePostKind(sp.kind),
+    category: feedSlug(sp.rubrique),
+    association: feedSlug(sp.asso),
+    q: feedQuery(sp.q),
+  };
+}
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
-  const kind = parsePostKind((await searchParams).kind);
+  const sp = await searchParams;
+  const f = readFilters(sp);
+  const filtered = Boolean(f.category || f.association || f.q || parseFeedCursor(sp.suite));
   return {
-    title: kind ? `${POST_KIND_PLURAL[kind]} · Le fil du campus` : "Le fil du campus",
+    title: f.kind ? `${POST_KIND_PLURAL[f.kind]} · Le fil du campus` : "Le fil du campus",
     description: DESCRIPTION,
+    alternates: { types: campusRssAlternate() },
+    // Filtered and paged views are for sharing, not for search engines (the sitemap lists every article).
+    robots: filtered ? { index: false, follow: true } : undefined,
   };
 }
 
 /**
- * /campus — the campus news feed, laid out like a student weekly printed on
- * the night surface: the lead story big, brèves in a side column, three
- * column stories, the édito on paper, then back issues grouped by week.
- * A rubrique filter (?kind=) narrows it to one kind of story. Until the
- * first article is published, the filter is hidden and the page says who
- * will write here.
+ * /campus — the campus fil, from the published posts of every public
+ * association page and of the BDE (public_posts, read as a visitor).
+ *
+ * Unfiltered first page, laid out like a student weekly: the BDE's
+ * important notices on paper, the lead story (a story the BDE put "à la
+ * une", otherwise the latest), brèves in a side column, three column
+ * stories, then the rest grouped by week. Any filter, a search or the
+ * "older" link switches to a plain list by week. Order is always the first
+ * publication, newest first, with keyset pages (?suite=) that never repeat
+ * or skip a story when new ones come out meanwhile. No ranking, no metrics.
  */
 export default async function CampusFeedPage({ searchParams }: { searchParams: SearchParams }) {
-  const kind = parsePostKind((await searchParams).kind);
-  const [all, session, bde] = await Promise.all([
-    getPosts(),
+  const sp = await searchParams;
+  const filters = readFilters(sp);
+  const cursor = parseFeedCursor(sp.suite);
+  const front = !filters.kind && !filters.category && !filters.association && !filters.q && !cursor;
+
+  const [page, facets, highlights, session, bde] = await Promise.all([
+    getFeed({ ...filters, before: cursor, limit: PAGE_SIZE }),
+    getPostFacets(),
+    front ? getFeaturedPosts() : Promise.resolve({ featured: [], important: [] }),
     getSession(),
     getBde(),
   ]);
   const managed = (await getAssociationsByIds(session.user?.managedAssociationIds ?? [])).map(toRef);
-  const posts = kind ? all.filter((p) => p.kind === kind) : all;
-
-  const options: FilterOption[] = [
-    { value: null, label: "Tout", count: all.length },
-    ...POST_KINDS.map((k) => ({
-      value: k,
-      label: POST_KIND_PLURAL[k],
-      count: all.filter((p) => p.kind === k).length,
-    })),
-  ];
+  const olderHref = page.next ? hrefWith(sp, { suite: encodeFeedCursor(page.next) }) : null;
 
   return (
     <>
-      <FeedHeader>
-        {all.length > 0 && (
-          <FilterChips label="Filtrer par rubrique" param="kind" options={options} current={kind} basePath={routes.campus} />
-        )}
-      </FeedHeader>
+      <FeedHeader>{facets.total > 0 && <FeedFilters values={filters} facets={facets} />}</FeedHeader>
 
-      {all.length === 0 ? (
+      {facets.total === 0 ? (
         <FirstIssue managed={managed} />
-      ) : posts.length === 0 ? (
-        <EmptyFeed kind={kind} />
-      ) : kind === "breve" ? (
-        <BriefsOnly posts={posts} />
-      ) : kind ? (
-        <KindFeed kind={kind} posts={posts} />
+      ) : front ? (
+        <FrontPage
+          posts={page.items}
+          featured={highlights.featured}
+          important={highlights.important}
+          contactEmail={bde?.contactEmail}
+          managed={managed}
+          olderHref={olderHref}
+        />
+      ) : page.items.length === 0 ? (
+        <EmptyFeed filters={filters} paged={Boolean(cursor)} />
       ) : (
-        <FrontPage posts={posts} contactEmail={bde?.contactEmail} managed={managed} />
+        <FilteredFeed filters={filters} facets={facets} posts={page.items} paged={Boolean(cursor)} olderHref={olderHref} />
       )}
     </>
   );
 }
 
+/** The current URL with some params replaced (null removes one). */
+function hrefWith(sp: Record<string, string | string[] | undefined>, set: Record<string, string | null>): string {
+  const out = new URLSearchParams();
+  for (const key of ["kind", "rubrique", "asso", "q"]) {
+    const v = sp[key];
+    const value = Array.isArray(v) ? v[0] : v;
+    if (value) out.set(key, value);
+  }
+  for (const [k, v] of Object.entries(set)) {
+    if (v === null) out.delete(k);
+    else out.set(k, v);
+  }
+  const qs = out.toString();
+  return qs ? `${routes.campus}?${qs}` : routes.campus;
+}
+
 /* ---- Views ---------------------------------------------------------------- */
 
-/** Everything: une + brèves, column stories, the édito on paper, back issues. */
+/** The unfiltered first page: important notices, une + brèves, column stories, the rest by week. */
 function FrontPage({
   posts,
+  featured,
+  important,
   contactEmail,
   managed,
+  olderHref,
 }: {
   posts: Post[];
+  featured: Post[];
+  important: Post[];
   contactEmail?: string;
   managed: AssociationRef[];
+  olderHref: string | null;
 }) {
-  const briefs = posts.filter((p) => p.kind === "breve");
-  const stories = posts.filter((p) => p.kind !== "breve");
-  const [lead, ...rest] = stories;
-  const edito = rest.find((p) => p.kind === "edito");
-  const others = rest.filter((p) => p !== edito);
-  const columns = others.slice(0, 3);
-  const archive = others.slice(3);
+  // Each story appears once: the notices first, then the une, then the rest.
+  const shown = new Set(important.map((p) => p.id));
+  const leadCandidates = [...featured, ...posts].filter((p) => p.kind !== "breve" && !shown.has(p.id));
+  const lead = leadCandidates[0] ?? null;
+  if (lead) shown.add(lead.id);
+  const briefs = posts.filter((p) => p.kind === "breve" && !shown.has(p.id)).slice(0, 5);
+  briefs.forEach((p) => shown.add(p.id));
+  // The other featured stories first, then the latest ones.
+  const columns: Post[] = [];
+  for (const p of [...featured, ...posts]) {
+    if (columns.length === 3) break;
+    if (p.kind === "breve" || shown.has(p.id)) continue;
+    shown.add(p.id);
+    columns.push(p);
+  }
+  const archive = posts.filter((p) => !shown.has(p.id));
 
   return (
     <>
+      <ImportantBand posts={important} className="mb-section" />
+
       <div className="wrap grid gap-x-10 gap-y-14 pb-section lg:grid-cols-12">
         {lead && (
           <div className="lg:col-span-8">
             <p className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t-2 border-fg pt-3 type-label text-muted">
-              <span className="text-accent-text">À la une</span>
-              <span>{todayLabel()}</span>
+              <span className="text-accent-text">{lead.prominence === "featured" ? "À la une" : "Dernière parution"}</span>
+              <span>{formatDayFull(new Date().toISOString())}</span>
             </p>
             <PostLead post={lead} />
           </div>
@@ -135,7 +183,7 @@ function FrontPage({
             />
             {briefs.length > 0 ? (
               <ul className="mt-2 divide-y divide-line">
-                {briefs.slice(0, 5).map((p) => (
+                {briefs.map((p) => (
                   <li key={p.id}>
                     <PostBrief post={p} excerpt="always" />
                   </li>
@@ -168,47 +216,72 @@ function FrontPage({
         </section>
       )}
 
-      {edito && <EditoBand post={edito} />}
-
       {archive.length > 0 && (
-        <section aria-labelledby="plus-tot" className={cx("wrap pb-section", edito && "pt-section")}>
-          <SectionHeader id="plus-tot" title="Plus tôt dans le fil" kicker="Les numéros précédents" />
+        <section aria-labelledby="plus-tot" className="wrap pb-section">
+          <SectionHeader id="plus-tot" title="Plus tôt dans le fil" kicker="Les semaines précédentes" />
           <WeekList posts={archive} className="mt-8" />
         </section>
       )}
+
+      {olderHref && <OlderLink href={olderHref} className="pb-section" />}
     </>
   );
 }
 
-/** One rubrique (récaps, interviews…): the latest one as the lead, the rest by week. */
-function KindFeed({ kind, posts }: { kind: PostKind; posts: Post[] }) {
-  const [lead, ...rest] = posts;
+/** Filtered, searched or paged: what matches, by week, newest first. */
+function FilteredFeed({
+  filters,
+  facets,
+  posts,
+  paged,
+  olderHref,
+}: {
+  filters: FeedFilterValues;
+  facets: PostFacets;
+  posts: Post[];
+  paged: boolean;
+  olderHref: string | null;
+}) {
+  const association = facets.organizations.find((o) => o.slug === filters.association);
+  const category = facets.categories.find((c) => c.slug === filters.category);
+  // The title names the main filter (search, then association, rubrique, type); the kicker the others.
+  const labels = [
+    filters.q ? `« ${filters.q} »` : null,
+    association ? (association.short_name ?? association.name) : null,
+    category?.label ?? null,
+    filters.kind ? POST_KIND_PLURAL[filters.kind] : null,
+  ].filter((l): l is string => Boolean(l));
+  const [title = "Le fil", ...others] = labels;
+  const kicker = [paged ? "Plus tôt dans le fil" : null, ...others].filter(Boolean).join(" · ");
+
   return (
-    <>
-      <div className="wrap pb-section">
-        <p className="mb-5 border-t-2 border-fg pt-3 type-label text-accent-text">Dernière parution</p>
-        <PostLead post={lead} layout="split" />
-      </div>
-      {rest.length > 0 && (
-        <section aria-labelledby="les-autres" className="wrap pb-section">
-          <SectionHeader id="les-autres" title={`Les autres ${POST_KIND_PLURAL[kind].toLowerCase()}`} />
-          <WeekList posts={rest} className="mt-8" />
-        </section>
+    <section aria-labelledby="resultats-fil" className="wrap pb-section">
+      <SectionHeader
+        id="resultats-fil"
+        title={title}
+        kicker={kicker || undefined}
+        action={paged ? { href: routes.campus, label: "Revenir aux dernières parutions" } : undefined}
+      />
+      {filters.kind === "breve" ? (
+        <BriefList posts={posts} className="mt-8" />
+      ) : (
+        <WeekList posts={posts} className="mt-8" />
       )}
-    </>
+      {olderHref && <OlderLink href={olderHref} className="pt-10" />}
+    </section>
   );
 }
 
 /** Brèves only: short items, no pictures, grouped by week. */
-function BriefsOnly({ posts }: { posts: Post[] }) {
+function BriefList({ posts, className }: { posts: Post[]; className?: string }) {
   return (
-    <div className="wrap pb-section">
+    <div className={className}>
       {groupByWeek(posts).map((week) => (
-        <WeekSection key={week.start} week={week} as="h2">
+        <WeekSection key={week.start} week={week}>
           <ul className="divide-y divide-line">
             {week.items.map((p) => (
               <li key={p.id} className="first:[&>article]:pt-0">
-                <PostBrief post={p} excerpt="always" as="h3" />
+                <PostBrief post={p} excerpt="always" as="h4" />
               </li>
             ))}
           </ul>
@@ -218,7 +291,7 @@ function BriefsOnly({ posts }: { posts: Post[] }) {
   );
 }
 
-/** Back issues: stories grouped under their week's number. */
+/** Stories grouped under their week. */
 function WeekList({ posts, className }: { posts: Post[]; className?: string }) {
   return (
     <div className={className}>
@@ -227,7 +300,7 @@ function WeekList({ posts, className }: { posts: Post[]; className?: string }) {
           <ul className="divide-y divide-line">
             {week.items.map((p) => (
               <li key={p.id} className="py-5 first:pt-0 last:pb-0">
-                <PostItem post={p} size="sm" withImage as="h4" />
+                {p.kind === "breve" ? <PostBrief post={p} excerpt="always" as="h4" /> : <PostItem post={p} size="sm" withImage as="h4" />}
               </li>
             ))}
           </ul>
@@ -237,22 +310,50 @@ function WeekList({ posts, className }: { posts: Post[]; className?: string }) {
   );
 }
 
-/** Articles exist, but none in this rubrique. */
-function EmptyFeed({ kind }: { kind: PostKind | null }) {
+/** The next page: older stories, from where this one stops. */
+function OlderLink({ href, className }: { href: string; className?: string }) {
+  return (
+    <div className={cx("wrap flex justify-center", className)}>
+      <Link
+        href={href}
+        className="group inline-flex min-h-12 items-center gap-2 border-2 border-fg px-5 type-button hover:bg-fg hover:text-bg"
+      >
+        Articles plus anciens
+        <Icon name="arrow-right" size={16} className="transition-transform group-hover:translate-x-0.5" />
+      </Link>
+    </div>
+  );
+}
+
+/** Published articles exist, but none match (or the pages ran out). */
+function EmptyFeed({ filters, paged }: { filters: FeedFilterValues; paged: boolean }) {
+  const kind: PostKind | null = filters.kind;
   return (
     <section aria-labelledby="fil-vide" className="wrap pb-section">
       <h2 id="fil-vide" className="sr-only">
-        {kind ? POST_KIND_PLURAL[kind] : "Articles"}
+        Aucun article
       </h2>
       <EmptyState
-        title={kind ? `${POST_KIND_NONE[kind]} pour l'instant` : "Rien ici pour l'instant"}
+        title={
+          paged
+            ? "C'est tout pour ce fil"
+            : filters.q
+              ? `Rien pour « ${filters.q} »`
+              : kind && !filters.category && !filters.association
+                ? `${POST_KIND_NONE[kind]} pour l'instant`
+                : "Rien ici pour l'instant"
+        }
         actions={
           <ButtonLink href={routes.campus} variant="secondary" icon="arrow-right">
             Tout le fil
           </ButtonLink>
         }
       >
-        Rien n&apos;est encore paru dans cette rubrique. Le reste du fil est à un clic.
+        {paged
+          ? "Il n'y a pas d'article plus ancien avec ces filtres."
+          : filters.q
+            ? "Aucun article publié ne contient ces mots. Essaie un autre mot, ou retire un filtre."
+            : "Aucun article publié ne correspond à ces filtres. Le reste du fil est à un clic."}
       </EmptyState>
     </section>
   );
@@ -290,9 +391,4 @@ function FirstIssue({ managed }: { managed: AssociationRef[] }) {
       </EmptyState>
     </section>
   );
-}
-
-/** "Mardi 14 octobre" — the dateline above the lead story. */
-function todayLabel(now = new Date()): string {
-  return formatDayFull(now.toISOString());
 }

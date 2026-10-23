@@ -68,8 +68,25 @@ export interface ManageEntry {
   icon?: IconName;
 }
 
-export const canUsePlatform = (access: MyAccess | null) => Boolean(access?.platform.includes("platform.organizations.manage"));
+/**
+ * Platform keys that open the BDE control center. Each of its pages checks
+ * its own key (associations, moderation, featured posts), and every function
+ * they call checks it again in the database.
+ */
+const PLATFORM_CENTER_KEYS = ["platform.organizations.manage", "platform.content.moderate", "platform.content.feature"];
+
+export const canUsePlatform = (access: MyAccess | null) =>
+  Boolean(access?.platform.some((key) => PLATFORM_CENTER_KEYS.includes(key)));
 export const canUseContinuity = (access: MyAccess | null) => Boolean(access?.platform.includes("platform.recovery"));
+
+/** Under "Centre de contrôle BDE": what this person can do there. */
+function platformDetail(access: MyAccess): string {
+  if (access.platform.includes("platform.organizations.manage")) return "Assos, présidences, passations";
+  const parts: string[] = [];
+  if (access.platform.includes("platform.content.moderate")) parts.push("Modération");
+  if (access.platform.includes("platform.content.feature")) parts.push(parts.length ? "à la une" : "À la une");
+  return parts.join(", ");
+}
 
 /**
  * What the account menu offers: the BDE control center, the guardian's page,
@@ -84,7 +101,7 @@ export function manageEntries(access: MyAccess | null): ManageEntry[] {
       key: "platform",
       href: routes.managePlatform,
       label: "Centre de contrôle BDE",
-      detail: "Assos, présidences, passations",
+      detail: platformDetail(access),
       name: "BDE",
       accent: "rose",
       icon: "grid",

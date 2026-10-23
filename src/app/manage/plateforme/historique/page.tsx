@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { getMyAccess, hasPlatform } from "@/lib/governance/access";
 import { getGovernanceHistory } from "@/lib/governance/queries";
 import { ManagePageHeader, ManageSection } from "@/components/manage/ManagePageHeader";
 import { AuditList } from "@/components/manage/governance/GovernanceBlocks";
 import { Notice } from "@/components/manage/governance/Notices";
+import { PlatformDenied } from "@/components/manage/moderation/PlatformDenied";
 
 export const metadata: Metadata = { title: "Historique" };
 
@@ -13,6 +15,10 @@ export const metadata: Metadata = { title: "Historique" };
  * Append-only in the database: no one can edit or delete a line from the site.
  */
 export default async function PlatformHistoryPage() {
+  // The control center also opens for moderation or the front page alone.
+  if (!hasPlatform(await getMyAccess(), "platform.audit.view")) {
+    return <PlatformDenied title="Historique" right="Voir l'historique de la plateforme" />;
+  }
   const history = await getGovernanceHistory(null, 150);
   return (
     <div className="flex flex-col gap-10">

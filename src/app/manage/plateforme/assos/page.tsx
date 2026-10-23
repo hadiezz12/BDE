@@ -5,7 +5,7 @@ import { formatDateLong, plural } from "@/lib/format";
 import { ACCENTS, ACCENT_KEYS } from "@/lib/accents";
 import { getCategoryCatalog } from "@/lib/associations/categories";
 import { getPlatformOrganizations } from "@/lib/governance/queries";
-import { getMyAccess } from "@/lib/governance/access";
+import { getMyAccess, hasPlatform } from "@/lib/governance/access";
 import { defaultMandateEnd, ORGANIZATION_STATUS_LABEL, toDateInput, TRANSITION_KIND_LABEL } from "@/lib/governance/labels";
 import type { PlatformOrganization } from "@/lib/governance/types";
 import {
@@ -23,6 +23,7 @@ import { ManageEmpty } from "@/components/manage/ManageEmpty";
 import { ActionForm } from "@/components/manage/governance/ActionForm";
 import { Disclosure } from "@/components/manage/governance/Disclosure";
 import { Notice } from "@/components/manage/governance/Notices";
+import { PlatformDenied } from "@/components/manage/moderation/PlatformDenied";
 
 type Search = Promise<{ cree?: string }>;
 
@@ -76,6 +77,10 @@ const STATUS_TONE: Record<PlatformOrganization["status"], StatusTone> = {
 export default async function PlatformOrganizationsPage({ searchParams }: { searchParams: Search }) {
   const { cree } = await searchParams;
   const [list, access, catalog] = await Promise.all([getPlatformOrganizations(), getMyAccess(), getCategoryCatalog()]);
+  // The control center also opens for moderation or the front page alone: say so instead of a load error.
+  if (!hasPlatform(access, "platform.governance.view")) {
+    return <PlatformDenied title="Assos" right="Voir la gouvernance de la plateforme" />;
+  }
   if (!list.ok) {
     return (
       <Notice tone="danger" icon="alert" title="La liste des assos n'a pas pu être chargée.">

@@ -4,33 +4,38 @@ import type { PostKind } from "@/lib/types";
 
 /** Rubrique names, singular — the kicker printed above a story. */
 export const POST_KIND_LABEL: Record<PostKind, string> = {
-  recap: "Récap",
-  interview: "Interview",
-  breve: "Brève",
-  edito: "Édito",
+  article: "Article",
   annonce: "Annonce",
+  recap: "Récap",
+  breve: "Brève",
 };
 
 /** Plural, for filters and section heads. */
 export const POST_KIND_PLURAL: Record<PostKind, string> = {
-  recap: "Récaps",
-  interview: "Interviews",
-  breve: "Brèves",
-  edito: "Éditos",
+  article: "Articles",
   annonce: "Annonces",
+  recap: "Récaps",
+  breve: "Brèves",
 };
 
 /** Empty-state wording, with the right gender: "Aucun récap", "Aucune brève". */
 export const POST_KIND_NONE: Record<PostKind, string> = {
-  recap: "Aucun récap",
-  interview: "Aucune interview",
-  breve: "Aucune brève",
-  edito: "Aucun édito",
+  article: "Aucun article",
   annonce: "Aucune annonce",
+  recap: "Aucun récap",
+  breve: "Aucune brève",
+};
+
+/** What each kind is for (the editor's type picker). */
+export const POST_KIND_HINT: Record<PostKind, string> = {
+  article: "Un vrai papier : une rencontre, un dossier, une interview.",
+  annonce: "Une info à faire passer : réunion, changement d'horaire, nouveauté.",
+  recap: "Le retour sur un événement passé, en mots et en photos.",
+  breve: "Deux lignes, sans photo : le fil les range dans « En bref ».",
 };
 
 /** Order of the rubriques in the filter row. */
-export const POST_KINDS: PostKind[] = ["recap", "interview", "annonce", "breve", "edito"];
+export const POST_KINDS: PostKind[] = ["article", "recap", "annonce", "breve"];
 
 export function parsePostKind(value: string | string[] | undefined): PostKind | null {
   const v = Array.isArray(value) ? value[0] : value;

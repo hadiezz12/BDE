@@ -19,9 +19,10 @@ about the **caller** only, wrapped in `(select …)` so Postgres evaluates them 
 | `private.my_transition_ids()` | transitions where the caller is the proposer, a candidate or an approver |
 | `private.current_user_email()` | the caller's e-mail (for invitations bound to an address) |
 
-These seven are the only private functions `authenticated` may execute (checked by
-`foundation.test.sql`); every other private function is revoked from `public`, `anon`,
-`authenticated` and `service_role`.
+These seven, plus the page and content helpers named in the Phase 5 and Phase 6 sections below,
+are the only private functions `authenticated` may execute (checked by `foundation.test.sql`);
+every other private function is revoked from `public`, `anon`, `authenticated` and
+`service_role`.
 
 ## Policies by table
 
@@ -130,6 +131,85 @@ New RPCs (same pattern as above, details in [association-pages.md](association-p
 `renew_invitation`, `create_association_category` / `update_association_category` (aal2), and the
 reads `association_editor`, `association_preview`. `create_organization` and
 `platform_organizations` were redefined (category goes to the draft; page status in the list).
+
+## Phase 6: publishing
+
+Tables `post_categories`, `organization_editorial_settings`, `posts`, `post_revisions`,
+`post_reviews`, `post_revision_media`, `post_slug_history` and `content_reports` are read-only for
+the API roles as well: every privilege is revoked from `anon` and `authenticated`, then SELECT is
+granted back where a policy below allows reading. Writes go only through the functions listed
+further down. A trigger freezes a revision's content once it is no longer a draft
+(`freeze_submitted_revision`, `revision_locked`) and another keeps a post's organization and
+author (`keep_post_organization`, `post_owner_locked`), whoever runs the update.
+
+New private helpers, `security definer`, answering about the caller only, granted to
+`authenticated`:
+
+| Helper | Returns |
+| --- | --- |
+| `private.my_post_editor_organization_ids()` | organizations where the caller holds `posts.edit`, `posts.approve` or `posts.publish` now (they see every post there) |
+| `private.my_readable_post_ids()` | posts of those organizations, plus the posts the caller started where they hold `posts.create` |
+| `private.my_media_organization_ids()` | organizations whose image library the caller may look at: the page team (Phase 5) and anyone holding `posts.create`, `posts.edit`, `posts.approve` or `posts.publish` there |
+
+| Table | Who reads what |
+| --- | --- |
+| `post_categories` | everyone (`anon` too): active rubriques; BDE leadership (`platform.organizations.manage`): all. |
+| `organization_editorial_settings` | the content team: `my_post_editor_organization_ids()` and holders of `posts.create`. |
+| `posts`, `post_revisions`, `post_reviews`, `post_revision_media` | posts in `my_readable_post_ids()` only (editors, approvers and publishers: the whole association; an author with `posts.create` alone: their own posts). |
+| `post_slug_history` | nobody directly: no grant, functions only. |
+| `content_reports` | the reporter, for their own reports (every column, including status and closing note); nobody else, not even moderators, who read through `moderation_queue`. |
+
+Each table except `post_categories` and `post_slug_history` also has the restrictive
+`<table>_require_mfa_when_enrolled` policy. Visitors never read these tables (`anon` gets
+`42501`, tested). No policy reads by platform key: BDE leadership sees another association's
+posts only through `moderation_queue` / `moderated_post` (published content), and the continuity
+guardian reads none of them (tested, tables and `post_editor`).
+
+Phase 5 policies changed:
+
+- `association_media`: `association_media_read_page_team` became
+  `association_media_read_content_team` (`my_media_organization_ids()`), so authors see the
+  library they pick images from.
+- Storage, bucket `association-media`: `association_media_select_team` now uses
+  `my_media_organization_ids()` (draft images for the content team);
+  `association_media_insert` accepts `posts.create` as well as `media.manage`;
+  `private.association_media_object_is_public(name)` (the visitor's select policy) also answers
+  yes for an image of the live revision of a public post. Delete is unchanged.
+
+`private.can_upload_media(user, organization)` (`media.manage` or `posts.create`) is used by
+`register_association_media` only; it is not granted to any API role.
+
+The RPC surface, same pattern as above (details in [publishing.md](publishing.md#who-may-do-what)).
+"Can edit" is `posts.edit` in the post's organization, or `posts.create` and having started the
+post.
+
+| Function | Right checked | aal2 |
+| --- | --- | --- |
+| `create_post` | `posts.create` or `posts.edit` | |
+| `save_post_revision`, `submit_post_revision`, `withdraw_post_revision`, `restore_post_revision`, `delete_post_draft` | can edit | |
+| `review_post_revision` | `posts.approve`, not a contributor or the submitter | ✓ |
+| `publish_post`, `schedule_post` | `posts.publish` + an approved revision (or the working draft under direct publishing) | ✓ |
+| `cancel_post_schedule`, `unpublish_post`, `archive_post`, `set_post_pin` | `posts.publish` | |
+| `change_post_slug` | `posts.publish` | ✓ |
+| `set_editorial_settings` | `posts.settings` | ✓ |
+| `set_post_prominence` | `platform.content.feature` | ✓ |
+| `report_post` | any signed-in person; the post must be public | |
+| `dismiss_report` | `platform.content.moderate` | |
+| `hide_post`, `restore_post_visibility` | `platform.content.moderate` + reason | ✓ |
+| `create_post_category`, `update_post_category` | `platform.organizations.manage` | ✓ |
+| `register_association_media` (redefined) | `media.manage` or `posts.create` | |
+| `remove_association_media` (redefined) | `media.manage`; refused while any post revision uses the image | |
+| `content_dashboard` | any `posts.*` key in the organization (own posts only with `posts.create` alone) | |
+| `post_editor`, `post_preview` | can edit, `posts.approve` or `posts.publish` | |
+| `moderation_queue`, `moderated_post` | `platform.content.moderate` (published content only, never a reporter) | |
+
+Granted to `anon` and `authenticated`, reading only the live revision of public posts:
+`public_posts`, `public_post`, `public_post_facets`, `public_featured_posts`,
+`public_association_posts`, `public_post_sitemap`.
+
+The scheduled worker `private.run_scheduled_publications()` is executable by no API role; the
+pg_cron job `publish-scheduled-posts` runs it every minute as the database owner
+([publishing.md](publishing.md#scheduling)).
 
 ## Performance (brief §61)
 

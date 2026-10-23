@@ -86,6 +86,33 @@ export type GovernanceErrorCode =
   | "category_taken"
   | "gallery_invalid"
   | "team_invalid"
+  // Phase 6: publishing and moderation
+  | "post_not_found"
+  | "post_invalid"
+  | "post_incomplete"
+  | "post_was_published"
+  | "post_hidden"
+  | "post_not_hidden"
+  | "post_not_published"
+  | "post_not_archived"
+  | "post_owner_locked"
+  | "revision_locked"
+  | "revision_not_editable"
+  | "revision_not_submitted"
+  | "revision_not_found"
+  | "self_review"
+  | "approval_required"
+  | "page_not_public"
+  | "invalid_schedule"
+  | "not_scheduled"
+  | "pin_limit"
+  | "prominence_invalid"
+  | "prominence_limit"
+  | "prominence_period"
+  | "already_reported"
+  | "report_rate_limited"
+  | "report_invalid"
+  | "report_not_open"
   | "unavailable"
   | "unexpected";
 
@@ -169,12 +196,49 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   media_not_found: "Cette image n'existe plus dans la médiathèque. Recharge la page.",
   media_quota: "La médiathèque est pleine (300 images) : retire celles qui ne servent plus.",
   media_invalid: "Cette image n'a pas pu être enregistrée.",
-  media_in_use: "Cette image est utilisée (logo, couverture ou galerie, en brouillon ou en ligne) : remplace-la d'abord.",
-  slug_invalid: "Adresse invalide : lettres minuscules, chiffres et tirets, sans les mots réservés du site.",
+  media_in_use:
+    "Cette image est utilisée (logo, couverture, galerie ou article, en brouillon ou en ligne) : remplace-la d'abord.",
+  slug_invalid:
+    "Adresse invalide : lettres minuscules, chiffres et tirets (3 caractères au moins), sans les mots réservés du site.",
   category_invalid: "Cette catégorie n'existe pas ou n'est plus proposée.",
   category_taken: "Une catégorie porte déjà ce nom ou cette adresse.",
   gallery_invalid: "La galerie compte 24 images au plus, chacune une seule fois.",
   team_invalid: "La présentation de l'équipe n'a pas pu être enregistrée : recharge la page.",
+  post_not_found: "Cet article n'existe plus ou n'est plus visible.",
+  post_invalid:
+    "Un champ n'est pas au bon format : vérifie le titre (140 caractères), l'introduction (400), les mots-clés (8 au plus) et les liens.",
+  post_incomplete: "Il manque le titre ou le texte de l'article pour le publier.",
+  post_was_published:
+    "Cet article a déjà été en ligne : il ne se supprime pas (les liens partagés mèneraient nulle part). Archive-le ou retire-le du site.",
+  post_hidden:
+    "Le BDE a masqué cet article (modération) : il ne peut pas revenir en ligne tant que le BDE ne l'a pas rétabli.",
+  post_not_hidden: "Cet article n'est pas masqué.",
+  post_not_published: "Cet article n'est pas en ligne.",
+  post_not_archived: "Cet article n'est pas archivé.",
+  post_owner_locked: "Un article reste dans l'asso qui l'a créé.",
+  revision_locked:
+    "Cette version a été envoyée en relecture : elle ne change plus. Modifie l'article pour en commencer une nouvelle.",
+  revision_not_editable:
+    "Cette version ne peut plus être modifiée ici (elle a été envoyée, approuvée ou remplacée). Recharge la page.",
+  revision_not_submitted: "Cette version n'attend pas de relecture (elle a été retirée ou déjà relue). Recharge la page.",
+  revision_not_found: "Cette version n'existe plus. Recharge la page.",
+  self_review:
+    "Tu as écrit ou envoyé cette version : quelqu'un d'autre doit la relire. C'est le principe de la relecture.",
+  approval_required:
+    "Dans cette asso, un article est relu avant publication : envoie-le en relecture, ou publie une version déjà approuvée.",
+  page_not_public:
+    "La page publique de l'asso n'est pas en ligne : publie-la d'abord (Page publique › Publication), les articles s'y rattachent.",
+  invalid_schedule: "Choisis une date à venir (dans deux minutes au moins, dans un an au plus).",
+  not_scheduled: "Cet article n'est plus programmé.",
+  pin_limit: "Trois articles au plus sont épinglés sur la page de l'asso : désépingles-en un d'abord.",
+  prominence_invalid: "« Important » est réservé aux annonces du BDE.",
+  prominence_limit:
+    "Il y a déjà le maximum d'articles à la une (3) ou en « important » (2) : retires-en un d'abord.",
+  prominence_period: "Choisis une date de fin à venir, dans 60 jours au plus (ou aucune date).",
+  already_reported: "Tu as déjà signalé cet article : le BDE va l'examiner.",
+  report_rate_limited: "Tu as envoyé beaucoup de signalements d'un coup. Réessaie plus tard.",
+  report_invalid: "Choisis une raison (et 500 caractères au plus pour les précisions).",
+  report_not_open: "Ce signalement a déjà été traité.",
   unavailable: "Le service est momentanément indisponible. Réessaie dans un instant.",
   unexpected: "Une erreur inattendue est survenue. Réessaie, et préviens le BDE si ça continue.",
 };

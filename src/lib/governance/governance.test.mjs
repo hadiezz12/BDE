@@ -59,7 +59,7 @@ test("constraint errors become sentences, never Postgres text", () => {
   }
 });
 
-const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog"]);
+const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation"]);
 
 test("every audited action has a sentence", () => {
   // Call shape: (actor, authority, action, category, …). The authority may be
