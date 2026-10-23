@@ -84,7 +84,8 @@ insert into fx (k, v) values ('f_pub_slug', (select slug from public.posts where
 
 set local role anon;
 select is(
-  (select array_agg(e ->> 'title' order by e ->> 'title') from jsonb_array_elements(public.public_posts()) as e),
+  -- Byte order ("C"), the same on every machine whatever its locale.
+  (select array_agg(e ->> 'title' order by e ->> 'title' collate "C") from jsonb_array_elements(public.public_posts()) as e),
   array['Infos de rentrée (exemple)', 'Rentrée de l''asso Finance (exemple)', 'Récap du tournoi (exemple)'],
   'the feed lists published, visible posts only (no draft, submission, schedule, archive or hidden post)'
 );
