@@ -235,3 +235,137 @@ begin
   perform set_config('request.jwt.claims', '', true);
 end
 $seed5$;
+
+-- Phase 6: fictional posts in every editorial state, written by calling the
+-- publishing functions as the fictional people above (local stack only).
+--   Finance (approval required): one published article with an edit waiting
+--   for review, Lucas's draft, a submission, an approved brève, an article
+--   scheduled for next week.
+--   Sports (direct publishing): a published recap, an archived article, an
+--   announcement hidden by BDE moderation after a report.
+--   BDE: an important announcement.
+do $seed6$
+declare
+  v_alice uuid := 'a0000000-0000-4000-8000-000000000001';
+  v_julie uuid := 'a0000000-0000-4000-8000-000000000004';
+  v_lucas uuid := 'a0000000-0000-4000-8000-000000000005';
+  v_emma uuid := 'a0000000-0000-4000-8000-000000000006';
+  v_nina uuid := 'a0000000-0000-4000-8000-000000000007';
+  v_finance uuid := (select id from public.organizations where slug = 'exemple-finance');
+  v_sports uuid := (select id from public.organizations where slug = 'exemple-sports');
+  v_bde uuid := (select id from public.organizations where kind = 'bde');
+  v_post uuid;
+  v_rev jsonb;
+  v_category uuid;
+  -- A short rich-text body, clearly fictional.
+  v_body jsonb := '{"type": "doc", "content": [
+    {"type": "paragraph", "content": [{"type": "text", "text": "Texte fictif de démonstration, écrit pour les données locales."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Un intertitre"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Un second paragraphe, avec un "},
+      {"type": "text", "marks": [{"type": "bold"}], "text": "passage en gras"},
+      {"type": "text", "text": " et un "},
+      {"type": "text", "marks": [{"type": "link", "attrs": {"href": "/associations/exemple-finance"}}], "text": "lien interne"},
+      {"type": "text", "text": "."}]},
+    {"type": "bulletList", "content": [
+      {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Premier point"}]}]},
+      {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Second point"}]}]}]}
+  ]}'::jsonb;
+begin
+  -- Finance asks for a review before every publication.
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_julie, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.set_editorial_settings(v_finance, 'approval', true);
+
+  -- 1. Published, then edited (the edit waits for review).
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_lucas, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  select id into v_category from public.post_categories where slug = 'vie-associative';
+  v_post := public.create_post(v_finance, 'article', 'Rentrée de l''asso Finance (exemple)');
+  v_rev := public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'article', 'title', 'Rentrée de l''asso Finance (exemple)',
+                       'intro', 'Article fictif de démonstration : ce que prépare l''asso cette année.',
+                       'body', v_body, 'category_id', v_category, 'tags', jsonb_build_array('rentree', 'finance')));
+  perform public.submit_post_revision(v_post, (v_rev ->> 'revision_id')::uuid);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_julie, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.review_post_revision(v_post, (v_rev ->> 'revision_id')::uuid, 'approve', null);
+  perform public.publish_post(v_post, (v_rev ->> 'revision_id')::uuid);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_lucas, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  v_rev := public.save_post_revision(v_post, (v_rev ->> 'revision_id')::uuid, 0,
+    jsonb_build_object('kind', 'article', 'title', 'Rentrée de l''asso Finance (exemple, corrigé)',
+                       'intro', 'Article fictif de démonstration, version corrigée en attente de relecture.',
+                       'body', v_body, 'category_id', v_category, 'tags', jsonb_build_array('rentree', 'finance')));
+  perform public.submit_post_revision(v_post, (v_rev ->> 'revision_id')::uuid);
+
+  -- 2. A draft.
+  v_post := public.create_post(v_finance, 'annonce', 'Brouillon de Lucas (exemple)');
+  perform public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'annonce', 'title', 'Brouillon de Lucas (exemple)',
+                       'intro', 'Brouillon fictif, jamais publié.', 'body', v_body, 'tags', '[]'::jsonb));
+
+  -- 3. Waiting for review.
+  v_post := public.create_post(v_finance, 'article', 'Soirée networking (exemple)');
+  v_rev := public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'article', 'title', 'Soirée networking (exemple)',
+                       'intro', 'Article fictif soumis à la relecture de la présidence.', 'body', v_body, 'tags', '[]'::jsonb));
+  perform public.submit_post_revision(v_post, (v_rev ->> 'revision_id')::uuid);
+
+  -- 4. Approved, not yet published.
+  v_post := public.create_post(v_finance, 'breve', 'Partenariats (exemple)');
+  v_rev := public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'breve', 'title', 'Partenariats (exemple)',
+                       'intro', 'Brève fictive approuvée, pas encore publiée.', 'body', '{"type": "doc", "content": []}'::jsonb,
+                       'tags', '[]'::jsonb));
+  perform public.submit_post_revision(v_post, (v_rev ->> 'revision_id')::uuid);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_julie, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.review_post_revision(v_post, (v_rev ->> 'revision_id')::uuid, 'approve', null);
+
+  -- 5. Approved and scheduled for next week.
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_lucas, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  v_post := public.create_post(v_finance, 'article', 'Atelier marchés (exemple)');
+  v_rev := public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'article', 'title', 'Atelier marchés (exemple)',
+                       'intro', 'Article fictif programmé pour la semaine prochaine.', 'body', v_body, 'tags', '[]'::jsonb));
+  perform public.submit_post_revision(v_post, (v_rev ->> 'revision_id')::uuid);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_julie, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.review_post_revision(v_post, (v_rev ->> 'revision_id')::uuid, 'approve', null);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_lucas, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.schedule_post(v_post, (v_rev ->> 'revision_id')::uuid, date_trunc('hour', now()) + interval '7 days');
+
+  -- Sports publishes directly (the default policy).
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_emma, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  select id into v_category from public.post_categories where slug = 'sport';
+  v_post := public.create_post(v_sports, 'recap', 'Récap du tournoi (exemple)');
+  v_rev := public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'recap', 'title', 'Récap du tournoi (exemple)',
+                       'intro', 'Récap fictif d''un tournoi qui n''a pas eu lieu.', 'body', v_body,
+                       'category_id', v_category, 'tags', jsonb_build_array('tournoi')));
+  perform public.publish_post(v_post, (v_rev ->> 'revision_id')::uuid);
+
+  v_post := public.create_post(v_sports, 'article', 'Ancien article (exemple)');
+  v_rev := public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'article', 'title', 'Ancien article (exemple)',
+                       'intro', 'Article fictif archivé.', 'body', v_body, 'tags', '[]'::jsonb));
+  perform public.publish_post(v_post, (v_rev ->> 'revision_id')::uuid);
+  perform public.archive_post(v_post, true);
+
+  v_post := public.create_post(v_sports, 'annonce', 'Annonce masquée (exemple)');
+  v_rev := public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'annonce', 'title', 'Annonce masquée (exemple)',
+                       'intro', 'Annonce fictive masquée par la modération du BDE.', 'body', v_body, 'tags', '[]'::jsonb));
+  perform public.publish_post(v_post, (v_rev ->> 'revision_id')::uuid);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_nina, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  perform public.report_post(v_post, 'misleading', 'Signalement fictif de démonstration.');
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_alice, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.hide_post(v_post, 'Masquage fictif de démonstration.');
+
+  -- The BDE's important announcement.
+  select id into v_category from public.post_categories where slug = 'infos-pratiques';
+  v_post := public.create_post(v_bde, 'annonce', 'Infos de rentrée (exemple)');
+  v_rev := public.save_post_revision(v_post, (select working_revision_id from public.posts where id = v_post), 1,
+    jsonb_build_object('kind', 'annonce', 'title', 'Infos de rentrée (exemple)',
+                       'intro', 'Annonce fictive du BDE, mise en avant comme importante.', 'body', v_body,
+                       'category_id', v_category, 'tags', '[]'::jsonb));
+  perform public.publish_post(v_post, (v_rev ->> 'revision_id')::uuid);
+  perform public.set_post_prominence(v_post, 'important', null);
+
+  perform set_config('request.jwt.claims', '', true);
+end
+$seed6$;

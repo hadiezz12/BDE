@@ -46,7 +46,10 @@ select is_empty(
           'my_page_organization_ids',     -- Phase 5: page team read policies
           'association_media_organization', -- Phase 5: Storage policies
           'association_media_object_is_public',
-          'portrait_object_is_public'
+          'portrait_object_is_public',
+          'my_post_editor_organization_ids', -- Phase 6: content read policies
+          'my_readable_post_ids',
+          'my_media_organization_ids'
         ) $$,
   'authenticated can execute only the allowlisted private helpers'
 );

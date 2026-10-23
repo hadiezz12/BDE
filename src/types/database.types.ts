@@ -321,6 +321,54 @@ export type Database = {
           },
         ]
       }
+      content_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          post_id: string
+          reason: string
+          reporter_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          post_id: string
+          reason: string
+          reporter_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          post_id?: string
+          reason?: string
+          reporter_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delegation_permissions: {
         Row: {
           delegation_id: string
@@ -673,6 +721,39 @@ export type Database = {
             foreignKeyName: "memberships_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_editorial_settings: {
+        Row: {
+          organization_id: string
+          review_mode: string
+          show_authors: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          organization_id: string
+          review_mode?: string
+          show_authors?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          organization_id?: string
+          review_mode?: string
+          show_authors?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_editorial_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -1150,6 +1231,393 @@ export type Database = {
           },
         ]
       }
+      post_categories: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      post_reviews: {
+        Row: {
+          content_hash: string
+          created_at: string
+          decision: string
+          id: string
+          note: string | null
+          post_id: string
+          reviewer_id: string
+          revision_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          content_hash: string
+          created_at?: string
+          decision: string
+          id?: string
+          note?: string | null
+          post_id: string
+          reviewer_id: string
+          revision_id: string
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          note?: string | null
+          post_id?: string
+          reviewer_id?: string
+          revision_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reviews_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_reviews_revision_fkey"
+            columns: ["revision_id", "post_id"]
+            isOneToOne: false
+            referencedRelation: "post_revisions"
+            referencedColumns: ["id", "post_id"]
+          },
+        ]
+      }
+      post_revision_media: {
+        Row: {
+          media_id: string
+          revision_id: string
+          role: string
+        }
+        ComputedFields: never
+        Insert: {
+          media_id: string
+          revision_id: string
+          role: string
+        }
+        Update: {
+          media_id?: string
+          revision_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_revision_media_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "association_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_revision_media_revision_id_fkey"
+            columns: ["revision_id"]
+            isOneToOne: false
+            referencedRelation: "post_revisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_revisions: {
+        Row: {
+          body: Json
+          category_id: string | null
+          contributors: string[]
+          cover_media_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          intro: string | null
+          kind: string
+          number: number
+          post_id: string
+          published_at: string | null
+          restored_from: string | null
+          review_mode: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          search: unknown
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string
+          version: number
+        }
+        ComputedFields: never
+        Insert: {
+          body?: Json
+          category_id?: string | null
+          contributors: string[]
+          cover_media_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          intro?: string | null
+          kind: string
+          number: number
+          post_id: string
+          published_at?: string | null
+          restored_from?: string | null
+          review_mode?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          search?: unknown
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by: string
+          version?: number
+        }
+        Update: {
+          body?: Json
+          category_id?: string | null
+          contributors?: string[]
+          cover_media_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          intro?: string | null
+          kind?: string
+          number?: number
+          post_id?: string
+          published_at?: string | null
+          restored_from?: string | null
+          review_mode?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          search?: unknown
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_revisions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "post_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_revisions_cover_media_id_fkey"
+            columns: ["cover_media_id"]
+            isOneToOne: false
+            referencedRelation: "association_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_revisions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_revisions_restored_from_fkey"
+            columns: ["restored_from"]
+            isOneToOne: false
+            referencedRelation: "post_revisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_slug_history: {
+        Row: {
+          post_id: string
+          replaced_at: string
+          replaced_by: string | null
+          slug: string
+        }
+        ComputedFields: never
+        Insert: {
+          post_id: string
+          replaced_at?: string
+          replaced_by?: string | null
+          slug: string
+        }
+        Update: {
+          post_id?: string
+          replaced_at?: string
+          replaced_by?: string | null
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_slug_history_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          first_published_at: string | null
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
+          id: string
+          organization_id: string
+          pinned_at: string | null
+          pinned_by: string | null
+          prominence: string
+          prominence_by: string | null
+          prominence_until: string | null
+          publication: string
+          published_at: string | null
+          published_by: string | null
+          published_revision_id: string | null
+          schedule_attempted_at: string | null
+          schedule_attempts: number
+          schedule_error: string | null
+          schedule_status: string | null
+          scheduled_at: string | null
+          scheduled_by: string | null
+          scheduled_revision_id: string | null
+          slug: string | null
+          unpublished_at: string | null
+          updated_at: string
+          working_revision_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by: string
+          first_published_at?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          organization_id: string
+          pinned_at?: string | null
+          pinned_by?: string | null
+          prominence?: string
+          prominence_by?: string | null
+          prominence_until?: string | null
+          publication?: string
+          published_at?: string | null
+          published_by?: string | null
+          published_revision_id?: string | null
+          schedule_attempted_at?: string | null
+          schedule_attempts?: number
+          schedule_error?: string | null
+          schedule_status?: string | null
+          scheduled_at?: string | null
+          scheduled_by?: string | null
+          scheduled_revision_id?: string | null
+          slug?: string | null
+          unpublished_at?: string | null
+          updated_at?: string
+          working_revision_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          first_published_at?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          organization_id?: string
+          pinned_at?: string | null
+          pinned_by?: string | null
+          prominence?: string
+          prominence_by?: string | null
+          prominence_until?: string | null
+          publication?: string
+          published_at?: string | null
+          published_by?: string | null
+          published_revision_id?: string | null
+          schedule_attempted_at?: string | null
+          schedule_attempts?: number
+          schedule_error?: string | null
+          schedule_status?: string | null
+          scheduled_at?: string | null
+          scheduled_by?: string | null
+          scheduled_revision_id?: string | null
+          slug?: string | null
+          unpublished_at?: string | null
+          updated_at?: string
+          working_revision_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_published_revision_fkey"
+            columns: ["published_revision_id", "id"]
+            isOneToOne: false
+            referencedRelation: "post_revisions"
+            referencedColumns: ["id", "post_id"]
+          },
+          {
+            foreignKeyName: "posts_scheduled_revision_fkey"
+            columns: ["scheduled_revision_id", "id"]
+            isOneToOne: false
+            referencedRelation: "post_revisions"
+            referencedColumns: ["id", "post_id"]
+          },
+          {
+            foreignKeyName: "posts_working_revision_fkey"
+            columns: ["working_revision_id", "id"]
+            isOneToOne: false
+            referencedRelation: "post_revisions"
+            referencedColumns: ["id", "post_id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -1203,6 +1671,10 @@ export type Database = {
         Args: { p_position_id: string; p_reason: string }
         Returns: undefined
       }
+      archive_post: {
+        Args: { p_archive?: boolean; p_post_id: string }
+        Returns: undefined
+      }
       assign_position: {
         Args: {
           p_ends_at: string
@@ -1221,10 +1693,16 @@ export type Database = {
         Args: { p_reason?: string; p_transition_id: string }
         Returns: undefined
       }
+      cancel_post_schedule: { Args: { p_post_id: string }; Returns: undefined }
       change_organization_slug: {
         Args: { p_organization_id: string; p_slug: string }
         Returns: string
       }
+      change_post_slug: {
+        Args: { p_post_id: string; p_slug: string }
+        Returns: string
+      }
+      content_dashboard: { Args: { p_organization_id: string }; Returns: Json }
       create_association_category: {
         Args: { p_label: string; p_slug: string; p_sort_order?: number }
         Returns: string
@@ -1261,6 +1739,19 @@ export type Database = {
         }
         Returns: string
       }
+      create_post: {
+        Args: { p_kind: string; p_organization_id: string; p_title?: string }
+        Returns: string
+      }
+      create_post_category: {
+        Args: { p_label: string; p_slug: string; p_sort_order?: number }
+        Returns: string
+      }
+      delete_post_draft: { Args: { p_post_id: string }; Returns: undefined }
+      dismiss_report: {
+        Args: { p_note?: string; p_report_id: string }
+        Returns: undefined
+      }
       end_assignment: {
         Args: { p_assignment_id: string; p_reason?: string }
         Returns: undefined
@@ -1274,6 +1765,10 @@ export type Database = {
         Returns: Json
       }
       governance_overview: { Args: never; Returns: Json }
+      hide_post: {
+        Args: { p_post_id: string; p_reason: string }
+        Returns: undefined
+      }
       invite_member: {
         Args: {
           p_email: string
@@ -1284,6 +1779,8 @@ export type Database = {
         Returns: string
       }
       member_access: { Args: { p_membership_id: string }; Returns: Json }
+      moderated_post: { Args: { p_post_id: string }; Returns: Json }
+      moderation_queue: { Args: never; Returns: Json }
       my_access: { Args: never; Returns: Json }
       my_governance_inbox: { Args: never; Returns: Json }
       organization_governance: {
@@ -1292,6 +1789,11 @@ export type Database = {
       }
       organization_team: { Args: { p_organization_id: string }; Returns: Json }
       platform_organizations: { Args: never; Returns: Json }
+      post_editor: { Args: { p_post_id: string }; Returns: Json }
+      post_preview: {
+        Args: { p_post_id: string; p_revision_id?: string }
+        Returns: Json
+      }
       propose_association_appointment: {
         Args: {
           p_candidate_email: string
@@ -1330,13 +1832,37 @@ export type Database = {
       }
       public_association: { Args: { p_slug: string }; Returns: Json }
       public_association_categories: { Args: never; Returns: Json }
+      public_association_posts: {
+        Args: { p_limit?: number; p_slug: string }
+        Returns: Json
+      }
       public_associations: { Args: never; Returns: Json }
+      public_featured_posts: { Args: never; Returns: Json }
       public_portrait_path: {
         Args: { p_membership_id: string }
         Returns: string
       }
+      public_post: { Args: { p_slug: string }; Returns: Json }
+      public_post_facets: { Args: never; Returns: Json }
+      public_post_sitemap: { Args: never; Returns: Json }
+      public_posts: {
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_category?: string
+          p_kind?: string
+          p_limit?: number
+          p_organization_slug?: string
+          p_q?: string
+        }
+        Returns: Json
+      }
       publish_association_page: {
         Args: { p_expected_revision: number; p_organization_id: string }
+        Returns: string
+      }
+      publish_post: {
+        Args: { p_post_id: string; p_revision_id: string }
         Returns: string
       }
       register_association_media: {
@@ -1363,6 +1889,10 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
+      report_post: {
+        Args: { p_details?: string; p_post_id: string; p_reason: string }
+        Returns: undefined
+      }
       respond_to_invitation: {
         Args: { p_accept: boolean; p_invitation_id: string }
         Returns: string
@@ -1370,6 +1900,23 @@ export type Database = {
       respond_to_leadership_candidacy: {
         Args: { p_accept: boolean; p_transition_id: string }
         Returns: string
+      }
+      restore_post_revision: {
+        Args: { p_post_id: string; p_revision_id: string }
+        Returns: Json
+      }
+      restore_post_visibility: {
+        Args: { p_post_id: string; p_reason: string }
+        Returns: undefined
+      }
+      review_post_revision: {
+        Args: {
+          p_decision: string
+          p_note?: string
+          p_post_id: string
+          p_revision_id: string
+        }
+        Returns: undefined
       }
       revoke_delegation: {
         Args: { p_delegation_id: string; p_reason?: string }
@@ -1383,6 +1930,19 @@ export type Database = {
         Args: { p_base: Json; p_organization_id: string; p_patch: Json }
         Returns: number
       }
+      save_post_revision: {
+        Args: {
+          p_content: Json
+          p_post_id: string
+          p_revision_id: string
+          p_version: number
+        }
+        Returns: Json
+      }
+      schedule_post: {
+        Args: { p_at: string; p_post_id: string; p_revision_id: string }
+        Returns: undefined
+      }
       set_association_gallery: {
         Args: { p_base: Json; p_items: Json; p_organization_id: string }
         Returns: number
@@ -1390,6 +1950,14 @@ export type Database = {
       set_association_team_presentation: {
         Args: { p_base: Json; p_entries: Json; p_organization_id: string }
         Returns: number
+      }
+      set_editorial_settings: {
+        Args: {
+          p_organization_id: string
+          p_review_mode: string
+          p_show_authors: boolean
+        }
+        Returns: undefined
       }
       set_membership_status: {
         Args: { p_membership_id: string; p_reason?: string; p_status: string }
@@ -1408,8 +1976,24 @@ export type Database = {
         Args: { p_organization_id: string; p_reason?: string; p_status: string }
         Returns: undefined
       }
+      set_post_pin: {
+        Args: { p_pinned: boolean; p_post_id: string }
+        Returns: undefined
+      }
+      set_post_prominence: {
+        Args: { p_post_id: string; p_prominence: string; p_until?: string }
+        Returns: undefined
+      }
+      submit_post_revision: {
+        Args: { p_post_id: string; p_revision_id: string }
+        Returns: undefined
+      }
       unpublish_association_page: {
         Args: { p_organization_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      unpublish_post: {
+        Args: { p_post_id: string; p_reason?: string }
         Returns: undefined
       }
       update_association_category: {
@@ -1434,8 +2018,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_post_category: {
+        Args: {
+          p_archived: boolean
+          p_category_id: string
+          p_label: string
+          p_sort_order: number
+        }
+        Returns: undefined
+      }
       withdraw_bde_approval: {
         Args: { p_transition_id: string }
+        Returns: undefined
+      }
+      withdraw_post_revision: {
+        Args: { p_post_id: string; p_revision_id: string }
         Returns: undefined
       }
       withhold_association_page: {
