@@ -181,6 +181,28 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   report_dismissed: "a classé un signalement",
   post_hidden: "a masqué un article (modération BDE)",
   post_restored: "a rétabli un article masqué (modération BDE)",
+  post_event_linked: "a relié un article à un événement",
+  post_event_unlinked: "a retiré l'événement d'un article",
+  // Phase 7: events
+  event_created: "a commencé un événement",
+  event_updated: "a modifié un événement en ligne",
+  event_rescheduled: "a changé les dates d'un événement",
+  event_location_changed: "a changé le lieu d'un événement",
+  event_registration_changed: "a changé les inscriptions d'un événement",
+  event_published: "a publié un événement",
+  event_unpublished: "a retiré un événement du site",
+  event_cancelled: "a annulé un événement",
+  event_draft_deleted: "a supprimé un brouillon d'événement",
+  event_pinned: "a épinglé un événement sur la page",
+  event_unpinned: "a désépinglé un événement",
+  event_slug_changed: "a changé l'adresse d'un événement",
+  event_registration_removed: "a retiré une inscription",
+  event_attendees_exported: "a exporté la liste des participant·es",
+  event_hidden: "a masqué un événement (modération BDE)",
+  event_restored: "a rétabli un événement masqué (modération BDE)",
+  event_prominence_changed: "a changé la mise en avant d'un événement",
+  event_category_created: "a créé une catégorie d'événements",
+  event_category_updated: "a modifié une catégorie d'événements",
 };
 
 /** Confirmations shown by a page after an answer removed the card it came from (?fait=…). */

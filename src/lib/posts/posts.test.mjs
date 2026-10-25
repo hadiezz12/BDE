@@ -808,6 +808,7 @@ test("a published post as lists show it, nothing more", () => {
     "authorName",
     "category",
     "cover",
+    "event",
     "excerpt",
     "id",
     "kind",
@@ -827,6 +828,7 @@ test("a published post as lists show it, nothing more", () => {
   assert.equal(item.updatedAt, undefined);
   assert.equal(item.readingMinutes, 3);
   assert.equal(item.authorName, undefined);
+  assert.equal(item.event, undefined, "no event linked: none shown (Phase 7)");
   assert.deepEqual(item.category, { slug: "exemple", label: "Exemple" });
   assert.deepEqual(item.tags, ["gala"]);
   assert.equal(item.cover.src, `/media/associations/${ORG}/${MEDIA}.webp`);

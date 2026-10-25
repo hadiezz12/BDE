@@ -6,6 +6,15 @@ export const routes = {
   home: "/",
   events: "/events",
   event: (slug: string) => `/events/${slug}`,
+  /** The campus calendar: month, week or list (?vue=mois|semaine|liste&date=YYYY-MM-DD). */
+  eventCalendar: "/events/calendrier",
+  /** The event as an iCalendar file (public information only). */
+  eventIcs: (slug: string) => `/events/${slug}/ics`,
+  /**
+   * An event as it will look, for its team only (never indexed). "apercu" is
+   * a reserved event slug, so no event can take it.
+   */
+  eventPreview: (eventId: string) => `/events/apercu/${eventId}`,
   associations: "/associations",
   association: (slug: string) => `/associations/${slug}`,
   /** The draft of a page, for its team only (never indexed). */
@@ -59,6 +68,12 @@ export const routes = {
   /** The association's publishing rules (approval or direct, authors shown). */
   manageContentSettings: (asso: string) => `/manage/${asso}/content/reglages`,
   manageEvents: (asso: string) => `/manage/${asso}/events`,
+  manageEventNew: (asso: string) => `/manage/${asso}/events/new`,
+  /** One event in the wizard (by id: drafts have no address yet); `step` opens a step. */
+  manageEvent: (asso: string, eventId: string, step?: string) =>
+    `/manage/${asso}/events/${eventId}${step ? `?etape=${step}` : ""}`,
+  manageEventParticipants: (asso: string, eventId: string) => `/manage/${asso}/events/${eventId}/participants`,
+  manageEventParticipantsExport: (asso: string, eventId: string) => `/manage/${asso}/events/${eventId}/participants/export`,
   manageTeam: (asso: string) => `/manage/${asso}/team`,
   /** One member: positions, mandates and the permission inspector. */
   manageMember: (asso: string, membershipId: string) => `/manage/${asso}/team/${membershipId}`,
@@ -92,5 +107,7 @@ export const routes = {
   managePlatformModeration: "/manage/plateforme/moderation",
   /** What the BDE puts "à la une" or marks important, campus-wide. */
   managePlatformFeatured: "/manage/plateforme/une",
+  /** The site's events: moderation and the front page (public information only). */
+  managePlatformEvents: "/manage/plateforme/evenements",
   manageContinuity: "/manage/continuite",
 } as const;

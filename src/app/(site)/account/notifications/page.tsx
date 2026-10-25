@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { routes } from "@/lib/routes";
 import { getSession } from "@/lib/session";
-import { getNotifications } from "@/lib/data/users";
+import { getMyEventNotifications } from "@/lib/events/me";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -11,20 +11,23 @@ import { groupByCalendarDay } from "@/components/account/account-facts";
 
 export const metadata: Metadata = {
   title: "Notifications",
-  description: "Les nouvelles de tes soirées, de tes candidatures, de tes assos et du BDE, jour par jour.",
+  description: "Les nouvelles de tes inscriptions aux événements, jour par jour.",
+  robots: { index: false },
 };
 
 /**
- * Notifications, newest first, grouped by day. Unread ones stand out (pink
- * edge, bold title, "non lue" for screen readers); each kind is named.
- * "Tout marquer comme lu" is client-only demo state (NotificationsBoard).
+ * Notifications, newest first, grouped by day: the student's event
+ * messages (notification_outbox, their own rows only) — confirmation,
+ * waiting list, a freed seat, a change of date or place, a cancellation, the
+ * reminder. Unread ones stand out (pink edge, bold title, "non lue" for
+ * screen readers). "Tout marquer comme lu" is saved (NotificationsBoard).
  */
 export default async function AccountNotificationsPage() {
   const { user } = await getSession();
   if (!user) return null;
 
   const now = new Date();
-  const notifications = await getNotifications(user.id);
+  const notifications = await getMyEventNotifications(100);
   const unread = notifications.filter((n) => !n.read).length;
   const groups = groupByCalendarDay(notifications, now);
 
@@ -34,7 +37,7 @@ export default async function AccountNotificationsPage() {
         variant="document"
         kicker="Mon espace"
         title="Notifications"
-        intro="Tes soirées, tes candidatures, tes assos et les annonces du BDE. Ce que tu reçois se règle dans ton profil."
+        intro="Les nouvelles de tes inscriptions : confirmation, liste d'attente, place libérée, changement de date ou de lieu, annulation et rappel la veille."
       />
 
       <div className="wrap">
@@ -43,12 +46,12 @@ export default async function AccountNotificationsPage() {
             <EmptyState
               title="Rien pour l'instant."
               actions={
-                <ButtonLink href={routes.accountProfile} variant="secondary" icon="arrow-right">
-                  Régler mes notifications
+                <ButtonLink href={routes.events} variant="secondary" icon="arrow-right">
+                  Voir l&apos;agenda
                 </ButtonLink>
               }
             >
-              Les rappels de tes soirées, les nouvelles de tes candidatures et les annonces du BDE arriveront ici.
+              Quand tu t&apos;inscris à un événement, sa confirmation, ses changements et son rappel arrivent ici.
             </EmptyState>
           ) : (
             <NotificationsBoard unread={unread}>

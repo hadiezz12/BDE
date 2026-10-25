@@ -1,5 +1,4 @@
 import "server-only";
-import { ticketSales } from "@/data/mock";
 import { addDaysToKey, parisDateKey, parisISO } from "@/lib/time";
 import type {
   ApplicationStatus,
@@ -8,7 +7,6 @@ import type {
   PostKind,
   RecruitmentPosition,
 } from "@/lib/types";
-import { getEvents } from "./events";
 import { getCampaigns } from "./recruitment";
 import { getApplicants } from "./users";
 
@@ -17,9 +15,8 @@ import { getApplicants } from "./users";
  * derived from records the platform holds: registrations against capacity,
  * applications, publications. No page views, no "reach": nothing is tracked.
  *
- * Phase 1 derives everything from the mock data (plus the daily ticket
- * series in data/mock/analytics). Phase 2: the same shapes from SQL
- * aggregates over Supabase tables.
+ * The shapes are kept for the analytics phase, which will fill them from
+ * SQL aggregates; until then only recruitment is derived.
  */
 
 /** One day of a daily series. `key` is the Paris date ("2026-10-08"); `iso` is noon that day. */
@@ -110,67 +107,25 @@ function dayRange(fromKey: string, toKey: string): string[] {
 
 const noon = (key: string) => parisISO(key, "12:00");
 
-/* ---- Derivations ---------------------------------------------------------- */
-
-function phaseOf(e: EventItem, now: Date): FillPhase {
-  if (Date.parse(e.endsAt ?? e.startsAt) < now.getTime()) return "past";
-  return Date.parse(e.startsAt) <= now.getTime() ? "live" : "upcoming";
-}
-
-function uncountedReason(e: EventItem): string {
-  if (e.publication === "brouillon") return "Brouillon, pas encore d'inscriptions";
-  if (e.publication === "programme") return "Programmé, pas encore dans l'agenda";
-  if (e.registration.status === "libre") return "Entrée libre, sans inscription";
-  if (e.registration.capacity === undefined) return "Billetterie pas encore ouverte, jauge à fixer";
-  return "Billetterie pas encore ouverte";
-}
-
 export async function getAssociationAnalytics(associationId: string, now = new Date()): Promise<AssociationAnalytics> {
   const season = seasonOf(now);
   const todayKey = parisDateKey(now);
-  const inSeason = (iso: string) => {
-    const k = parisDateKey(iso);
-    return k >= season.startKey && k < season.endKey;
-  };
 
-  const [upcoming, past, campaigns] = await Promise.all([
-    getEvents({ associationId, includeUnpublished: true, when: "upcoming" }),
-    getEvents({ associationId, includeUnpublished: true, when: "past" }),
-    getCampaigns({ associationId, scope: "all" }),
-  ]);
+  const campaigns = await getCampaigns({ associationId, scope: "all" });
   // Unsent applications never reach the bureau, so they are not counted.
   const applicants = campaigns.length
     ? (await getApplicants({ campaignIds: campaigns.map((c) => c.id) })).filter((a) => a.status !== "brouillon")
     : [];
 
-  /* Events: registrations against capacity, chronological. */
-  const seasonEvents = [...past, ...upcoming]
-    .filter((e) => inSeason(e.startsAt))
-    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  /*
+   * Events: registrations now live in the database (Phase 7) and the bureau
+   * reads them, with their counts, in the events desk. Their season-long
+   * statistics come with the analytics phase; until then nothing is derived
+   * from Phase 1 mock series.
+   */
   const counted: EventFill[] = [];
   const uncounted: UncountedEvent[] = [];
-  for (const e of seasonEvents) {
-    const { capacity, taken } = e.registration;
-    if (e.publication === "publie" && capacity !== undefined && capacity > 0 && taken !== undefined) {
-      counted.push({ event: e, taken, capacity, phase: phaseOf(e, now) });
-    } else {
-      uncounted.push({ event: e, reason: uncountedReason(e) });
-    }
-  }
-
-  /* Ticket sales per day, with the days a related post went out. */
-  const byId = new Map(seasonEvents.map((e) => [e.id, e]));
-  const sales: SalesStats[] = ticketSales
-    .filter((s) => byId.has(s.eventId))
-    .map((s) => {
-      const event = byId.get(s.eventId)!;
-      const days = s.days
-        .map((d) => ({ key: parisDateKey(d.day), iso: d.day, count: d.count }))
-        .filter((d) => d.key <= todayKey);
-      // Posts are not linked to events (Phase 6 has no such link): no markers.
-      return { event, days, total: days.reduce((n, d) => n + d.count, 0), posts: [] };
-    })
-    .filter((s) => s.days.length > 0);
+  const sales: SalesStats[] = [];
 
   /* Applications per campaign: by status, by role, per day. */
   const campaignStats: CampaignStats[] = campaigns.map((campaign) => {

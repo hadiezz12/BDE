@@ -113,6 +113,29 @@ export type GovernanceErrorCode =
   | "report_rate_limited"
   | "report_invalid"
   | "report_not_open"
+  // Phase 7: events and registrations
+  | "event_not_found"
+  | "event_invalid"
+  | "event_incomplete"
+  | "event_cancelled"
+  | "event_hidden"
+  | "event_not_hidden"
+  | "event_past"
+  | "event_has_registrations"
+  | "event_not_published"
+  | "event_was_published"
+  | "event_owner_locked"
+  | "registration_not_available"
+  | "registration_not_open"
+  | "registration_closed"
+  | "registration_not_found"
+  | "registration_rate_limited"
+  | "event_full"
+  | "cancellation_closed"
+  | "capacity_below_confirmed"
+  | "registration_mode_locked"
+  | "waitlist_not_empty"
+  | "profile_incomplete"
   | "unavailable"
   | "unexpected";
 
@@ -197,7 +220,7 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   media_quota: "La médiathèque est pleine (300 images) : retire celles qui ne servent plus.",
   media_invalid: "Cette image n'a pas pu être enregistrée.",
   media_in_use:
-    "Cette image est utilisée (logo, couverture, galerie ou article, en brouillon ou en ligne) : remplace-la d'abord.",
+    "Cette image est utilisée (logo, couverture, galerie, article ou événement, en brouillon ou en ligne) : remplace-la d'abord.",
   slug_invalid:
     "Adresse invalide : lettres minuscules, chiffres et tirets (3 caractères au moins), sans les mots réservés du site.",
   category_invalid: "Cette catégorie n'existe pas ou n'est plus proposée.",
@@ -239,6 +262,36 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   report_rate_limited: "Tu as envoyé beaucoup de signalements d'un coup. Réessaie plus tard.",
   report_invalid: "Choisis une raison (et 500 caractères au plus pour les précisions).",
   report_not_open: "Ce signalement a déjà été traité.",
+  event_not_found: "Cet événement n'existe plus ou n'est plus visible.",
+  event_invalid:
+    "Un champ n'est pas au bon format : vérifie le titre (120 caractères), les dates (la fin après le début, 14 jours au plus), le lieu et les liens (https).",
+  event_incomplete:
+    "Il manque l'essentiel pour publier : un titre, un résumé, les dates de début et de fin, le lieu (ou « en ligne ») et, pour une inscription sur un autre site, son adresse.",
+  event_cancelled: "Cet événement est annulé : il ne change plus et ne prend plus d'inscription.",
+  event_hidden:
+    "Le BDE a retiré cet événement du site (modération) : il ne peut pas revenir en ligne tant que le BDE ne l'a pas rétabli.",
+  event_not_hidden: "Cet événement n'est pas masqué.",
+  event_past: "Cet événement est déjà terminé : choisis des dates à venir.",
+  event_has_registrations:
+    "Des personnes sont inscrites ou en liste d'attente : on ne retire pas l'événement du site, on l'annule (elles sont prévenues).",
+  event_not_published: "Cet événement n'est pas en ligne.",
+  event_was_published:
+    "Cet événement a déjà été en ligne : il ne se supprime pas (son lien a pu être partagé). Annule-le ou retire-le du site.",
+  event_owner_locked: "Un événement reste dans l'asso qui l'a créé.",
+  registration_not_available: "Cet événement ne prend pas d'inscription sur le site.",
+  registration_not_open: "Les inscriptions ne sont pas encore ouvertes.",
+  registration_closed: "Les inscriptions sont closes.",
+  registration_not_found: "Tu n'es pas (ou plus) inscrit·e à cet événement.",
+  registration_rate_limited: "Trop d'inscriptions et d'annulations d'un coup. Réessaie dans quelques minutes.",
+  event_full: "C'est complet, et il n'y a pas de liste d'attente pour cet événement.",
+  cancellation_closed:
+    "Il est trop tard pour annuler toi-même : préviens l'asso qui organise.",
+  capacity_below_confirmed:
+    "La capacité ne peut pas descendre sous le nombre de places déjà confirmées. Retire d'abord des inscriptions (avec une raison) si c'est vraiment nécessaire.",
+  registration_mode_locked:
+    "Des personnes sont inscrites : le mode d'inscription ne change plus. Annule l'événement si tout change.",
+  waitlist_not_empty: "Des personnes attendent : la liste d'attente ne peut pas être fermée.",
+  profile_incomplete: "Termine d'abord ton profil (prénom et nom) : c'est ce que voit l'asso qui organise.",
   unavailable: "Le service est momentanément indisponible. Réessaie dans un instant.",
   unexpected: "Une erreur inattendue est survenue. Réessaie, et préviens le BDE si ça continue.",
 };

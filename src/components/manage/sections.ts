@@ -64,8 +64,7 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     label: "Événements",
     icon: "calendar",
     href: routes.manageEvents,
-    requires: ["events.create", "events.edit", "events.publish"],
-    soon: true,
+    requires: ["events.create", "events.edit", "events.publish", "events.attendees.view"],
   },
   {
     key: "recruitment",

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { EventItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { formatDayFull } from "@/lib/format";
@@ -8,39 +7,31 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { EventPoster } from "@/components/events/EventPoster";
 import type { PersonalState } from "@/components/events/PersonalMarks";
-import { eventAccent, timeRange } from "@/components/events/event-facts";
-import { euros, type MemberCardLink } from "./home-facts";
+import { RegistrationState } from "@/components/events/RegistrationState";
+import { eventAccent, timeRange, venueLine } from "@/components/events/event-facts";
 
 /**
  * The featured spread, printed on paper: the event's emblem poster with its
  * ticket on one side, and on the other what a student wants to know before
- * buying — how long to wait (a countdown, J-18), the pitch, three practical
- * lines and what the member card saves. The countdown is drawn in the
- * emblem's colour; the poster carries the only sticker.
+ * saying yes — how long to wait (a countdown, J-18), the pitch, where it is
+ * and where registration stands. The countdown is drawn in the emblem's
+ * colour; the poster carries the only sticker.
  */
 export function FeaturedEvent({
   event,
   index,
   personal,
-  memberActive,
-  memberCard,
   now,
 }: {
   event: EventItem;
   /** Running section number, e.g. "02". */
   index?: string;
   personal?: PersonalState;
-  /** null for a visitor (no card to speak of). */
-  memberActive: boolean | null;
-  memberCard: MemberCardLink;
   now: Date;
 }) {
   const days = Math.max(0, dayDiff(now, event.startsAt));
   const range = timeRange(event, now);
-  const practical = (event.practical ?? []).slice(0, 3);
   const club = event.association.shortName ?? event.association.name;
-  const price = event.price;
-  const memberPrice = price?.member !== undefined && price.member < price.standard ? price.member : null;
 
   return (
     <div data-surface="paper" className="grain">
@@ -82,44 +73,19 @@ export function FeaturedEvent({
             </p>
           </div>
 
-          <p className="max-w-2xl type-lead">{event.summary}</p>
+          {event.summary && <p className="max-w-2xl type-lead">{event.summary}</p>}
 
-          {practical.length > 0 && (
-            <div>
-              <h3 className="type-label text-muted">À savoir avant d&apos;y aller</h3>
-              <ul className="mt-3 border-b border-line">
-                {practical.map((line) => (
-                  <li key={line} className="flex gap-3 border-t border-line py-3">
-                    <Icon name="check" size={18} strokeWidth={2.25} className="mt-0.5 shrink-0 text-assoc-text" />
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {price && memberPrice !== null && (
+          <div className="flex flex-col gap-4 border-y border-line py-4">
             <p className="flex items-start gap-3">
-              <Icon name="ticket" size={20} className="mt-0.5 shrink-0 text-assoc-text" />
-              {memberActive ? (
-                <span>
-                  Avec ta carte cotisante, tu paies <strong>{euros(memberPrice)}</strong> au lieu de{" "}
-                  {euros(price.standard)}.
-                </span>
-              ) : (
-                <span>
-                  <strong>{euros(memberPrice)}</strong> avec la carte cotisante, {euros(price.standard)} sans.{" "}
-                  <Link href={memberCard.href} className="link font-semibold">
-                    {memberCard.price !== null ? `La carte : ${euros(memberCard.price)} l'année` : "Prendre la carte"}
-                  </Link>
-                </span>
-              )}
+              <Icon name={event.venue.type === "online" ? "globe" : "pin"} size={18} className="mt-0.5 shrink-0 text-assoc-text" />
+              <span>{venueLine(event.venue)}</span>
             </p>
-          )}
+            <RegistrationState event={event} meter now={now} />
+          </div>
 
           <div>
             <ButtonLink href={routes.event(event.slug)} icon="arrow-right" size="lg">
-              {event.category === "soiree" ? "Voir la soirée" : "Voir l'événement"}
+              {event.category?.slug === "soiree" ? "Voir la soirée" : "Voir l'événement"}
             </ButtonLink>
           </div>
         </div>

@@ -1,10 +1,9 @@
 import type { CSSProperties } from "react";
-import type { AccentKey, CampusEvent, EventItem, RegistrationStatus, Venue } from "@/lib/types";
+import type { AccentKey, CampusEvent, EventItem, RegistrationState, Venue } from "@/lib/types";
 import type { StatusTone } from "@/components/ui/StatusBadge";
 import type { StickerTone } from "@/components/ui/Sticker";
 import {
   DAY_BUCKET_LABEL,
-  REGISTRATION_LABEL,
   dayBucket,
   formatDayShort,
   formatTime,
@@ -12,6 +11,7 @@ import {
   relativeDay,
 } from "@/lib/format";
 import { CAMPUS_TZ, dayDiff } from "@/lib/time";
+import { REGISTRATION_STATE_LABEL, lastSeats, seatsLeft } from "@/lib/events/model";
 
 /**
  * Small derivations shared by the events kit (rows, posters, date blocks,
@@ -32,9 +32,9 @@ function parisHour(iso: string): number {
 /** "Ce soir" starts at 18h, same threshold as lib/format relativeDay. */
 const EVENING_HOUR = 18;
 
-/** Over once it has ended (or started, when it has no end). Same rule as lib/data/events. */
+/** Over once it has ended (the database counts it as past from then on). */
 export function isOver(e: Timed, now = new Date()): boolean {
-  return Date.parse(e.endsAt ?? e.startsAt) < now.getTime();
+  return Date.parse(e.endsAt) <= now.getTime();
 }
 
 /**
@@ -42,7 +42,6 @@ export function isOver(e: Timed, now = new Date()): boolean {
  * single night that ends after midnight (BOO Party 23h → 5h).
  */
 export function isMultiDay(e: Timed): boolean {
-  if (!e.endsAt) return false;
   const days = dayDiff(e.startsAt, e.endsAt);
   return days >= 2 || (days === 1 && parisHour(e.endsAt) >= 12);
 }
@@ -107,22 +106,22 @@ export function eventAccent(e: Pick<EventItem, "emblem" | "association">): Accen
 
 /* ---- Registration -------------------------------------------------------- */
 
-/** Green = open, brand pink = last places (amber is kept for safety), cyan = not yet / waiting list, grey = closed. */
-export const REGISTRATION_TONE: Record<RegistrationStatus, StatusTone> = {
-  libre: "ok",
-  ouverte: "ok",
-  "derniere-chance": "accent",
-  bientot: "info",
-  "liste-attente": "info",
-  complet: "neutral",
-  fermee: "neutral",
+/**
+ * Green = you can come or register, brand pink = last seats (amber is kept
+ * for safety), cyan = not yet / waiting list / on another site, grey =
+ * closed or over, red = cancelled.
+ */
+export const REGISTRATION_TONE: Record<RegistrationState, StatusTone> = {
+  none: "ok",
+  open: "ok",
+  external: "info",
+  upcoming: "info",
+  waitlist: "info",
+  full: "neutral",
+  closed: "neutral",
+  past: "neutral",
+  cancelled: "danger",
 };
-
-/** Seats left when the event counts them, else null. */
-export function seatsLeft(r: CampusEvent["registration"]): number | null {
-  if (r.capacity === undefined || r.taken === undefined) return null;
-  return Math.max(0, r.capacity - r.taken);
-}
 
 /** "clôture à 17h" · "clôture demain à 17h" · "clôture le 31 oct." */
 function closingWords(closesAt: string, now: Date): string | null {
@@ -141,83 +140,88 @@ export interface RegistrationFacts {
   detail: string | null;
   /** Live things only. */
   pulse: boolean;
-  /** For an optional fill meter. */
+  /** For an optional fill meter (internal registration with a capacity). */
   fill: { taken: number; capacity: number } | null;
 }
 
-export function registrationFacts(
-  e: Pick<CampusEvent, "registration" | "startsAt" | "endsAt">,
-  now = new Date(),
-): RegistrationFacts {
+type RegistrationInput = Pick<CampusEvent, "registration" | "startsAt" | "endsAt" | "status">;
+
+/**
+ * Where registration stands, from the database's state and real counts only:
+ * "Inscriptions ouvertes · 19 places restantes", "Dernières places · Plus que
+ * 2 places" (10 % of the capacity or less: lastSeats), "Complet · liste
+ * d'attente · 3 en attente", "Annulé".
+ */
+export function registrationFacts(e: RegistrationInput, now = new Date()): RegistrationFacts {
   const r = e.registration;
   const phase = eventPhase(e, now);
-  const left = seatsLeft(r);
-  const fill = r.capacity !== undefined && r.taken !== undefined ? { taken: r.taken, capacity: r.capacity } : null;
+  const fill = r.mode === "internal" && r.capacity !== undefined ? { taken: r.taken, capacity: r.capacity } : null;
 
-  if (phase === "past") {
-    return {
-      label: "Terminé",
-      tone: "neutral",
-      detail: r.taken ? plural(r.taken, "inscrit·e", "inscrit·es") : null,
-      pulse: false,
-      fill: null,
-    };
+  if (e.status === "cancelled") {
+    return { label: REGISTRATION_STATE_LABEL.cancelled, tone: "danger", detail: null, pulse: false, fill: null };
   }
-
+  if (phase === "past") {
+    return { label: "Terminé", tone: "neutral", detail: null, pulse: false, fill: null };
+  }
   if (phase === "live" && !isMultiDay(e)) {
     return {
       label: "En ce moment",
       tone: "ok",
-      detail: r.status === "libre" ? "Entrée libre, tu peux encore passer" : REGISTRATION_LABEL[r.status],
+      detail: r.mode === "none" ? "Entrée libre, tu peux encore passer" : null,
       pulse: true,
       fill: null,
     };
   }
 
   const parts: string[] = [];
-  switch (r.status) {
-    case "ouverte":
-    case "derniere-chance": {
-      if (left !== null) {
-        parts.push(
-          left === 0
-            ? "Toutes les places sont prises"
-            : left <= 10
-              ? `Plus que ${plural(left, "place")}`
-              : plural(left, "place restante", "places restantes"),
-        );
+  let label = REGISTRATION_STATE_LABEL[r.state];
+  let tone = REGISTRATION_TONE[r.state];
+  switch (r.state) {
+    case "open": {
+      const last = lastSeats(r);
+      const left = seatsLeft(r);
+      if (last !== null) {
+        label = "Dernières places";
+        tone = "accent";
+        parts.push(`Plus que ${plural(last, "place")}`);
+      } else if (left !== null) {
+        parts.push(plural(left, "place restante", "places restantes"));
       }
       const closing = r.closesAt ? closingWords(r.closesAt, now) : null;
       if (closing) parts.push(closing);
       break;
     }
-    case "bientot":
-      parts.push(
-        r.opensAt && Date.parse(r.opensAt) > now.getTime()
-          ? `Ouverture le ${formatDayShort(r.opensAt)} à ${formatTime(r.opensAt)}`
-          : "Date d'ouverture bientôt annoncée",
-      );
+    case "upcoming":
+      if (r.opensAt) parts.push(`Ouverture le ${formatDayShort(r.opensAt)} à ${formatTime(r.opensAt)}`);
       break;
-    case "complet":
-    case "liste-attente":
+    case "waitlist":
+      if (r.capacity !== undefined) parts.push(`Les ${r.capacity.toLocaleString("fr-FR")} places sont prises`);
+      if (r.waiting > 0) parts.push(`${r.waiting.toLocaleString("fr-FR")} en attente`);
+      break;
+    case "full":
       if (r.capacity !== undefined) parts.push(`Les ${r.capacity.toLocaleString("fr-FR")} places sont prises`);
       break;
-    case "libre":
-    case "fermee":
+    case "external":
+      parts.push("Sur le site de l'organisateur");
+      break;
+    case "none":
+    case "closed":
+    case "cancelled":
+    case "past":
       break;
   }
 
   const detail = parts.length ? parts.join(" · ") : null;
   return {
-    label: REGISTRATION_LABEL[r.status],
-    tone: REGISTRATION_TONE[r.status],
+    label,
+    tone,
     detail: detail && detail.charAt(0).toUpperCase() + detail.slice(1),
     pulse: false,
-    fill: r.status === "bientot" ? null : fill,
+    fill: r.state === "upcoming" ? null : fill,
   };
 }
 
-/* ---- When, where, how much ------------------------------------------------ */
+/* ---- When, where ---------------------------------------------------------- */
 
 export interface TimeRange {
   /** Visible text, with "→" between the two ends. */
@@ -232,7 +236,6 @@ export interface TimeRange {
  */
 export function timeRange(e: Timed, now = new Date()): TimeRange {
   const start = formatTime(e.startsAt);
-  if (!e.endsAt) return { text: start, spoken: `à ${start}` };
   const end = formatTime(e.endsAt);
   if (isMultiDay(e)) {
     if (eventPhase(e, now) === "live") {
@@ -246,10 +249,12 @@ export function timeRange(e: Timed, now = new Date()): TimeRange {
   return { text: `${start} → ${end}`, spoken: `de ${start} à ${end}` };
 }
 
-/** "Nom de la salle · campus" · "Nom du lieu · Paris" (format only). */
+/** "Nom de la salle · campus" · "Nom du lieu · Paris" · "En ligne" (format only). */
 export function venueLine(v: Venue): string {
-  if (v.onCampus) return /campus/i.test(v.name) ? v.name : `${v.name} · campus`;
-  return v.city && !v.name.includes(v.city) ? `${v.name} · ${v.city}` : v.name;
+  if (v.type === "online") return "En ligne";
+  const name = v.name ?? (v.onCampus ? "Sur le campus" : "Lieu à venir");
+  if (v.onCampus) return /campus/i.test(name) ? name : `${name} · campus`;
+  return v.city && !name.includes(v.city) ? `${name} · ${v.city}` : name;
 }
 
 /* ---- Stickers -------------------------------------------------------------- */
@@ -258,19 +263,17 @@ export function venueLine(v: Venue): string {
  * The one sticker a poster may wear: a fact, loudest first. Null when nothing
  * is worth shouting — most posters should have none.
  */
-export function eventSticker(
-  e: Pick<CampusEvent, "registration" | "startsAt" | "endsAt">,
-  now = new Date(),
-): { label: string; tone: StickerTone } | null {
+export function eventSticker(e: RegistrationInput, now = new Date()): { label: string; tone: StickerTone } | null {
+  if (e.status === "cancelled") return { label: "Annulé", tone: "cream" };
   const phase = eventPhase(e, now);
   if (phase === "past") return null;
   if (phase === "live" && !isMultiDay(e)) return { label: "En ce moment", tone: "ok" };
   if (isTonight(e, now)) return { label: "Ce soir", tone: "accent" };
   const r = e.registration;
-  if (r.status === "complet" || r.status === "liste-attente") return { label: "Complet", tone: "cream" };
-  if (r.status === "derniere-chance") {
-    const left = seatsLeft(r);
-    return { label: left !== null && left > 0 && left <= 10 ? `Plus que ${plural(left, "place")}` : "Dernières places", tone: "blush" };
+  if (r.state === "full" || r.state === "waitlist") return { label: "Complet", tone: "cream" };
+  if (r.state === "open") {
+    const last = lastSeats(r);
+    if (last !== null) return { label: `Plus que ${plural(last, "place")}`, tone: "blush" };
   }
   if (phase === "upcoming" && dayDiff(now, e.startsAt) === 1) return { label: relativeDay(e.startsAt, now), tone: "cream" };
   return null;

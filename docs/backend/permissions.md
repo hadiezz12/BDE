@@ -56,7 +56,10 @@ Database guards: an ordinary position may only carry grantable organization keys
 | `posts.approve` (approve a submitted version or ask for changes, never one's own) | content | ✓ | ✓ | | ✓ (Phase 6) |
 | `posts.publish` (publish, schedule, unpublish, archive, pin, change an address) | content | ✓ | ✓ | | ✓ (Phase 6) |
 | `posts.settings` (the editorial policy: approval or direct, authors shown) | content | ✓ | | | ✓ (Phase 6) |
-| `events.create`, `events.edit`, `events.publish` | events | ✓ | ✓ | | later |
+| `events.create` (start events, write one's own drafts, send their images) | events | ✓ | ✓ | | ✓ (Phase 7) |
+| `events.edit` (edit every event of the association; wording and image of a published one) | events | ✓ | ✓ | | ✓ (Phase 7) |
+| `events.publish` (publish, take off the site, cancel, change dates, place or registration of a published event, pin, change an address) | events | ✓ | ✓ | | ✓ (Phase 7) |
+| `events.attendees.view`, `.manage` (remove a registration with a reason), `.export` (CSV, audited) | events | ✓ | | ✓ | ✓ (Phase 7) |
 | `media.manage` (the image library) | media | ✓ | ✓ | | ✓ (Phase 5) |
 | `recruitment.campaigns.manage`, `recruitment.questions.manage` | recruitment | ✓ | ✓ | | later |
 | `recruitment.applications.view`, `.review`, `.export` | recruitment | ✓ | | ✓ | later |
@@ -70,12 +73,12 @@ lending them would let a borrower hand out rights the lender's position does not
 | Key | Held by |
 | --- | --- |
 | `platform.governance.view` | BDE president, BDE vice-president, guardian |
-| `platform.organizations.manage` (create, publish, suspend, archive; the directory categories and the post rubriques) | BDE president, BDE vice-president |
+| `platform.organizations.manage` (create, publish, suspend, archive; the directory categories, the post rubriques and the agenda categories) | BDE president, BDE vice-president |
 | `platform.associations.intervene` (appoint or end an association presidency in an emergency) | BDE president, BDE vice-president |
 | `platform.bde.succession` | BDE president, BDE vice-president |
 | `platform.audit.view` | BDE president, BDE vice-president |
-| `platform.content.moderate` (withhold and release an association page, Phase 5; handle reports, hide and restore posts, Phase 6) | BDE president, BDE vice-president |
-| `platform.content.feature` (featured stories and important BDE announcements on the campus feed, Phase 6) | BDE president, BDE vice-president |
+| `platform.content.moderate` (withhold and release an association page, Phase 5; handle reports, hide and restore posts, Phase 6; hide and restore events, Phase 7) | BDE president, BDE vice-president |
+| `platform.content.feature` (featured stories and important BDE announcements on the campus feed, Phase 6; events "à l'affiche" of the agenda and home page, Phase 7) | BDE president, BDE vice-president |
 | `platform.recovery` (restore a vacant BDE office, end a compromised one) | guardian only |
 
 The two BDE offices also carry every organization key **of the BDE organization itself**, so they
@@ -89,7 +92,7 @@ run the BDE's own team like any president. They get no key inside another associ
 | Présidence / Vice-présidence du BDE (offices) | every organization key except `governance.succession`, plus the BDE platform keys above |
 | Vice-présidence | members.view, members.invite, positions.assign, governance.view, audit.view, organization.settings.update, posts.create, posts.edit, posts.approve, posts.publish, events.*, media.manage, recruitment.campaigns.manage, recruitment.questions.manage, analytics.view |
 | Communication | members.view, posts.create, posts.edit, posts.publish, media.manage |
-| Événements | members.view, events.*, media.manage |
+| Événements | members.view, events.create, events.edit, events.publish, events.attendees.view, events.attendees.manage, media.manage |
 | Responsable recrutement | members.view, recruitment.* (including the three sensitive application keys) |
 | Évaluation des candidatures | recruitment.applications.view, recruitment.applications.review |
 | Trésorerie | members.view, analytics.view |

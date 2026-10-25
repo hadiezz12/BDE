@@ -5,10 +5,10 @@ import { registrationFacts } from "./event-facts";
 
 /**
  * Where registration stands, in words: "Inscriptions ouvertes · 19 places
- * restantes", "Billetterie bientôt · Ouverture le 24 oct. à 12h", "Complet ·
- * Les 24 places sont prises", "Terminé · 380 inscrit·es". The label always
- * says it; colour only repeats it (green open, pink text for the last
- * places, cyan not yet / waiting list, grey closed).
+ * restantes", "Bientôt · Ouverture le 24 oct. à 12h", "Complet · Les 24
+ * places sont prises", "Annulé". The label always says it; colour only
+ * repeats it (green open, pink text for the last places, cyan not yet /
+ * waiting list, grey closed, red cancelled).
  *
  *  - badge : the status alone (dense tables, side lists)
  *  - full  : status + detail line, optional fill meter (rows, posters, detail page)
@@ -29,7 +29,7 @@ export function RegistrationState({
   now = new Date(),
   className,
 }: {
-  event: Pick<CampusEvent, "registration" | "startsAt" | "endsAt">;
+  event: Pick<CampusEvent, "registration" | "startsAt" | "endsAt" | "status">;
   variant?: "badge" | "full";
   /** Thin bar showing how full the event is (only when capacity is known). */
   meter?: boolean;

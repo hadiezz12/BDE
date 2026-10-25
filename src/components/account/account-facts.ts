@@ -1,6 +1,6 @@
-import type { ApplicationItem, EventItem, NotificationKind, UserProfile } from "@/lib/types";
+import type { ApplicationItem, EventItem, NotificationKind } from "@/lib/types";
 import type { IconName } from "@/components/ui/Icon";
-import type { PersonalState } from "@/components/events/PersonalMarks";
+import { toEventItem, type MyEventsPayload, type MyRegistrationPayload } from "@/lib/events/model";
 import { eventPhase } from "@/components/events/event-facts";
 import { formatDayFull, formatDayShort, formatTime } from "@/lib/format";
 import { CAMPUS_TZ, dayDiff, parisDateKey } from "@/lib/time";
@@ -78,34 +78,74 @@ export function sinceWords(iso: string, now = new Date()): string {
 
 /* ---- Events ----------------------------------------------------------------- */
 
-/** What an event is to this student (for PersonalMarks), or undefined. */
-export function personalStateOf(
-  user: Pick<UserProfile, "registeredEventIds" | "savedEventIds">,
-  eventId: string,
-): PersonalState | undefined {
-  const registered = user.registeredEventIds.includes(eventId);
-  const saved = user.savedEventIds.includes(eventId);
-  return registered || saved ? { registered, saved } : undefined;
+export type MyEventEntry = { event: EventItem; registration: MyRegistrationPayload };
+
+/** An event the student registered to that is no longer on the site (hidden, page taken offline). */
+export interface UnavailableEntry {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  organization: string;
+  cancelled: boolean;
+  registration: MyRegistrationPayload;
 }
 
 /**
- * The student's events, split the way the space shows them: tickets to come
- * (soonest first), saved-but-not-registered to come, and everything past
- * (most recent first). Unpublished events never show.
+ * The student's events (my_events), split the way the space shows them:
+ *  - tickets: a seat or a waiting place for something not over, soonest first;
+ *  - cancelled: events the organizers cancelled while the student held a place;
+ *  - withdrawn: registrations cancelled (by the student or the organizers) for something to come;
+ *  - past: what they had a place for and is over, most recent first;
+ *  - unavailable: registrations whose event is no longer on the site;
+ *  - saved: bookmarks to come, without a place.
  */
-export function splitMyEvents(
-  user: Pick<UserProfile, "registeredEventIds" | "savedEventIds">,
-  events: EventItem[],
-  now = new Date(),
-) {
-  const unique = [...new Map(events.filter((e) => e.publication === "publie").map((e) => [e.id, e])).values()];
-  const byStart = (a: EventItem, b: EventItem) => Date.parse(a.startsAt) - Date.parse(b.startsAt);
-  const isPast = (e: EventItem) => eventPhase(e, now) === "past";
-  const registered = (e: EventItem) => user.registeredEventIds.includes(e.id);
+export function splitMyEvents(my: MyEventsPayload, now = new Date()) {
+  const byStart = (a: MyEventEntry, b: MyEventEntry) => Date.parse(a.event.startsAt) - Date.parse(b.event.startsAt);
+  const tickets: MyEventEntry[] = [];
+  const cancelled: MyEventEntry[] = [];
+  const withdrawn: MyEventEntry[] = [];
+  const past: MyEventEntry[] = [];
+  const unavailable: UnavailableEntry[] = [];
+  const held = new Set<string>();
+
+  for (const { registration, event } of my.registrations) {
+    const active = registration.status !== "cancelled";
+    if ("unavailable" in event) {
+      if (active) {
+        unavailable.push({
+          id: event.id,
+          title: event.title,
+          startsAt: event.starts_at,
+          endsAt: event.ends_at,
+          organization: event.organization.short_name ?? event.organization.name,
+          cancelled: event.status === "cancelled",
+          registration,
+        });
+        held.add(event.id);
+      }
+      continue;
+    }
+    const entry = { event: toEventItem(event), registration };
+    const over = eventPhase(entry.event, now) === "past";
+    if (active) held.add(event.id);
+    if (active && entry.event.status === "cancelled") cancelled.push(entry);
+    else if (active && over) past.push(entry);
+    else if (active) tickets.push(entry);
+    else if (!over && entry.event.status !== "cancelled") withdrawn.push(entry);
+  }
+
   return {
-    tickets: unique.filter((e) => registered(e) && !isPast(e)).sort(byStart),
-    saved: unique.filter((e) => !registered(e) && !isPast(e)).sort(byStart),
-    past: unique.filter(isPast).sort((a, b) => byStart(b, a)),
+    tickets: tickets.sort(byStart),
+    cancelled: cancelled.sort((a, b) => byStart(b, a)),
+    withdrawn: withdrawn.sort(byStart),
+    past: past.sort((a, b) => byStart(b, a)),
+    unavailable,
+    saved: my.bookmarks
+      .filter((b) => !held.has(b.id))
+      .map((b) => toEventItem(b))
+      .filter((e) => e.status !== "cancelled" && eventPhase(e, now) !== "past")
+      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
   };
 }
 

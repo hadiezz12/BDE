@@ -5,8 +5,8 @@ import { routes } from "@/lib/routes";
 import { formatDateLong, formatDayFull, formatTime, plural, relativeDay } from "@/lib/format";
 import { getSession } from "@/lib/session";
 import { getAssociationsByIds, getBde, toRef } from "@/lib/data/associations";
-import { getEventsByIds } from "@/lib/data/events";
-import { getApplications, getNotifications } from "@/lib/data/users";
+import { getApplications } from "@/lib/data/users";
+import { getMyEventNotifications, getMyEvents } from "@/lib/events/me";
 import { getMyMfaStatus } from "@/lib/auth/mfa";
 import { AssociationRow } from "@/components/associations/AssociationRow";
 import { MemberCard } from "@/components/brand/MemberCard";
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 
 /** The one sentence under the hello: what's next, said like a friend would. */
 function nextOutLine(next: EventItem | undefined, now: Date): string {
-  if (!next) return "Rien de prévu pour l'instant : quand le bureau annonce une date et que tu t'inscris, elle s'affiche ici.";
+  if (!next) return "Rien de prévu pour l'instant : quand tu t'inscris à un événement, il s'affiche ici.";
   const name = shortEventName(next.title);
   if (isTonight(next, now)) return `Ce soir, c'est ${name}. Le reste peut attendre demain.`;
   if (eventPhase(next, now) === "live") return `${name} est en cours. Le reste peut attendre.`;
@@ -54,15 +54,15 @@ export default async function AccountHomePage() {
   if (!user) return null;
 
   const now = new Date();
-  const [events, applications, notifications, associations, mfa] = await Promise.all([
-    getEventsByIds([...user.registeredEventIds, ...user.savedEventIds]),
+  const [my, applications, notifications, associations, mfa] = await Promise.all([
+    getMyEvents(),
     getApplications(user.id),
-    getNotifications(user.id),
+    getMyEventNotifications(20),
     getAssociationsByIds([...new Set([...user.memberships.map((m) => m.associationId), ...user.managedAssociationIds])]),
     getMyMfaStatus(),
   ]);
 
-  const { tickets, saved } = splitMyEvents(user, events, now);
+  const { tickets, saved } = splitMyEvents(my, now);
   const next = tickets[0];
   const attention = applications.filter((a) => needsAttention(a, now));
   const ongoing = applications.filter(isOngoing);
@@ -88,7 +88,7 @@ export default async function AccountHomePage() {
             {greeting(now)}
             {name ? ` ${name}` : ""}.
           </h1>
-          <p className="max-w-2xl type-lead text-muted">{nextOutLine(next, now)}</p>
+          <p className="max-w-2xl type-lead text-muted">{nextOutLine(next?.event, now)}</p>
           {/* Counts only once there is something to count: a fresh space doesn't need a row of zeros. */}
           {tickets.length + ongoing.length + unread.length > 0 && (
             <p className="flex flex-wrap gap-x-5 gap-y-1 type-meta text-muted">
@@ -108,7 +108,17 @@ export default async function AccountHomePage() {
           />
           {next ? (
             <>
-              <RegisteredTicket event={next} holder={user} practicalLimit={3} now={now} />
+              <RegisteredTicket
+                event={next.event}
+                holder={user}
+                registration={{
+                  status: next.registration.status === "waitlisted" ? "waitlisted" : "confirmed",
+                  position: next.registration.position,
+                  reference: next.registration.reference,
+                }}
+                accessDetails={next.registration.access_details}
+                now={now}
+              />
               {tickets.length > 1 && (
                 <p className="type-small text-muted">
                   Et {plural(tickets.length - 1, "autre inscription", "autres inscriptions")} à venir,{" "}
@@ -136,8 +146,8 @@ export default async function AccountHomePage() {
                 </>
               }
             >
-              Quand tu t&apos;inscris à un événement, ton billet arrive ici avec ce qu&apos;il faut savoir avant
-              d&apos;y aller.
+              Quand tu t&apos;inscris à un événement, ton billet arrive ici avec sa référence, l&apos;heure et le
+              lieu.
             </EmptyState>
           )}
         </section>
@@ -237,7 +247,7 @@ export default async function AccountHomePage() {
             </div>
           ) : (
             <EmptyState tone="quiet" className="mt-6" title="Tu es à jour.">
-              Les nouvelles de tes soirées, de tes candidatures et de tes assos arriveront ici.
+              Les nouvelles de tes inscriptions (confirmation, changement, rappel) arriveront ici.
             </EmptyState>
           )}
         </section>

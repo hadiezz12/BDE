@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { SearchEntry, SearchKind } from "@/lib/types";
-import { getSearchIndex, postSearchEntry } from "@/lib/data/search";
+import { eventSearchEntry, getSearchIndex, postSearchEntry } from "@/lib/data/search";
+import { getEventPage } from "@/lib/data/events";
 import { getFeed, getPostFacets } from "@/lib/data/posts";
 import { normaliseQuery, searchEntries, SEARCH_KIND_LABEL } from "@/lib/search";
 import { routes } from "@/lib/routes";
@@ -92,12 +93,30 @@ async function searchArticlesInDatabase(q: string): Promise<SearchEntry[] | null
 function scopeLine(counts: Record<SearchKind, number>): string {
   const parts = [
     counts.association > 0 && plural(counts.association, "association"),
-    counts.evenement > 0 && `${plural(counts.evenement, "événement")} de l'année`,
+    counts.evenement > 0 && plural(counts.evenement, "événement"),
     counts.recrutement > 0 && plural(counts.recrutement, "campagne de recrutement", "campagnes de recrutement"),
     counts.article > 0 && plural(counts.article, "article du fil", "articles du fil"),
     "les pages du site",
   ].filter((p): p is string => Boolean(p));
   return `Dans ${listFr.format(parts)}.`;
+}
+
+/**
+ * Dated events from the database's full-text search (public_events: French
+ * stemming, accents ignored, the association's name too), the ones to come
+ * first, then the last ones over. Null when the index must answer instead.
+ */
+async function searchEventsInDatabase(q: string): Promise<SearchEntry[] | null> {
+  if (normaliseQuery(q).replace(/\s+/g, "").length < 2) return null;
+  try {
+    const [upcoming, past] = await Promise.all([
+      getEventPage({ q, limit: RESULTS_PER_KIND }),
+      getEventPage({ q, limit: RESULTS_PER_KIND, order: "desc" }),
+    ]);
+    return [...upcoming.items, ...past.items].slice(0, RESULTS_PER_KIND).map(eventSearchEntry);
+  } catch {
+    return null;
+  }
 }
 
 /** One block of results: the count as a big numeral, the rubrique, the rows. */
@@ -143,20 +162,23 @@ function ResultGroup({
 
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const q = readQuery((await searchParams).q);
-  const [index, facets, found] = await Promise.all([
+  const [index, facets, found, foundEvents] = await Promise.all([
     getSearchIndex(),
     getPostFacets().catch(() => null),
     q ? searchArticlesInDatabase(q) : Promise.resolve(null),
+    q ? searchEventsInDatabase(q) : Promise.resolve(null),
   ]);
-  // Associations, events and recruitment: the local index, as in the ⌘K dialog.
-  const others = index.filter((e) => e.kind !== "article");
+  // Associations, the events of the year and recruitment: the local index, as in the ⌘K dialog.
+  // Dated events come from the database when it answers (past ones included), else from the index.
+  const dated = (e: SearchEntry) => e.kind === "evenement" && /^[0-9a-f]{8}-/.test(e.id);
+  const others = index.filter((e) => e.kind !== "article" && !(foundEvents && dated(e)));
   const articles = q
     ? (found ?? searchEntries(index.filter((e) => e.kind === "article"), q, RESULTS_PER_KIND))
     : [];
 
   // The fil counts every published article, not just the ones the index carries.
   const counts = { ...countByKind(index), ...(facets ? { article: facets.total } : {}) };
-  const results = q ? [...searchEntries(others, q, RESULTS_PER_KIND), ...articles] : [];
+  const results = q ? [...searchEntries(others, q, RESULTS_PER_KIND), ...(foundEvents ?? []), ...articles] : [];
   const pages: SitePage[] = q ? matchPages(q) : [];
   const groups = rankGroups(groupByKind(results), q);
   const total = results.length + pages.length;

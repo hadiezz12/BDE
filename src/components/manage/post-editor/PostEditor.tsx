@@ -86,6 +86,7 @@ export function PostEditor({
   readOnly,
   canPublishPage,
   today,
+  eventLink = null,
 }: {
   asso: string;
   data: PostEditorData;
@@ -94,6 +95,8 @@ export function PostEditor({
   canPublishPage: boolean;
   /** Today in Paris (yyyy-mm-dd), from the server. */
   today: string;
+  /** The event the article is about (server-rendered panel, saved on its own). */
+  eventLink?: ReactNode;
 }) {
   const router = useRouter();
   const { post, working, can, organization } = data;
@@ -686,6 +689,12 @@ export function PostEditor({
                 disabled={!editable}
               />
             </PanelSection>
+
+            {eventLink && (
+              <PanelSection title="Événement" className={cx(panel !== "reglages" && "max-xl:hidden")}>
+                {eventLink}
+              </PanelSection>
+            )}
 
             <PanelSection title="Relire" className={cx(panel !== "reglages" && "max-xl:hidden")}>
               <QualityNotes notes={notes} />

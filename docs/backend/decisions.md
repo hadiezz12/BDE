@@ -442,3 +442,72 @@ foundational choice.
 - **Consequence:** taking a post off the site is final until someone publishes it again; the
   audit line of the unpublication or archiving records whether a schedule or a prominence went
   with it.
+
+## D44. Events are their own model, owned by one organization (Phase 7)
+
+- **Decision:** `events` is a table of its own (not a kind of post), owned by one organization for
+  ever (`event_owner_locked`), with three concerns kept apart: publication
+  (draft/published/unpublished), status (scheduled/cancelled, irreversible) and BDE moderation
+  (hidden). "Past" is computed from `ends_at`, never stored.
+- **Reason:** dates, places, capacity and registrations have rules a post does not; a cancelled
+  event must stay readable with its reason, and a hidden one must keep its registrations.
+- **Consequence:** an event with registrations is cancelled, never unpublished or deleted; only a
+  draft that was never online can be deleted. Co-organizers are a credit, not a right.
+
+## D45. Seats are counted under the event's lock, by the database only (Phase 7)
+
+- **Decision:** `register_for_event` locks the event row and maintains `confirmed_count` and
+  `waitlist_count`; `CHECK (capacity is null or confirmed_count <= capacity)` and a unique partial
+  index (one active registration per student and event) make overbooking and double registration
+  impossible. A null capacity means unlimited. Registering twice returns the same registration.
+- **Reason:** the brief's 20-students-for-one-seat case; counting rows from the app would race.
+- **Consequence:** the counters are written only by the functions (lock order: event, then
+  registrations); the concurrency suite runs on every push.
+
+## D46. The waiting list is first come, first served, and only while registration is open (Phase 7)
+
+- **Decision:** waiting places are ordered by a sequence; a freed seat goes automatically to the
+  first in line, who is told, as long as registration is open. After the closing time nobody is
+  promoted.
+- **Reason:** fairness without a person deciding; a late promotion would surprise someone hours
+  before the start.
+- **Consequence:** organizers who want to fill a late seat raise the capacity knowingly (which
+  promotes in order). Leaving the list is always possible before the start.
+
+## D47. "À l'affiche" is the BDE's, pins are the association's (Phase 7)
+
+- **Decision:** as for posts (D40), `platform.content.feature` puts up to three events "à
+  l'affiche" of the agenda and the home page, for 60 days at most; `events.publish` pins up to
+  three events at the top of its own association's page.
+- **Reason:** no association can take over the home page through its own metadata.
+- **Consequence:** prominence is released when an event is cancelled, hidden or taken offline.
+
+## D48. Participants are personal data with their own keys (Phase 7)
+
+- **Decision:** `events.attendees.view`, `.manage` and `.export` are sensitive, grantable,
+  never delegable; the list shows names, statuses, references and dates only (no e-mail); every
+  export is audited; a student's registrations are not audit lines.
+- **Reason:** organizing an event needs names, nothing more; `audit.view` must not become a way to
+  read who registered; the BDE must not get routine access to associations' participants.
+- **Consequence:** the BDE reads public information and counts only; the "Événements" template
+  sees and manages participants but does not export.
+
+## D49. Messages go through an outbox; e-mail is a separate worker (Phase 7)
+
+- **Decision:** every message is a `notification_outbox` row written in the same transaction as
+  the change it reports, deduplicated by key, read in the student's Notifications; a worker
+  (`/api/notifications/send`, the only user of the privileged client) e-mails pending rows with a
+  lease, retries and backoff. Reminders are queued by the pg_cron job `enqueue-event-reminders`.
+- **Reason:** a message must never be lost or doubled by a failed delivery, and a delivery problem
+  must never touch a registration. The sender's address and provider are the BDE's choice.
+- **Consequence:** without a transport configured (the case today) students get messages in the
+  site only and the desk shows e-mails waiting. The full notification centre stays Phase 10.
+
+## D50. Event reads fixed forward (Phase 7)
+
+- **Decision:** `20261025090000_event_read_fixes`: the BDE list's archive takes the 100 most
+  recent past events (it took the oldest); the article editor gets the linked event's address;
+  the participant counts list each person once (a cancelled row of someone who registered again
+  is not a cancellation).
+- **Reason:** found while building the screens and checking them on the development project.
+- **Consequence:** same signatures and grants; covered by new checks in `events.test.sql`.

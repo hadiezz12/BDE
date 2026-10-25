@@ -9,6 +9,7 @@ import { categoryKicker } from "@/components/associations/association-facts";
 import { PostItem } from "@/components/campus/PostItem";
 import { EventPoster } from "@/components/events/EventPoster";
 import { EventRow } from "@/components/events/EventRow";
+import { agendaHref } from "@/lib/events/filters";
 import type { PersonalState } from "@/components/events/PersonalMarks";
 import { Breadcrumbs } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
@@ -68,7 +69,7 @@ export function AssociationProfile({
   /** The draft shown to its page team: no personal marks, no links that act. */
   preview?: boolean;
 }) {
-  const { events, series, campaigns, posts, offer, applications } = modules;
+  const { events, pastEvents, personal, series, campaigns, posts, offer, applications } = modules;
   const now = new Date();
   const user = preview ? null : viewer.user;
   const { accent } = association;
@@ -81,8 +82,8 @@ export function AssociationProfile({
 
   const [nextEvent, ...laterEvents] = events;
   const shownLater = laterEvents.slice(0, EVENT_LIMIT - 1);
-  const personalFor = (e: EventItem): PersonalState | undefined =>
-    user ? { registered: user.registeredEventIds.includes(e.id), saved: user.savedEventIds.includes(e.id) } : undefined;
+  const personalFor = (e: EventItem): PersonalState | undefined => (user ? personal.get(e.id) : undefined);
+  const agendaOfThem = agendaHref({ association: association.slug });
 
   const noteFor = (c: CampaignItem) => {
     const mine = findApplication(applications, c.id);
@@ -103,7 +104,8 @@ export function AssociationProfile({
   const facts = [
     association.foundedYear ? { label: "Créée en", value: String(association.foundedYear) } : null,
     series.length > 0 ? { label: "Événements de l'année", value: String(series.length) } : null,
-    events.length > 0 ? { label: "À l'agenda", value: String(events.length) } : null,
+    // At most 9 are read: "9+" says there may be more.
+    events.length > 0 ? { label: "À l'agenda", value: events.length >= 9 ? "9+" : String(events.length) } : null,
     offer ? { label: "La carte", value: eur(offer.price) } : null,
   ]
     .filter((f): f is { label: string; value: string } => Boolean(f))
@@ -332,9 +334,9 @@ export function AssociationProfile({
           <SectionHeader
             id="rendez-vous"
             index={nextIndex()}
-            kicker={plural(events.length, "date à venir", "dates à venir")}
+            kicker={events.length >= 9 ? "Plus de 8 dates à venir" : plural(events.length, "date à venir", "dates à venir")}
             title="Prochains rendez-vous"
-            action={events.length > EVENT_LIMIT ? { href: routes.events, label: "Tout l'agenda" } : undefined}
+            action={events.length > EVENT_LIMIT ? { href: agendaOfThem, label: "Toutes leurs dates" } : undefined}
           />
           <div className="mt-8 grid gap-x-12 gap-y-10 lg:grid-cols-12">
             <EventPoster
@@ -398,6 +400,25 @@ export function AssociationProfile({
             </EmptyState>
           </section>
         )
+      )}
+
+      {/* ---- Their last events, quietly ---- */}
+      {pastEvents.length > 0 && (
+        <section aria-labelledby="deja-passes" className="wrap pt-[var(--section)]">
+          <SectionHeader
+            id="deja-passes"
+            as="h2"
+            size="headline"
+            kicker="Pour mémoire"
+            title="Déjà passés"
+            action={{ href: agendaHref({ association: association.slug, when: "past" }), label: "Les archives" }}
+          />
+          <div className="mt-6 border-b border-line">
+            {pastEvents.map((e) => (
+              <EventRow key={e.id} event={e} variant="compact" showAssociation={false} personal={personalFor(e)} now={now} />
+            ))}
+          </div>
+        </section>
       )}
 
       {/* ---- Recruitment, on paper like the fiches de poste ---- */}

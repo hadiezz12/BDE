@@ -5,7 +5,9 @@ import { getSession } from "@/lib/session";
 import { getMyAccess } from "@/lib/governance/access";
 import { legacyId } from "@/lib/data/associations";
 import { getEventSeries } from "@/lib/data/event-series";
-import { getEvents } from "@/lib/data/events";
+import { getAssociationEvents } from "@/lib/data/events";
+import { getMyEvents } from "@/lib/events/me";
+import { personalStates } from "@/lib/events/model";
 import { getMemberCardOffer } from "@/lib/data/member-card";
 import { getAssociationPosts } from "@/lib/data/posts";
 import { getCampaigns } from "@/lib/data/recruitment";
@@ -14,23 +16,26 @@ import type { ProfileViewer } from "./AssociationProfile";
 
 /**
  * What an association page shows besides its own profile: the events of its
- * year, the carte cotisante, dated events, recruitment and posts. Posts are
- * real (Phase 6: its published posts, pinned first). The other
- * modules still read the Phase 1 data layer (their own phases replace it),
- * keyed by the mock id of the BDE (legacyId); every other association has
- * none yet, so these sections stay out of its page.
+ * year, the carte cotisante, dated events, recruitment and posts. Posts
+ * (Phase 6) and events (Phase 7: its published events, pinned first, and the
+ * last ones over) are real, with the student's own marks. The other modules
+ * still read the Phase 1 data layer (their own phases replace it), keyed by
+ * the mock id of the BDE (legacyId); every other association has none yet,
+ * so these sections stay out of its page.
  */
 export async function loadProfileModules(association: Association, userId?: string) {
   const id = legacyId(association);
-  const [events, series, campaigns, posts, offer, applications] = await Promise.all([
-    getEvents({ associationId: id }),
+  const [events, pastEvents, my, series, campaigns, posts, offer, applications] = await Promise.all([
+    getAssociationEvents(association.slug, "upcoming", 9),
+    getAssociationEvents(association.slug, "past", 4),
+    userId ? getMyEvents() : Promise.resolve({ registrations: [], bookmarks: [] }),
     getEventSeries({ associationId: id }),
     getCampaigns({ associationId: id }),
     getAssociationPosts(association.slug, 4),
     getMemberCardOffer(id),
     userId ? getApplications(userId) : Promise.resolve<ApplicationItem[]>([]),
   ]);
-  return { events, series, campaigns, posts, offer, applications };
+  return { events, pastEvents, personal: personalStates(my), series, campaigns, posts, offer, applications };
 }
 
 export type ProfileModules = Awaited<ReturnType<typeof loadProfileModules>>;

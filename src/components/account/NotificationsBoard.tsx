@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useActionState, type ReactNode } from "react";
 import { cx } from "@/lib/cx";
 import { plural } from "@/lib/format";
+import { markNotificationsRead } from "@/app/actions/events";
 import { Button } from "@/components/ui/Button";
-import { DemoNotice } from "@/components/manage/DemoNotice";
+import { Icon } from "@/components/ui/Icon";
 
 /**
- * The notification list's toolbar and wrapper. "Tout marquer comme lu" is
- * PHASE 1 client state only: it flips [data-read-all] on the wrapper (the
- * server-rendered NotificationItems restyle themselves from it) and says
- * plainly that nothing is saved.
+ * The message list's toolbar and wrapper. "Tout marquer comme lu" is a real
+ * request (mark_notifications_read: the student's own rows only); once it
+ * succeeds the wrapper takes [data-read-all] at once (the server-rendered
+ * NotificationItems restyle themselves from it) and the next load shows
+ * them read from the database.
  */
 export function NotificationsBoard({
   unread,
@@ -21,7 +23,8 @@ export function NotificationsBoard({
   children: ReactNode;
   className?: string;
 }) {
-  const [allRead, setAllRead] = useState(false);
+  const [state, action, pending] = useActionState(markNotificationsRead, { status: "idle" });
+  const allRead = state.status === "done";
   const left = allRead ? 0 : unread;
 
   return (
@@ -37,26 +40,29 @@ export function NotificationsBoard({
             <span className="text-muted">Tout est lu. Les plus récentes en haut.</span>
           )}
         </p>
-        {/* aria-disabled, not disabled: the button keeps focus after the click. */}
-        <Button
-          variant="secondary"
-          size="sm"
-          icon="check"
-          iconPosition="start"
-          aria-disabled={left === 0}
-          onClick={() => {
-            if (left > 0) setAllRead(true);
-          }}
-        >
-          Tout marquer comme lu
-        </Button>
+        <form action={action}>
+          {/* aria-disabled, not disabled: the button keeps focus after the click. */}
+          <Button
+            type="submit"
+            variant="secondary"
+            size="sm"
+            icon="check"
+            iconPosition="start"
+            aria-disabled={left === 0 || pending}
+            onClick={(event) => {
+              if (left === 0 || pending) event.preventDefault();
+            }}
+          >
+            {pending ? "Un instant…" : "Tout marquer comme lu"}
+          </Button>
+        </form>
       </div>
-      <div role="status" className={cx(allRead && "mt-4")}>
-        {allRead && (
-          <DemoNotice>
-            rien n&apos;est enregistré pour l&apos;instant. Au prochain chargement, tes notifications redeviennent non
-            lues.
-          </DemoNotice>
+      <div role="status" className={cx(state.status === "error" && "mt-4")}>
+        {state.status === "error" && (
+          <p className="flex items-start gap-2 rounded-sm border-2 border-danger/60 bg-danger/10 p-3 type-small">
+            <Icon name="alert" size={18} className="mt-px shrink-0 text-danger" />
+            {state.message}
+          </p>
         )}
       </div>
       <div data-read-all={allRead ? "" : undefined}>{children}</div>

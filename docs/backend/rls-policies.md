@@ -211,6 +211,28 @@ The scheduled worker `private.run_scheduled_publications()` is executable by no 
 pg_cron job `publish-scheduled-posts` runs it every minute as the database owner
 ([publishing.md](publishing.md#scheduling)).
 
+## Phase 7: events
+
+Tables `event_categories`, `events`, `event_coorganizers`, `event_slug_history`,
+`event_registrations`, `event_bookmarks` and `notification_outbox` are read-only for the API
+roles: writes go only through the event functions ([events.md](events.md)). Policies:
+
+| Table | Who reads |
+| --- | --- |
+| `event_categories` | everyone the active ones; `platform.organizations.manage` all |
+| `events`, `event_coorganizers` | the event's team (`events.edit`, `events.publish`; an author their own drafts). Visitors read through `public_events` / `public_event` only |
+| `event_registrations` | the student their own rows. Teams read through `event_attendees` (`events.attendees.view`) |
+| `event_bookmarks` | the student their own rows |
+| `notification_outbox` | the recipient their own rows (no write: `mark_notifications_read`) |
+
+Each has a restrictive policy requiring the second factor when the person enrolled one. New
+private helpers, `security definer`, about the caller only: `private.my_event_team_organization_ids()`,
+`private.my_readable_event_ids()`. Granted to `anon` and `authenticated`: `public_events`,
+`public_event`, `public_event_facets`, `public_featured_events`, `public_association_events`,
+`public_series_events`, `public_event_sitemap`. Granted to `service_role` only:
+`claim_notification_emails`, `complete_notification_email`. The reminders function is executable
+by no API role; the pg_cron job `enqueue-event-reminders` runs it every 15 minutes.
+
 ## Performance (brief §61)
 
 - Policies call the helpers through `(select …)` subqueries (initPlan, once per statement).

@@ -1,9 +1,11 @@
 import "server-only";
 import { routes } from "@/lib/routes";
-import type { PostItem, SearchEntry } from "@/lib/types";
+import type { EventItem, PostItem, SearchEntry } from "@/lib/types";
+import { formatDayShort, formatTime } from "@/lib/format";
 import { POST_KIND_LABEL } from "@/components/campus/labels";
 import { getAssociations } from "./associations";
 import { getEventSeries } from "./event-series";
+import { getUpcomingEvents } from "./events";
 import { getLatestPosts } from "./posts";
 import { getCampaigns } from "./recruitment";
 
@@ -13,13 +15,15 @@ import { getCampaigns } from "./recruitment";
  * the 30 latest here: the /search page asks the database's full-text search
  * for them instead (public_posts), so older articles are found too.
  *
- * Events are indexed as the BDE's eight recurring events (one page each), not
- * as dated editions: no edition date is known yet.
+ * Events: the BDE's eight events of the year (one page each) and the dated
+ * events still to come (the 60 next, as on the agenda). The /search page
+ * asks the database for dated events too (public_events), past ones included.
  */
 export async function getSearchIndex(): Promise<SearchEntry[]> {
-  const [associations, series, campaigns, posts] = await Promise.all([
+  const [associations, series, upcoming, campaigns, posts] = await Promise.all([
     getAssociations(),
     getEventSeries(),
+    getUpcomingEvents().catch(() => [] as EventItem[]),
     getCampaigns({ scope: "all" }),
     // Same memoised read as the article page's "Ailleurs sur le campus"; the site still works without it.
     getLatestPosts(30).catch(() => [] as PostItem[]),
@@ -45,6 +49,7 @@ export async function getSearchIndex(): Promise<SearchEntry[]> {
       accent: s.accent,
       keywords: [s.description, producers.get(s.associationId)].filter(Boolean).join(" "),
     })),
+    ...upcoming.map(eventSearchEntry),
     ...campaigns
       .filter((c) => c.status !== "cloturee")
       .map<SearchEntry>((c) => ({
@@ -75,5 +80,19 @@ export function postSearchEntry(p: PostItem): SearchEntry {
     href: routes.post(p.slug),
     accent: p.association.accent,
     keywords: [p.excerpt, ...p.tags, p.category?.label, kind, p.association.name].filter(Boolean).join(" "),
+  };
+}
+
+/** A published event as a search result: date and association on the context line. */
+export function eventSearchEntry(e: EventItem): SearchEntry {
+  const when = `${formatDayShort(e.startsAt)} à ${formatTime(e.startsAt)}`;
+  return {
+    kind: "evenement",
+    id: e.id,
+    title: e.status === "cancelled" ? `${e.title} (annulé)` : e.title,
+    context: `${when} · ${e.association.shortName ?? e.association.name}`,
+    href: routes.event(e.slug),
+    accent: e.association.accent,
+    keywords: [e.summary, e.category?.label, e.venue.name, e.venue.city, e.association.name].filter(Boolean).join(" "),
   };
 }

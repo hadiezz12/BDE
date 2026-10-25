@@ -1,5 +1,5 @@
 import { CAMPUS_TZ, dayDiff, parisWeekday } from "./time";
-import type { CampaignStatus, EventCategory, RegistrationStatus, ApplicationStatus } from "./types";
+import type { CampaignStatus, ApplicationStatus } from "./types";
 
 /**
  * French, Paris-time formatting. Every visible date goes through here so the
@@ -116,39 +116,11 @@ export function daysLeft(iso: string, now = new Date()): number | null {
   return Math.max(0, dayDiff(now, iso));
 }
 
-export function formatPrice(price: { member?: number; standard: number } | null): string {
-  if (!price) return "Gratuit";
-  const eur = (n: number) => `${n.toLocaleString("fr-FR")} €`;
-  return price.member !== undefined && price.member !== price.standard
-    ? `${eur(price.member)} adhérent · ${eur(price.standard)}`
-    : eur(price.standard);
-}
-
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n.toLocaleString("fr-FR")} ${n > 1 ? many : one}`;
 }
 
 /* ---- Labels -------------------------------------------------------------- */
-
-export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
-  soiree: "Soirées",
-  sport: "Sport",
-  carriere: "Carrière",
-  academique: "Académique",
-  culture: "Culture",
-  solidarite: "Solidarité",
-  "week-end": "Week-ends",
-};
-
-export const REGISTRATION_LABEL: Record<RegistrationStatus, string> = {
-  libre: "Entrée libre",
-  bientot: "Billetterie bientôt",
-  ouverte: "Inscriptions ouvertes",
-  "derniere-chance": "Dernières places",
-  "liste-attente": "Liste d'attente",
-  complet: "Complet",
-  fermee: "Inscriptions closes",
-};
 
 export const CAMPAIGN_STATUS_LABEL: Record<CampaignStatus, string> = {
   "a-venir": "Bientôt",

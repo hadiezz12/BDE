@@ -31,19 +31,23 @@ function tagHref(tag: string): string {
  * byline and photo stay on the night surface; the text itself is printed on
  * paper (RichText: long-reading measure, subheads, quotes ruled in the
  * association's colour, inline figures, the sticker drop cap), signed at the
- * end, with its tags, then `actions` (share and report, public page only).
+ * end, with its tags, then the event it is about (a live ticket) and
+ * `actions` (share and report, public page only).
  * The association's signature sits in the margin with the way to its page
  * and to everything it published. Brèves are text only: no photo, no poster.
  */
 export function ArticleView({
   post,
   tagline,
+  event,
   actions,
   className,
 }: {
   post: ArticleViewPost;
   /** The association's one line, under "Publié par" (when its page has one). */
   tagline?: string | null;
+  /** The event the article is about, as a live ticket (public page only). */
+  event?: ReactNode;
   /** Share and report, closing the text. */
   actions?: ReactNode;
   className?: string;
@@ -133,6 +137,15 @@ export function ArticleView({
                     </li>
                   ))}
                 </ul>
+              </section>
+            )}
+
+            {event && (
+              <section aria-labelledby="article-evenement" className="mt-12 flex flex-col gap-4">
+                <h2 id="article-evenement" className="type-label text-muted">
+                  L&apos;événement
+                </h2>
+                {event}
               </section>
             )}
 

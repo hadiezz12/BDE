@@ -12,6 +12,9 @@ import { ArticleView } from "@/components/campus/ArticleView";
 import { PostItem } from "@/components/campus/PostItem";
 import { ReportPost } from "@/components/campus/ReportPost";
 import { ShareArticle } from "@/components/campus/ShareArticle";
+import { RelatedEventTicket, type EventAttendance } from "@/components/campus/RelatedEventTicket";
+import { getMyEvents } from "@/lib/events/me";
+import { personalStates } from "@/lib/events/model";
 import { campusRssAlternate } from "@/components/campus/campus-rss";
 import { POST_KIND_LABEL } from "@/components/campus/labels";
 
@@ -83,6 +86,9 @@ export default async function CampusPostPage({ params }: { params: Params }) {
     // 30, like the search index of the site header: one read for both.
     getLatestPosts(30).catch(() => [] as Post[]),
   ]);
+  // The student's own relation to the event the article is about (none for a visitor).
+  const mine = post.event && session.user ? personalStates(await getMyEvents()).get(post.event.id) : undefined;
+  const attendance: EventAttendance = mine?.registered ? "inscrit" : mine?.waitlisted ? "attente" : mine?.saved ? "favori" : null;
 
   const more = sameAssociation.filter((p) => p.id !== post.id).slice(0, 3);
   const elsewhere = latest.filter((p) => p.association.id !== post.association.id).slice(0, 3);
@@ -93,6 +99,7 @@ export default async function CampusPostPage({ params }: { params: Params }) {
       <ArticleView
         post={post}
         tagline={association?.tagline}
+        event={post.event ? <RelatedEventTicket event={post.event} attendance={attendance} /> : undefined}
         actions={
           <>
             <ShareArticle title={post.title} path={path} />

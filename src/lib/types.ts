@@ -121,67 +121,90 @@ export interface EventSeries {
   associationId: string;
 }
 
-export type EventCategory =
-  | "soiree"
-  | "sport"
-  | "carriere"
-  | "academique"
-  | "culture"
-  | "solidarite"
-  | "week-end";
+/** A category of the platform catalog (public.event_categories): its slug. */
+export type EventCategory = string;
 
-export type RegistrationStatus =
-  /** Registration not needed — just show up. */
-  | "libre"
-  | "bientot"
-  | "ouverte"
-  /** Open but closing within 48 h or nearly full. */
-  | "derniere-chance"
-  | "liste-attente"
-  | "complet"
-  | "fermee";
+/** Where it happens: on the campus, somewhere else, or online. */
+export type EventLocationType = "campus" | "external" | "online";
 
-export type PublicationStatus = "brouillon" | "programme" | "publie";
+/** How students take part: just come, register on the site, or on the organizer's site. */
+export type RegistrationMode = "none" | "internal" | "external";
+
+/**
+ * Where registration stands for everyone (no personal data), as the database
+ * computes it (private.event_registration_state): information only, on
+ * another site, not open yet, open, full with a waiting list, full, closed,
+ * event cancelled, event over.
+ */
+export type RegistrationState = "none" | "external" | "upcoming" | "open" | "waitlist" | "full" | "closed" | "cancelled" | "past";
+
+/** The event itself: will it happen? "completed" is derived (it has ended). */
+export type EventStatus = "scheduled" | "cancelled" | "completed";
 
 export interface Venue {
-  name: string;
+  type: EventLocationType;
+  /** "Amphithéâtre", "Le lieu de la soirée". Absent for an online event. */
+  name?: string;
   address?: string;
   city?: string;
-  onCampus?: boolean;
+  onCampus: boolean;
+  /** Only coordinates the organizer typed (never guessed from an address). */
+  latitude?: number;
+  longitude?: number;
+  /** A public link to follow an online event. */
+  onlineUrl?: string;
+  /** Private instructions exist (given to confirmed participants only). */
+  hasPrivateDetails: boolean;
 }
 
+/** A published event as the public site shows it (src/lib/events/model.ts maps the database payload). */
 export interface CampusEvent {
   id: string;
   slug: string;
   title: string;
-  subtitle?: string;
-  associationId: string;
-  /** The recurring event this is an edition of (EventSeries.id), if any. */
-  seriesId?: string;
-  category: EventCategory;
-  startsAt: string;
-  endsAt?: string;
-  venue: Venue;
   /** One or two sentences for previews. */
   summary: string;
-  /** Detail page body, paragraph by paragraph. */
+  /** Detail page body, paragraph by paragraph (plain text). */
   description: string[];
+  associationId: string;
+  /** Associations credited as co-organizers (no right on the event). */
+  coorganizers: AssociationRef[];
+  /** One of the BDE's events of the year (EventSeries.slug), if any. */
+  seriesKey?: string;
+  category?: { slug: EventCategory; label: string };
+  startsAt: string;
+  endsAt: string;
+  /** The intended zone (Europe/Paris): dates are always shown in it. */
+  timezone: string;
+  venue: Venue;
   cover?: Photo;
-  /** Neon emblem artwork (BDE signature events). */
+  /** Neon emblem artwork (the BDE's events of the year). */
   emblem?: string;
-  /** Prices in euros. `null` means free. */
-  price: { member?: number; standard: number } | null;
+  status: EventStatus;
+  cancelledAt?: string;
+  cancellationReason?: string;
   registration: {
-    status: RegistrationStatus;
-    capacity?: number;
-    taken?: number;
+    mode: RegistrationMode;
+    state: RegistrationState;
+    /** The organizer's own registration page (mode "external"). */
+    externalUrl?: string;
     opensAt?: string;
+    /** When registration closes (at the latest, the start). */
     closesAt?: string;
+    /** Absent: no fixed capacity. */
+    capacity?: number;
+    /** Confirmed seats. */
+    taken: number;
+    waitlistEnabled: boolean;
+    /** People waiting (a count, never names). */
+    waiting: number;
+    /** Self-service cancellation stops this many minutes before the start. */
+    cancellationCutoffMinutes: number;
   };
-  /** Practical lines shown on the detail page ("Dress code rose", "Navette retour 2h"). */
-  practical?: string[];
-  featured?: boolean;
-  publication: PublicationStatus;
+  /** Featured on the site by the BDE. */
+  featured: boolean;
+  /** Pinned by its association on its own page. */
+  pinned: boolean;
 }
 
 /**
@@ -217,6 +240,8 @@ export interface PostItem {
   pinned: boolean;
   /** Archived: readable at its address, off the feeds. */
   archived: boolean;
+  /** The event the article is about, read live from the event (public events only). */
+  event?: EventItem;
 }
 
 export type CampaignStatus = "a-venir" | "ouverte" | "derniere-chance" | "cloturee";

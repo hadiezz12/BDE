@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import type { ApplicationItem, Association, EventItem, PostItem } from "@/lib/types";
+import type { ApplicationItem, Association, PostItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { getSession } from "@/lib/session";
-import { getEvents, getEventsByIds } from "@/lib/data/events";
+import { getEvents, getFeaturedEvents, getUpcomingEvents } from "@/lib/data/events";
+import { getMyEvents } from "@/lib/events/me";
+import { personalStates } from "@/lib/events/model";
+import { agendaWindow } from "@/lib/events/filters";
 import { getEventSeries } from "@/lib/data/event-series";
 import { getAssociations, getAssociationsByIds, getBde, legacyId } from "@/lib/data/associations";
 import { getCampaigns } from "@/lib/data/recruitment";
@@ -11,7 +14,7 @@ import { getFeaturedPosts, getFeed } from "@/lib/data/posts";
 import { getSafetyDirectory } from "@/lib/data/safety";
 import { getMemberCardOffer } from "@/lib/data/member-card";
 import { getApplications } from "@/lib/data/users";
-import { eventPhase } from "@/components/events/event-facts";
+import { splitMyEvents } from "@/components/account/account-facts";
 import { memberCardHref, memberDiscount } from "@/components/events/series-facts";
 import { isActiveApplication } from "@/components/recruitment/campaign-facts";
 import { HomeOpening } from "@/components/home/HomeOpening";
@@ -70,12 +73,17 @@ async function HomeContent() {
   const now = new Date();
   const user = session.user;
 
-  const [series, today, week, upcoming, campaigns, associations, fil, highlights, safety, bde, applications, registered, managed] =
+  const todaySpan = agendaWindow({ when: "today", from: null, to: null }, now);
+  const weekSpan = agendaWindow({ when: "week", from: null, to: null }, now);
+  // The agenda is one block among many: the front door still opens if it cannot be read.
+  const none = () => [];
+  const [series, today, week, upcoming, featuredList, campaigns, associations, fil, highlights, safety, bde, applications, my, managed] =
     await Promise.all([
       getEventSeries(),
-      getEvents({ when: "today" }),
-      getEvents({ when: "week" }),
-      getEvents({ when: "upcoming" }),
+      getEvents({ from: todaySpan.from, to: todaySpan.to }).catch(none),
+      getEvents({ from: now.toISOString(), to: weekSpan.to }).catch(none),
+      getUpcomingEvents().catch(none),
+      getFeaturedEvents().catch(none),
       getCampaigns({ scope: "open" }),
       getAssociations(),
       // The fil is one block among many: the front door still opens if it cannot be read.
@@ -84,11 +92,12 @@ async function HomeContent() {
       getSafetyDirectory(),
       getBde(),
       user ? getApplications(user.id) : Promise.resolve<ApplicationItem[]>([]),
-      user ? getEventsByIds(user.registeredEventIds) : Promise.resolve<EventItem[]>([]),
+      getMyEvents(),
       user ? getAssociationsByIds(user.managedAssociationIds) : Promise.resolve<Association[]>([]),
     ]);
 
-  const personal = personalFor(user);
+  const personal = personalFor(user ? personalStates(my) : null);
+  const mine = splitMyEvents(my, now);
   const cardOffer = bde ? await getMemberCardOffer(legacyId(bde)) : null;
   // The card is presented on the BDE's page; without one, the index still finds it.
   const memberCard: MemberCardLink = {
@@ -97,25 +106,23 @@ async function HomeContent() {
     discount: cardOffer ? (memberDiscount(cardOffer)?.value ?? null) : null,
   };
 
-  // Dated editions (none published yet): what is already on screen, so no event is shown twice.
-  const board = tonightBoard(today, upcoming, now);
-  const hero = heroEvent(board.events, upcoming);
+  // What is already on screen, so no event is shown twice. Cancelled events stay off the front door.
+  const live = <T extends { status: string }>(list: T[]) => list.filter((e) => e.status !== "cancelled");
+  const board = tonightBoard(live(today), live(upcoming), now);
+  const hero = heroEvent(board.events, live(upcoming));
   const shown = new Set(board.events.map((e) => e.id));
   if (hero) shown.add(hero.id);
-  const featured = featuredEvent(upcoming, shown, now);
+  const featured = featuredEvent(live([...featuredList, ...upcoming]), shown, now);
   if (featured) shown.add(featured.id);
-  const weekRest = week.filter((e) => !shown.has(e.id));
-  const later = upcoming.filter((e) => !shown.has(e.id) && !week.some((w) => w.id === e.id));
+  const weekRest = live(week).filter((e) => !shown.has(e.id));
+  const later = live(upcoming).filter((e) => !shown.has(e.id) && !week.some((w) => w.id === e.id));
   // The dated blocks carry their own bottom space before the bureau; the personal line does not.
   const datedShown = weekRest.length > 0 || later.length > 0 || featured !== null;
 
   // Student bits.
   const memberActive = hasActiveMemberCard(user, now);
-  const nextOuting =
-    registered
-      .filter((e) => eventPhase(e, now) !== "past")
-      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt))[0] ?? null;
-  const savedUpcoming = user ? upcoming.filter((e) => user.savedEventIds.includes(e.id)).length : 0;
+  const nextOuting = mine.tickets.find((t) => t.registration.status === "confirmed")?.event ?? null;
+  const savedUpcoming = mine.saved.length;
   const activeApplications = applications.filter((a) => isActiveApplication(a.status));
 
   // The BDE has its own sections; the rail is for the other associations, once they have a page.
@@ -160,8 +167,6 @@ async function HomeContent() {
           event={featured}
           index={next()}
           personal={personal(featured)}
-          memberActive={user ? memberActive : null}
-          memberCard={memberCard}
           now={now}
         />
       )}

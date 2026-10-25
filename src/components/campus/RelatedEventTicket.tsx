@@ -2,19 +2,20 @@ import Link from "next/link";
 import type { EventItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
-import { REGISTRATION_LABEL, dateParts, formatDayMonth, formatPrice, formatWhen, plural } from "@/lib/format";
-import { REGISTRATION_TONE, isOver, seatsLeft } from "@/components/events/event-facts";
+import { dateParts, formatDayMonth, formatWhen } from "@/lib/format";
+import { isOver, registrationFacts, venueLine } from "@/components/events/event-facts";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Sticker } from "@/components/ui/Sticker";
 
 /** The viewer's own relation to the event (students only). */
-export type EventAttendance = "inscrit" | "favori" | null;
+export type EventAttendance = "inscrit" | "attente" | "favori" | null;
 
 /**
  * The event an article talks about, as a ticket: a night stub with the date
  * in big condensed numerals, a dashed tear line, then what, when, where and
  * whether you can still get in. One link (stretched title) to the event page.
- * Past events keep the ticket but drop the booking facts.
+ * Past and cancelled events keep the ticket but drop the booking facts
+ * (a cancelled one says so).
  */
 export function RelatedEventTicket({
   event,
@@ -30,8 +31,8 @@ export function RelatedEventTicket({
   const H = headingLevel === 2 ? "h2" : "h3";
   const over = isOver(event);
   const d = dateParts(event.startsAt);
-  const reg = event.registration;
-  const left = reg.status === "ouverte" || reg.status === "derniere-chance" ? seatsLeft(reg) : null;
+  const cancelled = event.status === "cancelled";
+  const facts = registrationFacts(event);
 
   return (
     <article
@@ -50,14 +51,14 @@ export function RelatedEventTicket({
       </div>
 
       <div className="flex min-w-0 flex-col gap-2 border-l-2 border-dashed border-fg p-4">
-        {attendance && !over && (
+        {attendance && !over && !cancelled && (
           <Sticker
             tone={attendance === "inscrit" ? "accent" : "blush"}
             size="sm"
             tilt={3}
             className="absolute -top-3 right-3"
           >
-            {attendance === "inscrit" ? "Tu y vas" : "Enregistré"}
+            {attendance === "inscrit" ? "Tu y vas" : attendance === "attente" ? "En attente" : "Enregistré"}
           </Sticker>
         )}
         <H className="type-card text-[1.2rem] break-words">
@@ -68,18 +69,15 @@ export function RelatedEventTicket({
             {event.title}
           </Link>
         </H>
-        {event.subtitle && <p className="type-small text-muted">{event.subtitle}</p>}
+        {event.summary && <p className="line-clamp-2 type-small text-muted">{event.summary}</p>}
         <p className="flex flex-col type-meta text-muted">
           <span>{over ? `Terminé · ${formatDayMonth(event.startsAt)}` : formatWhen(event.startsAt)}</span>
-          <span>{event.venue.name}</span>
+          <span>{venueLine(event.venue)}</span>
         </p>
-        {!over && (
+        {(cancelled || !over) && (
           <div className="mt-1 flex flex-col gap-1.5">
-            <StatusBadge tone={REGISTRATION_TONE[reg.status]}>{REGISTRATION_LABEL[reg.status]}</StatusBadge>
-            <p className="type-meta">
-              {formatPrice(event.price)}
-              {left !== null && ` · ${plural(left, "place restante", "places restantes")}`}
-            </p>
+            <StatusBadge tone={facts.tone} pulse={facts.pulse}>{facts.label}</StatusBadge>
+            {facts.detail && <p className="type-meta">{facts.detail}</p>}
           </div>
         )}
       </div>

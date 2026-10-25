@@ -9,6 +9,7 @@
 import type { AccentKey, AssociationRef, CategoryRef, Photo, PostItem, PostKind } from "../types";
 import { BDE_BADGE, mediaUrl, toPhoto, type MediaPayload } from "../associations/model.ts";
 import type { PostDocument } from "./document";
+import { toEventItem, type EventCardPayload } from "../events/model.ts";
 
 export const POST_KINDS: PostKind[] = ["article", "annonce", "recap", "breve"];
 
@@ -39,6 +40,8 @@ export interface PostCardPayload {
   pinned: boolean;
   archived: boolean;
   author_name: string | null;
+  /** The event the article is about, live (public events only; Phase 7). */
+  event?: EventCardPayload | null;
 }
 
 export interface PublicPostPayload extends PostCardPayload {
@@ -93,6 +96,7 @@ export function toPostItem(p: PostCardPayload, { preview = false }: { preview?: 
     prominence: p.prominence,
     pinned: p.pinned,
     archived: p.archived,
+    event: p.event ? toEventItem(p.event, { preview }) : undefined,
   };
 }
 

@@ -11,25 +11,20 @@ export function FillMeter({
   registration,
   className,
 }: {
-  registration: Pick<CampusEvent["registration"], "capacity" | "taken" | "status">;
+  registration: Pick<CampusEvent["registration"], "capacity" | "taken" | "mode">;
   className?: string;
 }) {
-  const { capacity, taken, status } = registration;
+  const { capacity, taken, mode } = registration;
 
   if (capacity === undefined) {
     return (
       <span className={cx("type-small text-subtle", className)}>
-        {status === "libre" ? "Sans inscription" : "Sans jauge"}
+        {mode === "internal" ? "Sans limite" : mode === "external" ? "Inscription extérieure" : "Sans inscription"}
       </span>
     );
   }
 
   const cap = capacity.toLocaleString("fr-FR");
-  if (taken === undefined) {
-    // Gauge set, ticketing not open yet: the status badge next to it says so.
-    return <span className={cx("type-meta text-muted", className)}>Jauge {cap}</span>;
-  }
-
   const ratio = capacity > 0 ? Math.min(1, taken / capacity) : 0;
   const pct = Math.round(ratio * 100);
   const sold = taken.toLocaleString("fr-FR");

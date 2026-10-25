@@ -1,27 +1,48 @@
 "use client";
 
-import { createContext, use, useState, type ReactNode } from "react";
+import Link from "next/link";
+import {
+  createContext,
+  startTransition,
+  use,
+  useActionState,
+  useOptimistic,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  cancelMyRegistration,
+  registerForEvent,
+  setEventBookmark,
+  type RegistrationActionState,
+} from "@/app/actions/events";
+import type { GovernanceActionState } from "@/app/actions/governance";
+import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { Button, type ButtonSize, type ButtonVariant } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 
 /**
- * The event page's only interactive bits: register / waiting list, and the
- * "Enregistrer" toggle. They live in two places (side panel on desktop,
- * action bar on phones), so one provider holds the state and both stay in
- * sync. The page itself remains server-rendered; these are tiny leaves.
- *
- * PHASE 1 — nothing is sent or stored. Every action reveals a plain demo
- * notice in a live region; never a fake "Inscription confirmée !".
+ * The event page's interactive bits: register / join the waiting list,
+ * cancel, and the "Enregistrer" toggle. They appear in two places (the side
+ * panel on desktop, the action bar on phones), so one provider holds the
+ * Server Actions' state and both stay in sync. The page itself stays
+ * server-rendered; the actions revalidate it, so after a click it shows what
+ * the database decided (confirmed, or waitlisted at a given place) — never a
+ * success before the database has committed.
  */
-export type DemoAction = "register" | "waitlist" | "save";
 
 interface EventActionsState {
+  eventId: string;
   saved: boolean;
   toggleSaved: () => void;
-  notice: DemoAction | null;
-  showNotice: (action: DemoAction) => void;
-  dismissNotice: () => void;
+  register: (form: FormData) => void;
+  registerState: RegistrationActionState;
+  registering: boolean;
+  cancel: (form: FormData) => void;
+  cancelState: RegistrationActionState;
+  cancelling: boolean;
+  bookmarkState: GovernanceActionState;
 }
 
 const EventActionsContext = createContext<EventActionsState | null>(null);
@@ -33,33 +54,46 @@ function useEventActions(): EventActionsState {
 }
 
 export function EventActionsProvider({
+  eventId,
   initialSaved = false,
   children,
 }: {
-  /** From the student's savedEventIds (mock). */
+  eventId: string;
+  /** Whether the student saved this event (my_event_status). */
   initialSaved?: boolean;
   children: ReactNode;
 }) {
-  const [saved, setSaved] = useState(initialSaved);
-  const [notice, setNotice] = useState<DemoAction | null>(null);
+  const [registerState, register, registering] = useActionState(registerForEvent, { status: "idle" });
+  const [cancelState, cancel, cancelling] = useActionState(cancelMyRegistration, { status: "idle" });
+  const [bookmarkState, bookmark] = useActionState(setEventBookmark, { status: "idle" });
+  const [saved, setSavedOptimistic] = useOptimistic(initialSaved);
 
   const value: EventActionsState = {
+    eventId,
     saved,
     toggleSaved: () => {
-      setSaved((s) => !s);
-      setNotice("save");
+      const form = new FormData();
+      form.set("event_id", eventId);
+      form.set("saved", saved ? "0" : "1");
+      startTransition(() => {
+        setSavedOptimistic(!saved);
+        bookmark(form);
+      });
     },
-    notice,
-    showNotice: setNotice,
-    dismissNotice: () => setNotice(null),
+    register,
+    registerState,
+    registering,
+    cancel,
+    cancelState,
+    cancelling,
+    bookmarkState,
   };
 
   return <EventActionsContext value={value}>{children}</EventActionsContext>;
 }
 
-/** "S'inscrire" / "Rejoindre la liste d'attente" — demo: reveals the notice. */
+/** "S'inscrire" / "Rejoindre la liste d'attente": a real request; the result comes from the database. */
 export function RegisterButton({
-  action,
   variant = "assoc",
   size = "md",
   block,
@@ -67,7 +101,6 @@ export function RegisterButton({
   className,
   children,
 }: {
-  action: "register" | "waitlist";
   /** Trailing arrow; off in the narrow phone bar. */
   arrow?: boolean;
   variant?: ButtonVariant;
@@ -76,18 +109,79 @@ export function RegisterButton({
   className?: string;
   children: ReactNode;
 }) {
-  const { showNotice } = useEventActions();
+  const { eventId, register, registering } = useEventActions();
   return (
-    <Button
-      variant={variant}
-      size={size}
-      block={block}
-      icon={arrow ? "arrow-right" : undefined}
-      className={className}
-      onClick={() => showNotice(action)}
+    <form
+      action={register}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (registering) return;
+        const data = new FormData(event.currentTarget);
+        startTransition(() => register(data));
+      }}
+      className={cx(block && "w-full")}
     >
-      {children}
-    </Button>
+      <input type="hidden" name="event_id" value={eventId} />
+      <Button
+        type="submit"
+        variant={variant}
+        size={size}
+        block={block}
+        icon={arrow && !registering ? "arrow-right" : undefined}
+        disabled={registering}
+        aria-disabled={registering}
+        className={className}
+      >
+        {registering ? "Un instant…" : children}
+      </Button>
+    </form>
+  );
+}
+
+/**
+ * Gives back the seat, or leaves the waiting list, after a confirmation
+ * (one more click: a seat given back may be taken at once by the waiting list).
+ */
+export function CancelRegistration({ waitlisted, className }: { waitlisted: boolean; className?: string }) {
+  const { eventId, cancel, cancelling } = useEventActions();
+  const [asking, setAsking] = useState(false);
+  if (!asking) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAsking(true)}
+        className={cx("inline-flex min-h-10 items-center gap-1.5 self-start type-small font-bold text-muted underline-offset-4 hover:text-danger hover:underline", className)}
+      >
+        <Icon name="close" size={15} />
+        {waitlisted ? "Quitter la liste d'attente" : "Annuler mon inscription"}
+      </button>
+    );
+  }
+  return (
+    <form
+      action={cancel}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        startTransition(() => cancel(data));
+      }}
+      className={cx("flex flex-col gap-3 rounded-sm border-2 border-danger/50 p-3", className)}
+    >
+      <input type="hidden" name="event_id" value={eventId} />
+      <p className="type-small">
+        {waitlisted
+          ? "Tu quittes la liste d'attente : si tu changes d'avis, tu repasseras en dernier."
+          : "Ta place est rendue tout de suite (elle peut revenir à la liste d'attente). Si tu changes d'avis, tu te réinscris s'il reste de la place."}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="danger" size="sm" disabled={cancelling} aria-disabled={cancelling}>
+          {cancelling ? "Un instant…" : waitlisted ? "Quitter la liste" : "Oui, annuler"}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setAsking(false)}>
+          Garder ma place
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -134,39 +228,53 @@ export function SaveToggle({ compact, className }: { compact?: boolean; classNam
   );
 }
 
-const NOTICE: Record<DemoAction, string> = {
-  register: "l'inscription n'est pas encore ouverte sur le site, rien n'est envoyé pour l'instant.",
-  waitlist: "la liste d'attente n'est pas encore branchée, rien n'est envoyé pour l'instant.",
-  save: "rien n'est enregistré pour l'instant, ton choix s'oublie dès que tu recharges la page.",
-};
-
 /**
- * Live region for the demo notice. Render one per visible action area (the
- * panel's and the bar's never show at the same breakpoint).
+ * What the database answered, in a live region: "C'est fait, tu es
+ * inscrit·e !", "Tu es sur la liste d'attente, 3e…", or why not ("C'est
+ * complet…", "Les inscriptions sont closes."). Render one per visible action
+ * area (the panel's and the bar's never show at the same breakpoint).
  */
-export function EventDemoNotice({ className }: { className?: string }) {
-  const { notice, dismissNotice } = useEventActions();
+export function EventActionNotice({ className }: { className?: string }) {
+  const { registerState, cancelState, bookmarkState } = useEventActions();
+  // The latest answer wins.
+  const latest = [registerState, cancelState, bookmarkState]
+    .filter((s) => s.status !== "idle" && s.message)
+    .sort((a, b) => (b.at ?? 0) - (a.at ?? 0))[0];
   return (
     <div role="status" aria-live="polite">
-      {notice && (
+      {latest && (
         <p
+          key={latest.at}
           className={cx(
-            "flex items-start gap-3 rounded-sm border-2 border-info/60 bg-info/10 py-2.5 pl-3 pr-1.5 type-small leading-snug",
+            "flex items-start gap-3 rounded-sm border-2 py-2.5 pl-3 pr-3 type-small leading-snug",
+            latest.status === "done" ? "border-ok/60 bg-ok/10" : "border-danger/60 bg-danger/10",
             className,
           )}
         >
-          <Icon name="info" size={18} className="mt-px shrink-0 text-info" />
+          <Icon
+            name={latest.status === "done" ? "check" : "alert"}
+            size={18}
+            className={cx("mt-px shrink-0", latest.status === "done" ? "text-ok" : "text-danger")}
+          />
           <span className="min-w-0 flex-1">
-            <strong className="font-bold">Version de démonstration&nbsp;:</strong> {NOTICE[notice]}
+            {latest.message}
+            {latest.code === "not_authenticated" && (
+              <>
+                {" "}
+                <Link href={routes.login} className="underline underline-offset-2">
+                  Se connecter
+                </Link>
+              </>
+            )}
+            {latest.code === "profile_incomplete" && (
+              <>
+                {" "}
+                <Link href={routes.accountOnboarding} className="underline underline-offset-2">
+                  Compléter mon profil
+                </Link>
+              </>
+            )}
           </span>
-          <button
-            type="button"
-            onClick={dismissNotice}
-            aria-label="Masquer ce message"
-            className="-my-1 inline-grid size-8 shrink-0 place-items-center rounded-xs text-muted hover:text-fg"
-          >
-            <Icon name="close" size={16} />
-          </button>
         </p>
       )}
     </div>

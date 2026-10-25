@@ -58,7 +58,7 @@ It is reserved for narrowly defined trusted operations, each listed here before 
 
 | Operation | Why it cannot use the user's client | Added in |
 | --- | --- | --- |
-| _(none yet)_ | | |
+| The e-mail worker, `POST /api/notifications/send` | it claims and completes other people's messages (`claim_notification_emails`, `complete_notification_email` are granted to `service_role` only) and reads their address to send them; it runs without a user, behind `NOTIFICATIONS_WORKER_SECRET` | Phase 7 |
 
 A permission problem in a page is fixed with a policy, never by switching to this client.
 

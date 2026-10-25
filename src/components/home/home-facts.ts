@@ -72,12 +72,9 @@ export function featuredEvent(upcoming: EventItem[], shown: Set<string>, now: Da
   );
 }
 
-/** Registered / saved marks for a signed-in student; nothing for a visitor. */
-export function personalFor(user: UserProfile | null) {
-  return (e: Pick<EventItem, "id">): PersonalState | undefined =>
-    user
-      ? { registered: user.registeredEventIds.includes(e.id), saved: user.savedEventIds.includes(e.id) }
-      : undefined;
+/** Registered / waiting / saved marks for a signed-in student (from my_events); nothing for a visitor. */
+export function personalFor(states: Map<string, PersonalState> | null) {
+  return (e: Pick<EventItem, "id">): PersonalState | undefined => states?.get(e.id);
 }
 
 /** The member card counts until its validity date. */

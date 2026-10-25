@@ -1,91 +1,117 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import Link from "next/link";
-import type { EventCategory, EventItem, UserProfile } from "@/lib/types";
-import type { EventWindow } from "@/lib/data/events";
-import { getEventCategoryCounts, getEvents } from "@/lib/data/events";
+import type { EventItem } from "@/lib/types";
+import { getEventFacets, getEventPage, getFeaturedEvents, getUpcomingEvents } from "@/lib/data/events";
 import { getEventSeries } from "@/lib/data/event-series";
+import { getMyEvents } from "@/lib/events/me";
+import { encodeEventCursor, parseEventCursor, personalStates } from "@/lib/events/model";
+import {
+  AVAILABILITY_LABEL,
+  PLACE_LABEL,
+  WHEN_LABEL,
+  agendaHref,
+  agendaWindow,
+  emptyAgendaTitle,
+  hasRefinement,
+  isFiltered,
+  parseAgendaFilters,
+  type AgendaFilters,
+} from "@/lib/events/filters";
+import { dayLabel } from "@/lib/events/calendar";
 import { getSession } from "@/lib/session";
 import { routes } from "@/lib/routes";
-import { EVENT_CATEGORY_LABEL, formatDayFull, formatWhen, plural } from "@/lib/format";
+import { formatDayFull, formatWhen, plural } from "@/lib/format";
 import { addDaysToKey, parisDateKey, parisISO } from "@/lib/time";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { FilterChips, type FilterOption } from "@/components/ui/FilterChips";
 import { Icon } from "@/components/ui/Icon";
 import { Sticker } from "@/components/ui/Sticker";
 import { EventRow } from "@/components/events/EventRow";
 import { PastEventRow } from "@/components/events/PastEventRow";
 import { SeriesRow } from "@/components/events/SeriesRow";
+import { AgendaFilterBar } from "@/components/events/AgendaFilterBar";
+import { AgendaViewSwitch } from "@/components/events/AgendaViewSwitch";
 import type { PersonalState } from "@/components/events/PersonalMarks";
 import { groupByDay, isTonight, type DayBucket } from "@/components/events/event-facts";
+import { groupByMonth, monthLabel } from "@/components/events/agenda-filters";
 import { seriesNumbers } from "@/components/events/series-facts";
-import {
-  AGENDA_WINDOWS,
-  EVENT_CATEGORIES,
-  WINDOW_LABEL,
-  WINDOW_TITLE,
-  agendaHref,
-  countByCategory,
-  emptyTitle,
-  groupByMonth,
-  monthLabel,
-  parseCategory,
-  parseWindow,
-} from "@/components/events/agenda-filters";
+import { FeaturedEvent } from "@/components/home/FeaturedEvent";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+const PAGE_SIZE = 40;
+
 const DESCRIPTION =
-  "Les 8 événements de l'année du Very Pink Club, le BDE de GEM Alpine Business School à Paris, chacun avec sa page, et les dates de chaque édition dès que le bureau les annonce.";
+  "L'agenda des associations de GEM Alpine Business School à Paris et les 8 événements de l'année du Very Pink Club : dates, lieux et inscriptions.";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const sp = await searchParams;
-  const when = parseWindow(sp.when);
-  const category = parseCategory(sp.category);
-  const parts = [category ? EVENT_CATEGORY_LABEL[category] : null, when !== "upcoming" ? WINDOW_TITLE[when] : null].filter(
-    (p): p is string => Boolean(p),
-  );
+  const f = parseAgendaFilters(sp);
+  const paged = parseEventCursor(sp.suite) !== null;
   return {
-    title: parts.length > 0 ? `${parts.join(" · ")} · Agenda` : "Agenda",
+    title: f.when !== "upcoming" ? `${WHEN_LABEL[f.when]} · Agenda` : "Agenda",
     description: DESCRIPTION,
+    alternates: { canonical: routes.events },
+    // Filtered and paged views are for sharing, not for search engines (the sitemap lists every event).
+    robots: isFiltered(f) || paged ? { index: false, follow: true } : undefined,
   };
 }
 
 /**
- * /events — the agenda, in two parts:
- *  01 the BDE's 8 events of the year (recurring series, each with its page)
- *  02 the dated editions, grouped Aujourd'hui / Demain / Cette semaine /
- *     Plus tard (by month), with the archive at ?when=past.
- * No edition is published yet: part 02 says who announces the dates, and the
- * filters (?when=, ?category=, plain shareable links) only appear once there
- * is something dated to filter.
+ * /events — what is happening at school, and when. Published events of every
+ * public association page and of the BDE (public_events, read as a visitor):
+ *  - the event the BDE features (front page only);
+ *  - the dates, filtered by the URL (period, category, association, place,
+ *    registration, search, chosen days), grouped Aujourd'hui / Demain /
+ *    Cette semaine / Plus tard (by month), with keyset pages (?suite=);
+ *    ?quand=passes is the archive, newest first;
+ *  - the BDE's 8 events of the year, each with its page.
+ * A signed-in student sees their own marks (registered, waiting, saved) from
+ * my_events; a visitor sees the same agenda without them.
  */
 export default async function EventsPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
-  const when = parseWindow(sp.when);
-  const category = parseCategory(sp.category);
+  const filters = parseAgendaFilters(sp);
+  const cursor = parseEventCursor(sp.suite);
   const now = new Date();
+  const span = agendaWindow(filters, now);
+  const front = !isFiltered(filters) && !cursor;
 
-  const [session, series, today, week, upcoming, past, upcomingCounts] = await Promise.all([
+  const [session, my, facets, page, upcoming, featured, series] = await Promise.all([
     getSession(),
+    getMyEvents(),
+    getEventFacets(),
+    getEventPage({
+      from: span.from,
+      to: span.to,
+      order: span.order,
+      category: filters.category,
+      association: filters.association,
+      locationType: filters.place,
+      availability: filters.availability,
+      q: filters.q || null,
+      after: cursor,
+      limit: PAGE_SIZE,
+    }),
+    getUpcomingEvents(),
+    front ? getFeaturedEvents() : Promise.resolve([] as EventItem[]),
     getEventSeries(),
-    getEvents({ when: "today" }),
-    getEvents({ when: "week" }),
-    getEvents({ when: "upcoming" }),
-    getEvents({ when: "past" }),
-    getEventCategoryCounts(),
   ]);
-  const hasDated = upcoming.length > 0 || past.length > 0;
+
+  const signedIn = Boolean(session.user);
+  const personal = personalStates(my);
+  const personalFor = (e: EventItem): PersonalState | undefined => (signedIn ? personal.get(e.id) : undefined);
+  const tonight = upcoming.filter((e) => e.status !== "cancelled" && isTonight(e, now)).length;
+  const lead = featured[0] ?? null;
+  const nextHref = page.next ? agendaHref(filters, routes.events, encodeEventCursor(page.next)) : null;
   const numbers = seriesNumbers(series);
-  const tonight = upcoming.filter((e) => isTonight(e, now)).length;
 
   return (
     <>
       <PageHeader
-        kicker={hasDated ? `Agenda · ${formatDayFull(now.toISOString())}` : "Agenda"}
+        kicker={`Agenda · ${formatDayFull(now.toISOString())}`}
         title={
           <>
             On sort<span className="text-accent-text">&nbsp;?</span>
@@ -98,17 +124,95 @@ export default async function EventsPage({ searchParams }: { searchParams: Searc
             </Sticker>
           ) : undefined
         }
-        intro="Les 8 événements de l'année du Very Pink Club, chacun avec sa page, et les dates de chaque édition dès que le bureau les annonce."
+        intro="Ce qui se passe à l'école, et quand : les événements des associations et du Very Pink Club, avec leur lieu et leurs inscriptions."
       />
 
-      {series.length > 0 && (
-        <section id="les-8" aria-labelledby="les-8-titre" className="wrap scroll-mt-[calc(var(--header-h)+1rem)]">
+      <div className="wrap -mt-2 pb-8">
+        <AgendaViewSwitch current="list" />
+      </div>
+
+      {lead && (
+        <FeaturedEvent event={lead} index="01" personal={personalFor(lead)} now={now} />
+      )}
+
+      <section id="dates" aria-labelledby="dates-titre" className="wrap scroll-mt-[calc(var(--header-h)+1rem)] pt-section">
+        <SectionHeader
+          id="dates-titre"
+          index={lead ? "02" : "01"}
+          kicker={front ? plural(facets.total, "date à venir", "dates à venir") : filterSummary(filters)}
+          title={filters.when === "past" ? "Déjà passés" : "Les dates"}
+        />
+        <AgendaFilterBar filters={filters} facets={facets} className="mt-8" />
+        <PersonalLine signedIn={signedIn} my={my} now={now} />
+
+        {page.items.length === 0 ? (
+          <EmptyAgenda filters={filters} paged={Boolean(cursor)} next={upcoming.find((e) => e.status !== "cancelled") ?? null} now={now} />
+        ) : filters.when === "past" ? (
+          <Archive list={page.items} personalFor={personalFor} now={now} />
+        ) : filters.when === "range" || cursor ? (
+          <ByMonth list={page.items} personalFor={personalFor} now={now} />
+        ) : (
+          groupByDay(page.items, now).map((group) => (
+            <div key={group.bucket} className="pt-10 sm:pt-12">
+              <SectionHeader
+                as="h3"
+                size="headline"
+                rule={false}
+                kicker={bucketKicker(group.bucket, group.events, now)}
+                title={group.label}
+              />
+              {group.bucket === "plus-tard" ? (
+                <ByMonth list={group.events} personalFor={personalFor} now={now} bare />
+              ) : (
+                <div className="mt-4 border-b border-line-strong">
+                  {group.events.map((e) => (
+                    <EventRow key={e.id} event={e} headingLevel={4} personal={personalFor(e)} now={now} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+
+        <nav aria-label="Pages de l'agenda" className="flex flex-wrap items-center justify-between gap-4 pt-10">
+          {cursor ? (
+            <Link href={agendaHref(filters)} className="inline-flex items-center gap-1.5 type-label hover:text-accent-text">
+              <Icon name="arrow-left" size={14} />
+              Revenir au début
+            </Link>
+          ) : filters.when === "past" ? (
+            <Link
+              href={agendaHref({ ...filters, when: "upcoming" })}
+              className="inline-flex items-center gap-1.5 type-label hover:text-accent-text"
+            >
+              <Icon name="arrow-left" size={14} />
+              Retour à ce qui arrive
+            </Link>
+          ) : (
+            <Link
+              href={agendaHref({ ...filters, when: "past", from: null, to: null })}
+              className="inline-flex items-center gap-1.5 type-label hover:text-accent-text"
+            >
+              Les événements passés
+              <Icon name="arrow-right" size={14} />
+            </Link>
+          )}
+          {nextHref && (
+            <ButtonLink href={nextHref} variant="secondary" icon="arrow-right">
+              {filters.when === "past" ? "Plus anciens" : "Plus tard"}
+            </ButtonLink>
+          )}
+        </nav>
+      </section>
+
+      {front && series.length > 0 && (
+        <section id="les-8" aria-labelledby="les-8-titre" className="wrap scroll-mt-[calc(var(--header-h)+1rem)] pt-section">
           <SectionHeader
             id="les-8-titre"
-            index="01"
+            index={lead ? "03" : "02"}
             kicker="Toute l'année"
             title={`Les ${series.length} événements de l'année`}
-            description="Chaque événement a sa page dédiée."
+            description="Les grands rendez-vous du Very Pink Club : chacun a sa page, avec ses dates dès que le bureau les annonce."
           />
           <div className="mt-6 border-b border-line-strong">
             {series.map((s) => (
@@ -118,179 +222,23 @@ export default async function EventsPage({ searchParams }: { searchParams: Searc
         </section>
       )}
 
-      <section id="dates" aria-labelledby="dates-titre" className="wrap pt-section">
-        <SectionHeader
-          id="dates-titre"
-          index={series.length > 0 ? "02" : "01"}
-          kicker={hasDated ? plural(upcoming.length, "date à venir", "dates à venir") : "Les éditions"}
-          title="Les dates"
-        />
-        {hasDated ? (
-          <DatedAgenda
-            when={when}
-            category={category}
-            user={session.user}
-            lists={{ today, week, upcoming, past }}
-            upcomingCounts={upcomingCounts}
-            now={now}
-          />
-        ) : (
-          <EmptyState className="mt-8" title="Pas encore de date annoncée">
-            Les dates sont annoncées par le bureau au fil de l&apos;année. Chaque édition apparaîtra ici avec son
-            horaire, son lieu et son tarif.
-          </EmptyState>
-        )}
-      </section>
-
       <div aria-hidden className="h-[var(--section)]" />
     </>
   );
 }
 
-/* ---- Dated editions (none published yet) ------------------------------------ */
-
-/** Filters, the student's line, then the day groups — or the archive, or what's empty for this filter. */
-function DatedAgenda({
-  when,
-  category,
-  user,
-  lists,
-  upcomingCounts,
-  now,
-}: {
-  when: EventWindow;
-  category: EventCategory | null;
-  user: UserProfile | null;
-  lists: Record<EventWindow, EventItem[]>;
-  upcomingCounts: Partial<Record<EventCategory, number>>;
-  now: Date;
-}) {
-  const inCategory = (list: EventItem[]) => (category ? list.filter((e) => e.category === category) : list);
-  const windowAll = lists[when];
-  const list = inCategory(windowAll);
-  const categoryCounts = when === "upcoming" ? upcomingCounts : countByCategory(windowAll);
-  const whenParam = when === "upcoming" ? undefined : when;
-  const pastCount = inCategory(lists.past).length;
-
-  const personalFor = (e: EventItem): PersonalState | undefined =>
-    user ? { registered: user.registeredEventIds.includes(e.id), saved: user.savedEventIds.includes(e.id) } : undefined;
-
-  const whenOptions: FilterOption[] = AGENDA_WINDOWS.map((w) => ({
-    value: w === "upcoming" ? null : w,
-    label: WINDOW_LABEL[w],
-    count: inCategory(lists[w]).length,
-  }));
-  const categoryOptions: FilterOption[] = [
-    { value: null, label: "Toutes", count: windowAll.length },
-    ...EVENT_CATEGORIES.filter((c) => (categoryCounts[c] ?? 0) > 0 || c === category).map((c) => ({
-      value: c,
-      label: EVENT_CATEGORY_LABEL[c],
-      count: categoryCounts[c] ?? 0,
-    })),
-  ];
-
-  return (
-    <>
-      <div className="mt-8 flex flex-col gap-4">
-        <FilterRow label="Quand">
-          <FilterChips
-            label="Filtrer par période"
-            param="when"
-            basePath={routes.events}
-            options={whenOptions}
-            current={whenParam ?? null}
-            params={{ category: category ?? undefined }}
-          />
-        </FilterRow>
-        <FilterRow label="Quoi">
-          <FilterChips
-            label="Filtrer par catégorie"
-            param="category"
-            basePath={routes.events}
-            options={categoryOptions}
-            current={category}
-            params={{ when: whenParam }}
-          />
-        </FilterRow>
-      </div>
-
-      <PersonalLine user={user} upcoming={lists.upcoming} />
-
-      {list.length === 0 ? (
-        <EmptyAgenda when={when} category={category} next={inCategory(lists.upcoming)[0] ?? null} pastCount={pastCount} now={now} />
-      ) : when === "past" ? (
-        <Archive list={list} personalFor={personalFor} now={now} />
-      ) : (
-        groupByDay(list, now).map((group) => (
-          <div key={group.bucket} className="pt-10 sm:pt-12">
-            <SectionHeader
-              as="h3"
-              size="headline"
-              rule={false}
-              kicker={bucketKicker(group.bucket, group.events, now)}
-              title={group.label}
-            />
-            {group.bucket === "plus-tard" ? (
-              <div className="mt-4 border-b border-line-strong">
-                {groupByMonth(group.events, now).map((month) => (
-                  <div key={month.key} className="pt-8 first:pt-2">
-                    <p className="flex items-baseline justify-between gap-4 pb-3 type-label text-muted">
-                      <span className="text-fg">{month.label}</span>
-                      <span>{plural(month.events.length, "événement")}</span>
-                    </p>
-                    {month.events.map((e) => (
-                      <EventRow key={e.id} event={e} headingLevel={4} personal={personalFor(e)} now={now} />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-4 border-b border-line-strong">
-                {group.events.map((e) => (
-                  <EventRow key={e.id} event={e} headingLevel={4} personal={personalFor(e)} now={now} />
-                ))}
-              </div>
-            )}
-          </div>
-        ))
-      )}
-
-      {list.length > 0 && (
-        <p className="pt-10">
-          {when === "past" ? (
-            <Link
-              href={agendaHref({ category })}
-              className="inline-flex items-center gap-1.5 type-label hover:text-accent-text"
-            >
-              <Icon name="arrow-left" size={14} />
-              Retour à ce qui arrive
-            </Link>
-          ) : (
-            pastCount > 0 && (
-              <Link
-                href={agendaHref({ when: "past", category })}
-                className="inline-flex items-center gap-1.5 type-label hover:text-accent-text"
-              >
-                {plural(pastCount, "édition passée", "éditions passées")}
-                <Icon name="arrow-right" size={14} />
-              </Link>
-            )
-          )}
-        </p>
-      )}
-    </>
-  );
-}
-
-function FilterRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
-      <p aria-hidden className="type-label text-muted sm:w-14 sm:shrink-0 sm:pt-3.5">
-        {label}
-      </p>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
-  );
+/** "Ce week-end · Sur le campus · « tournoi »": what the list is narrowed to, in words. */
+function filterSummary(f: AgendaFilters): string {
+  const parts: string[] = [];
+  if (f.when === "range" && f.from && f.to) {
+    parts.push(f.from === f.to ? dayLabel(f.from) : `Du ${dayLabel(f.from)} au ${dayLabel(f.to)}`);
+  } else if (f.when !== "upcoming") {
+    parts.push(WHEN_LABEL[f.when]);
+  }
+  if (f.place) parts.push(PLACE_LABEL[f.place]);
+  if (f.availability) parts.push(AVAILABILITY_LABEL[f.availability]);
+  if (f.q) parts.push(`« ${f.q} »`);
+  return parts.length ? parts.join(" · ") : "Filtré";
 }
 
 /** "Mercredi 14 octobre · 3 événements" — the date for today and tomorrow, the span for later. */
@@ -307,9 +255,47 @@ function bucketKicker(bucket: DayBucket, events: EventItem[], now: Date): string
   return count;
 }
 
-/** What the student has going on, or how to get personal marks. No greeting: demo accounts have no real name. */
-function PersonalLine({ user, upcoming }: { user: UserProfile | null; upcoming: EventItem[] }) {
-  if (!user) {
+/** Month groups of an ascending list (chosen days, later pages, "plus tard"). */
+function ByMonth({
+  list,
+  personalFor,
+  now,
+  bare = false,
+}: {
+  list: EventItem[];
+  personalFor: (e: EventItem) => PersonalState | undefined;
+  now: Date;
+  /** Inside a day group: no top padding of its own. */
+  bare?: boolean;
+}) {
+  return (
+    <div className={bare ? "mt-4 border-b border-line-strong" : "mt-10 border-b border-line-strong"}>
+      {groupByMonth(list, now).map((month) => (
+        <div key={month.key} className="pt-8 first:pt-2">
+          <p className="flex items-baseline justify-between gap-4 pb-3 type-label text-muted">
+            <span className="text-fg">{month.label}</span>
+            <span>{plural(month.events.length, "événement")}</span>
+          </p>
+          {month.events.map((e) => (
+            <EventRow key={e.id} event={e} headingLevel={4} personal={personalFor(e)} now={now} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** What the student has going on, or how to get personal marks. */
+function PersonalLine({
+  signedIn,
+  my,
+  now: at,
+}: {
+  signedIn: boolean;
+  my: Awaited<ReturnType<typeof getMyEvents>>;
+  now: Date;
+}) {
+  if (!signedIn) {
     return (
       <div className="mt-8 flex flex-col gap-4 border-y border-line py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
         <p className="flex items-start gap-3">
@@ -332,35 +318,37 @@ function PersonalLine({ user, upcoming }: { user: UserProfile | null; upcoming: 
     );
   }
 
-  const registered = upcoming.filter((e) => user.registeredEventIds.includes(e.id)).length;
-  const saved = upcoming.filter((e) => user.savedEventIds.includes(e.id) && !user.registeredEventIds.includes(e.id)).length;
-  const summary =
-    registered > 0 && saved > 0
-      ? `Tu es inscrit·e à ${plural(registered, "événement")} et tu en as ${saved} autre${saved > 1 ? "s" : ""} de côté`
-      : registered > 0
-        ? `Tu es inscrit·e à ${plural(registered, "événement")} à venir`
-        : saved > 0
-          ? `Tu as ${plural(saved, "événement")} de côté`
-          : null;
+  const now = at.getTime();
+  const upcoming = my.registrations.filter(
+    (r) => r.registration.status !== "cancelled" && Date.parse(r.event.ends_at) > now && r.event.status !== "cancelled",
+  );
+  const confirmed = upcoming.filter((r) => r.registration.status === "confirmed").length;
+  const waiting = upcoming.length - confirmed;
+  const saved = my.bookmarks.filter((b) => Date.parse(b.ends_at) > now).length;
+  const parts = [
+    confirmed > 0 ? `inscrit·e à ${plural(confirmed, "événement")}` : null,
+    waiting > 0 ? `sur ${plural(waiting, "liste", "listes")} d'attente` : null,
+  ].filter(Boolean);
 
   return (
     <div className="mt-8 flex flex-col gap-4 border-y border-line py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
       <p className="flex items-start gap-3">
         <Icon name="ticket" size={20} className="mt-0.5 shrink-0 text-muted" />
         <span>
-          {summary ? (
+          {parts.length > 0 || saved > 0 ? (
             <>
-              <strong>{summary}</strong>, c&apos;est signalé dans la liste.
+              <strong>
+                {parts.length > 0 ? `Tu es ${parts.join(" et ")}` : `Tu as ${plural(saved, "événement")} de côté`}
+              </strong>
+              {parts.length > 0 && saved > 0 ? `, ${plural(saved, "autre", "autres")} de côté` : ""} : c&apos;est signalé
+              dans la liste.
             </>
           ) : (
-            <>Rien de réservé pour l&apos;instant. Ouvre une date pour t&apos;inscrire ou la garder de côté.</>
+            <>Rien de réservé pour l&apos;instant. Ouvre un événement pour t&apos;inscrire ou le garder de côté.</>
           )}
         </span>
       </p>
-      <Link
-        href={routes.accountEvents}
-        className="inline-flex shrink-0 items-center gap-1.5 type-label hover:text-accent-text"
-      >
+      <Link href={routes.accountEvents} className="inline-flex shrink-0 items-center gap-1.5 type-label hover:text-accent-text">
         Mes événements
         <Icon name="arrow-right" size={14} />
       </Link>
@@ -368,11 +356,7 @@ function PersonalLine({ user, upcoming }: { user: UserProfile | null; upcoming: 
   );
 }
 
-/**
- * ?when=past — what's over, newest first, by month. Récaps are articles of
- * the fil (Phase 6) and are not linked to an event yet: the events phase
- * brings that link back.
- */
+/** ?quand=passes — what's over, newest first, by month. */
 function Archive({
   list,
   personalFor,
@@ -382,91 +366,64 @@ function Archive({
   personalFor: (e: EventItem) => PersonalState | undefined;
   now: Date;
 }) {
-
   return (
-    <div className="pt-10 sm:pt-12">
-      <SectionHeader
-        as="h3"
-        size="headline"
-        rule={false}
-        kicker={plural(list.length, "édition")}
-        title="Déjà passés"
-      />
-      <div className="mt-4 border-b border-line-strong">
-        {groupByMonth(list, now).map((month) => (
-          <div key={month.key} className="pt-8 first:pt-2">
-            <p className="flex items-baseline justify-between gap-4 pb-3 type-label text-muted">
-              <span className="text-fg">{month.label}</span>
-              <span>{plural(month.events.length, "édition")}</span>
-            </p>
-            {month.events.map((e) => (
-              <PastEventRow
-                key={e.id}
-                event={e}
-                recap={null}
-                headingLevel={4}
-                personal={personalFor(e)}
-                now={now}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
+    <div className="mt-10 border-b border-line-strong">
+      {groupByMonth(list, now).map((month) => (
+        <div key={month.key} className="pt-8 first:pt-2">
+          <p className="flex items-baseline justify-between gap-4 pb-3 type-label text-muted">
+            <span className="text-fg">{month.label}</span>
+            <span>{plural(month.events.length, "événement")}</span>
+          </p>
+          {month.events.map((e) => (
+            <PastEventRow key={e.id} event={e} recap={null} headingLevel={4} personal={personalFor(e)} now={now} />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
 
 /** Says what's empty for this exact filter, and where to look instead. */
 function EmptyAgenda({
-  when,
-  category,
+  filters,
+  paged,
   next,
-  pastCount,
   now,
 }: {
-  when: EventWindow;
-  category: EventCategory | null;
-  /** First upcoming event in the same category, if any. */
+  filters: AgendaFilters;
+  paged: boolean;
+  /** The next event on the whole agenda, if any. */
   next: EventItem | null;
-  pastCount: number;
   now: Date;
 }) {
-  const nearWindow = when === "today" || when === "week";
-  let body: string;
-  if (when === "past") {
-    body = "Aucune édition n'est encore passée.";
-  } else if (nearWindow && next) {
-    body = `La prochaine : ${next.title}, ${formatWhen(next.startsAt, now).toLowerCase()}.`;
-  } else if (category) {
-    body = "Rien d'annoncé dans cette catégorie pour l'instant.";
-  } else {
-    body = "Les dates sont annoncées par le bureau au fil de l'année.";
+  if (paged) {
+    return (
+      <EmptyState className="mt-10" title="C'est tout pour l'instant">
+        Il n&apos;y a rien de plus dans cette liste.
+      </EmptyState>
+    );
   }
+  const nearWindow = filters.when === "today" || filters.when === "week" || filters.when === "weekend";
+  let body: string;
+  if (hasRefinement(filters)) body = "Essaie avec moins de filtres, ou une autre période.";
+  else if (filters.when === "past") body = "Les événements terminés apparaîtront ici.";
+  else if (nearWindow && next) body = `Le prochain : ${next.title}, ${formatWhen(next.startsAt, now).toLowerCase()}.`;
+  else body = "Les associations et le bureau publient leurs événements au fil de l'année : ils apparaîtront ici.";
 
   return (
     <EmptyState
       className="mt-10"
-      title={emptyTitle(when, category)}
+      title={emptyAgendaTitle(filters)}
       actions={
         <>
-          {nearWindow && next && (
+          {nearWindow && next && !hasRefinement(filters) && (
             <ButtonLink href={routes.event(next.slug)} icon="arrow-right">
-              Voir la date
+              Voir l&apos;événement
             </ButtonLink>
           )}
-          {when !== "upcoming" && (
-            <ButtonLink href={agendaHref({ category })} variant="secondary">
+          {isFiltered(filters) && (
+            <ButtonLink href={routes.events} variant="secondary">
               Tout ce qui arrive
-            </ButtonLink>
-          )}
-          {when === "upcoming" && category && (
-            <ButtonLink href={agendaHref({})} variant="secondary">
-              Toutes les catégories
-            </ButtonLink>
-          )}
-          {when === "upcoming" && category && pastCount > 0 && (
-            <ButtonLink href={agendaHref({ when: "past", category })} variant="ghost">
-              Les passés
             </ButtonLink>
           )}
         </>

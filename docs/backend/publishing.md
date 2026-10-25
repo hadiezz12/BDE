@@ -9,7 +9,7 @@ association pages and the home page read posts as a visitor; nothing on them is 
 hard-coded.
 
 What a post is **not**: an event (Phase 7 has its own model, dates and registrations; a post never
-stands in for one), a recruitment campaign (Phase 8), a comment thread (there are no comments,
+stands in for one, but it can point to one: [events.md](events.md#articles-about-an-event)), a recruitment campaign (Phase 8), a comment thread (there are no comments,
 likes or view counters), or an association's page (Phase 5, [association-pages.md](association-pages.md)).
 
 Migrations: `20261021092120_create_posts.sql` (helpers, tables, permissions, audit vocabulary,

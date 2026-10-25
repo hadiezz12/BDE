@@ -7,18 +7,21 @@ import { timeRange, venueLine } from "./event-facts";
 
 /**
  * The registered student's confirmation, printed like a cream ticket stuck
- * on the night page: who it's for, their card number, where and when — and
- * the date on a tear-off stub. Shown instead of the CTA. It restates what the
- * (mock) data already says; it never claims an action just succeeded.
+ * on the night page: who it's for, the registration reference, their card
+ * number, where and when — and the date on a tear-off stub. Shown instead of
+ * the CTA, from the registration the database returned.
  */
 export function EventTicket({
   event,
   holder,
+  reference,
   now = new Date(),
   className,
 }: {
   event: Pick<CampusEvent, "title" | "startsAt" | "endsAt" | "venue">;
   holder: Pick<UserProfile, "firstName" | "lastName" | "demoLabel" | "memberCard">;
+  /** The registration's reference, to quote to the organizers. */
+  reference?: string | null;
   now?: Date;
   className?: string;
 }) {
@@ -41,6 +44,12 @@ export function EventTicket({
               {holder.demoLabel ?? `${holder.firstName} ${holder.lastName}`}
             </dd>
           </div>
+          {reference && (
+            <div className="flex flex-col gap-0.5">
+              <dt className="type-label text-muted">Référence</dt>
+              <dd className="type-meta tracking-wider">{reference}</dd>
+            </div>
+          )}
           {holder.memberCard && (
             <div className="flex flex-col gap-0.5">
               <dt className="type-label text-muted">Carte cotisante</dt>

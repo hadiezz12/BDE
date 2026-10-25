@@ -132,7 +132,7 @@ export function EventRow({
       <div className="flex min-w-0 flex-col gap-2 [grid-area:main]">
         {showAssociation && <AssociationIdentity association={event.association} size="sm" link={false} />}
         {title("text-[1.25rem] leading-[1.15] sm:text-[1.4rem] lg:text-[1.6rem]")}
-        {event.subtitle && <p className="hidden type-small text-muted sm:block">{event.subtitle}</p>}
+        {event.summary && <p className="hidden line-clamp-2 type-small text-muted sm:block">{event.summary}</p>}
       </div>
 
       <EventFacts event={event} now={now} className="[grid-area:facts] lg:pt-1" />

@@ -51,7 +51,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ass
   if (ctx.status !== "authenticated") return json(401, { error: governanceErrorMessage("not_authenticated") });
 
   const organization = await getAccessOrganization(asso);
-  const canUpload = organization?.permissions.some((k) => k === "media.manage" || k === "posts.create");
+  const canUpload = organization?.permissions.some((k) => k === "media.manage" || k === "posts.create" || k === "events.create");
   if (!organization || !canUpload) {
     return json(403, { error: governanceErrorMessage("insufficient_permission") });
   }

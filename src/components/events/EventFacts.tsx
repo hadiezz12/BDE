@@ -1,27 +1,26 @@
 import type { ReactNode } from "react";
 import type { CampusEvent } from "@/lib/types";
 import { cx } from "@/lib/cx";
-import { formatPrice } from "@/lib/format";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { timeRange, venueLine } from "./event-facts";
 
 /**
- * When, where, how much — the three things a student checks before saying
- * yes. Times and prices in mono (metadata), the venue in plain text.
+ * When and where — what a student checks before saying yes. Times in mono
+ * (metadata), the venue in plain text ("En ligne" for an online event).
  *
  *  - stack  : one line each with a small glyph (rows, posters, detail aside)
  *  - inline : a single run "20h30 → 1h · salle · campus" (compact lists)
  */
-export type EventFact = "time" | "venue" | "price";
+export type EventFact = "time" | "venue";
 
 export function EventFacts({
   event,
-  show = ["time", "venue", "price"],
+  show = ["time", "venue"],
   layout = "stack",
   now = new Date(),
   className,
 }: {
-  event: Pick<CampusEvent, "startsAt" | "endsAt" | "venue" | "price">;
+  event: Pick<CampusEvent, "startsAt" | "endsAt" | "venue">;
   show?: EventFact[];
   layout?: "stack" | "inline";
   now?: Date;
@@ -43,11 +42,8 @@ export function EventFacts({
           </>
         ),
       });
-    } else if (key === "venue") {
-      items.push({ key, icon: "pin", mono: false, node: venueLine(event.venue) });
     } else {
-      // Keep "12 €" together when the line wraps.
-      items.push({ key, icon: "ticket", mono: true, node: formatPrice(event.price).replace(/ €/g, "\u00a0€") });
+      items.push({ key, icon: event.venue.type === "online" ? "globe" : "pin", mono: false, node: venueLine(event.venue) });
     }
   }
 

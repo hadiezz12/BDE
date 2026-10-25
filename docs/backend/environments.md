@@ -43,7 +43,10 @@ runs the full local stack from scratch on every push (see
   without activity (restore it from the dashboard; nothing is lost).
 - Scheduled posts (Phase 6) need the `pg_cron` extension: the migration creates the job
   `publish-scheduled-posts` (every minute) where it exists. It is enabled here; check it on any
-  new environment ([publishing.md](publishing.md#scheduling)).
+  new environment ([publishing.md](publishing.md#scheduling)). Phase 7 adds the job
+  `enqueue-event-reminders` (every 15 minutes) the same way ([events.md](events.md#messages)).
+- No e-mail transport is configured (Phase 7): `EMAIL_TRANSPORT` and the worker secret are empty,
+  so event messages stay in the students' Notifications.
 - Its legacy `anon` / `service_role` keys are still active next to the new
   publishable/secret keys. Nothing uses them: disable them in Dashboard → Settings → API Keys.
 
@@ -84,7 +87,12 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
   invented people. Until then, nobody manages anything in production.
 - `AUTH_TEST_ACCOUNTS` is never set in production.
 - Enable the `pg_cron` extension before applying the Phase 6 migrations, or scheduled posts never
-  go out (the job `publish-scheduled-posts` is created only where the extension exists).
+  go out (the job `publish-scheduled-posts` is created only where the extension exists); the same
+  holds for the Phase 7 reminders (`enqueue-event-reminders`).
+- E-mail (Phase 7): choose a sender on the BDE's own domain, authenticate it (SPF, DKIM, DMARC)
+  with the provider, set `EMAIL_TRANSPORT`, `EMAIL_FROM`, the provider key and a long random
+  `NOTIFICATIONS_WORKER_SECRET`, then schedule a POST to `/api/notifications/send` every few
+  minutes ([events.md](events.md#messages)).
 
 ## Variables
 
@@ -92,7 +100,11 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | public (inlined into the browser bundle) | all three clients | project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public (inlined into the browser bundle) | browser and server clients | Dashboard → Settings → API Keys → publishable (`sb_publishable_…`) |
-| `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — nothing calls it yet | API Keys → secret (`sb_secret_…`). Leave empty. |
+| `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — only the e-mail worker (Phase 7) | API Keys → secret (`sb_secret_…`). Leave empty until e-mail is set up. |
+| `NOTIFICATIONS_WORKER_SECRET` | **secret**, server only | the e-mail worker's bearer token (32+ characters); empty = endpoint not found | a random string you generate |
+| `EMAIL_TRANSPORT` | server only, not secret | empty (no e-mail), `log` (development only) or `brevo` | the operator's choice |
+| `EMAIL_FROM` | server only, not secret | the sender, e.g. `Very Pink Club <adresse@domaine-du-bde>` | the BDE's domain, once bought |
+| `BREVO_API_KEY` | **secret**, server only | the `brevo` transport | the provider's dashboard |
 | `AUTH_SSO_PROVIDER` | server only, not secret | shows institutional sign-in on `/login` (`azure` or `google`) | leave empty until the school's provider is configured in Supabase |
 | `AUTH_TEST_ACCOUNTS` | server only, not secret | development only: `on` shows the "Comptes de test" form on `/login` | `on` in a development `.env.local`; **never set in production** |
 | `SUPABASE_ACCESS_TOKEN` | **secret**, personal | the Supabase CLI (`login`, `link`, `gen types --linked`) | your account's access tokens; `npx supabase login` stores it for you |

@@ -124,7 +124,7 @@ export function EventPoster({
               {event.title}
             </Link>
           </H>
-          {lg && event.subtitle && <p className="type-small text-muted">{event.subtitle}</p>}
+          {lg && event.summary && <p className="line-clamp-2 type-small text-muted">{event.summary}</p>}
           <EventFacts event={event} now={now} />
         </div>
       </div>
