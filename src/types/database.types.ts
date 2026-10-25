@@ -468,6 +468,379 @@ export type Database = {
           },
         ]
       }
+      event_bookmarks: {
+        Row: {
+          created_at: string
+          event_id: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_bookmarks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_categories: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      event_coorganizers: {
+        Row: {
+          event_id: string
+          organization_id: string
+          position: number
+        }
+        ComputedFields: never
+        Insert: {
+          event_id: string
+          organization_id: string
+          position?: number
+        }
+        Update: {
+          event_id?: string
+          organization_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_coorganizers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_coorganizers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_registrations: {
+        Row: {
+          cancel_reason: string | null
+          cancel_source: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          confirmed_at: string | null
+          created_at: string
+          event_id: string
+          id: string
+          kind: string
+          promoted_at: string | null
+          queue_position: number | null
+          reference: string
+          status: string
+          updated_at: string
+          user_id: string
+          waitlisted_at: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          cancel_reason?: string | null
+          cancel_source?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          kind?: string
+          promoted_at?: string | null
+          queue_position?: number | null
+          reference: string
+          status: string
+          updated_at?: string
+          user_id: string
+          waitlisted_at?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancel_source?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          kind?: string
+          promoted_at?: string | null
+          queue_position?: number | null
+          reference?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          waitlisted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_slug_history: {
+        Row: {
+          created_at: string
+          event_id: string
+          slug: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          event_id: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_slug_history_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          access_details: string | null
+          address_line: string | null
+          cancellation_cutoff_minutes: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          capacity: number | null
+          category_id: string | null
+          city: string | null
+          confirmed_count: number
+          cover_media_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          ends_at: string | null
+          external_url: string | null
+          first_published_at: string | null
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
+          id: string
+          latitude: number | null
+          location_type: string
+          longitude: number | null
+          online_url: string | null
+          organization_id: string
+          pinned_at: string | null
+          pinned_by: string | null
+          prominence: string
+          prominence_by: string | null
+          prominence_until: string | null
+          publication: string
+          published_at: string | null
+          registration_closes_at: string | null
+          registration_mode: string
+          registration_opens_at: string | null
+          search: unknown
+          series_key: string | null
+          slug: string | null
+          starts_at: string | null
+          status: string
+          summary: string | null
+          timezone: string
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by: string | null
+          venue_name: string | null
+          version: number
+          waitlist_count: number
+          waitlist_enabled: boolean
+        }
+        ComputedFields: never
+        Insert: {
+          access_details?: string | null
+          address_line?: string | null
+          cancellation_cutoff_minutes?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          capacity?: number | null
+          category_id?: string | null
+          city?: string | null
+          confirmed_count?: number
+          cover_media_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          ends_at?: string | null
+          external_url?: string | null
+          first_published_at?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          latitude?: number | null
+          location_type?: string
+          longitude?: number | null
+          online_url?: string | null
+          organization_id: string
+          pinned_at?: string | null
+          pinned_by?: string | null
+          prominence?: string
+          prominence_by?: string | null
+          prominence_until?: string | null
+          publication?: string
+          published_at?: string | null
+          registration_closes_at?: string | null
+          registration_mode?: string
+          registration_opens_at?: string | null
+          search?: never
+          series_key?: string | null
+          slug?: string | null
+          starts_at?: string | null
+          status?: string
+          summary?: string | null
+          timezone?: string
+          title?: string
+          unpublished_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          venue_name?: string | null
+          version?: number
+          waitlist_count?: number
+          waitlist_enabled?: boolean
+        }
+        Update: {
+          access_details?: string | null
+          address_line?: string | null
+          cancellation_cutoff_minutes?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          capacity?: number | null
+          category_id?: string | null
+          city?: string | null
+          confirmed_count?: number
+          cover_media_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          ends_at?: string | null
+          external_url?: string | null
+          first_published_at?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          latitude?: number | null
+          location_type?: string
+          longitude?: number | null
+          online_url?: string | null
+          organization_id?: string
+          pinned_at?: string | null
+          pinned_by?: string | null
+          prominence?: string
+          prominence_by?: string | null
+          prominence_until?: string | null
+          publication?: string
+          published_at?: string | null
+          registration_closes_at?: string | null
+          registration_mode?: string
+          registration_opens_at?: string | null
+          search?: never
+          series_key?: string | null
+          slug?: string | null
+          starts_at?: string | null
+          status?: string
+          summary?: string | null
+          timezone?: string
+          title?: string
+          unpublished_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          venue_name?: string | null
+          version?: number
+          waitlist_count?: number
+          waitlist_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "event_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_cover_media_id_fkey"
+            columns: ["cover_media_id"]
+            isOneToOne: false
+            referencedRelation: "association_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       governance_audit_events: {
         Row: {
           action: string
@@ -722,6 +1095,63 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_outbox: {
+        Row: {
+          created_at: string
+          dedupe_key: string
+          email_attempts: number
+          email_last_error: string | null
+          email_next_attempt_at: string
+          email_sent_at: string | null
+          email_status: string
+          event_id: string | null
+          id: number
+          kind: string
+          payload: Json
+          read_at: string | null
+          recipient_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          dedupe_key: string
+          email_attempts?: number
+          email_last_error?: string | null
+          email_next_attempt_at?: string
+          email_sent_at?: string | null
+          email_status?: string
+          event_id?: string | null
+          id?: never
+          kind: string
+          payload?: Json
+          read_at?: string | null
+          recipient_id: string
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string
+          email_attempts?: number
+          email_last_error?: string | null
+          email_next_attempt_at?: string
+          email_sent_at?: string | null
+          email_status?: string
+          event_id?: string | null
+          id?: never
+          kind?: string
+          payload?: Json
+          read_at?: string | null
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_outbox_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -1497,6 +1927,7 @@ export type Database = {
           archived_at: string | null
           created_at: string
           created_by: string
+          event_id: string | null
           first_published_at: string | null
           hidden_at: string | null
           hidden_by: string | null
@@ -1529,6 +1960,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           created_by: string
+          event_id?: string | null
           first_published_at?: string | null
           hidden_at?: string | null
           hidden_by?: string | null
@@ -1560,6 +1992,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           created_by?: string
+          event_id?: string | null
           first_published_at?: string | null
           hidden_at?: string | null
           hidden_by?: string | null
@@ -1588,6 +2021,13 @@ export type Database = {
           working_revision_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_organization_id_fkey"
             columns: ["organization_id"]
@@ -1689,11 +2129,20 @@ export type Database = {
         Args: { p_organization_id: string }
         Returns: Json
       }
+      cancel_event: {
+        Args: { p_event_id: string; p_reason: string }
+        Returns: number
+      }
       cancel_leadership_transition: {
         Args: { p_reason?: string; p_transition_id: string }
         Returns: undefined
       }
+      cancel_my_registration: { Args: { p_event_id: string }; Returns: Json }
       cancel_post_schedule: { Args: { p_post_id: string }; Returns: undefined }
+      change_event_slug: {
+        Args: { p_event_id: string; p_slug: string }
+        Returns: string
+      }
       change_organization_slug: {
         Args: { p_organization_id: string; p_slug: string }
         Returns: string
@@ -1701,6 +2150,11 @@ export type Database = {
       change_post_slug: {
         Args: { p_post_id: string; p_slug: string }
         Returns: string
+      }
+      claim_notification_emails: { Args: { p_limit?: number }; Returns: Json }
+      complete_notification_email: {
+        Args: { p_error?: string; p_id: number; p_ok: boolean }
+        Returns: undefined
       }
       content_dashboard: { Args: { p_organization_id: string }; Returns: Json }
       create_association_category: {
@@ -1716,6 +2170,14 @@ export type Database = {
           p_reason: string
           p_starts_at?: string
         }
+        Returns: string
+      }
+      create_event: {
+        Args: { p_organization_id: string; p_title?: string }
+        Returns: string
+      }
+      create_event_category: {
+        Args: { p_label: string; p_slug: string; p_sort_order?: number }
         Returns: string
       }
       create_organization: {
@@ -1747,6 +2209,7 @@ export type Database = {
         Args: { p_label: string; p_slug: string; p_sort_order?: number }
         Returns: string
       }
+      delete_event_draft: { Args: { p_event_id: string }; Returns: undefined }
       delete_post_draft: { Args: { p_post_id: string }; Returns: undefined }
       dismiss_report: {
         Args: { p_note?: string; p_report_id: string }
@@ -1760,11 +2223,29 @@ export type Database = {
         Args: { p_assignment_id: string; p_reason: string }
         Returns: undefined
       }
+      event_attendees: {
+        Args: {
+          p_event_id: string
+          p_limit?: number
+          p_offset?: number
+          p_q?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      event_dashboard: { Args: { p_organization_id: string }; Returns: Json }
+      event_editor: { Args: { p_event_id: string }; Returns: Json }
+      event_preview: { Args: { p_event_id: string }; Returns: Json }
+      export_event_attendees: { Args: { p_event_id: string }; Returns: Json }
       governance_history: {
         Args: { p_limit?: number; p_organization_id?: string }
         Returns: Json
       }
       governance_overview: { Args: never; Returns: Json }
+      hide_event: {
+        Args: { p_event_id: string; p_reason: string }
+        Returns: undefined
+      }
       hide_post: {
         Args: { p_post_id: string; p_reason: string }
         Returns: undefined
@@ -1778,18 +2259,26 @@ export type Database = {
         }
         Returns: string
       }
+      mark_notifications_read: { Args: { p_ids?: number[] }; Returns: number }
       member_access: { Args: { p_membership_id: string }; Returns: Json }
       moderated_post: { Args: { p_post_id: string }; Returns: Json }
       moderation_queue: { Args: never; Returns: Json }
       my_access: { Args: never; Returns: Json }
+      my_event_status: { Args: { p_event_id: string }; Returns: Json }
+      my_events: { Args: never; Returns: Json }
       my_governance_inbox: { Args: never; Returns: Json }
       organization_governance: {
         Args: { p_organization_id: string }
         Returns: Json
       }
       organization_team: { Args: { p_organization_id: string }; Returns: Json }
+      platform_events: {
+        Args: { p_q?: string; p_view?: string }
+        Returns: Json
+      }
       platform_organizations: { Args: never; Returns: Json }
       post_editor: { Args: { p_post_id: string }; Returns: Json }
+      post_event_options: { Args: { p_post_id: string }; Returns: Json }
       post_preview: {
         Args: { p_post_id: string; p_revision_id?: string }
         Returns: Json
@@ -1832,11 +2321,35 @@ export type Database = {
       }
       public_association: { Args: { p_slug: string }; Returns: Json }
       public_association_categories: { Args: never; Returns: Json }
+      public_association_events: {
+        Args: { p_limit?: number; p_slug: string; p_when?: string }
+        Returns: Json
+      }
       public_association_posts: {
         Args: { p_limit?: number; p_slug: string }
         Returns: Json
       }
       public_associations: { Args: never; Returns: Json }
+      public_event: { Args: { p_slug: string }; Returns: Json }
+      public_event_facets: { Args: never; Returns: Json }
+      public_event_sitemap: { Args: never; Returns: Json }
+      public_events: {
+        Args: {
+          p_after_at?: string
+          p_after_id?: string
+          p_availability?: string
+          p_category?: string
+          p_from?: string
+          p_limit?: number
+          p_location_type?: string
+          p_order?: string
+          p_organization_slug?: string
+          p_q?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      public_featured_events: { Args: never; Returns: Json }
       public_featured_posts: { Args: never; Returns: Json }
       public_portrait_path: {
         Args: { p_membership_id: string }
@@ -1857,10 +2370,12 @@ export type Database = {
         }
         Returns: Json
       }
+      public_series_events: { Args: { p_series_key: string }; Returns: Json }
       publish_association_page: {
         Args: { p_expected_revision: number; p_organization_id: string }
         Returns: string
       }
+      publish_event: { Args: { p_event_id: string }; Returns: string }
       publish_post: {
         Args: { p_post_id: string; p_revision_id: string }
         Returns: string
@@ -1877,6 +2392,7 @@ export type Database = {
         }
         Returns: string
       }
+      register_for_event: { Args: { p_event_id: string }; Returns: Json }
       release_association_page: {
         Args: { p_organization_id: string; p_reason: string }
         Returns: undefined
@@ -1884,6 +2400,10 @@ export type Database = {
       remove_association_media: {
         Args: { p_media_id: string }
         Returns: string
+      }
+      remove_event_registration: {
+        Args: { p_reason: string; p_registration_id: string }
+        Returns: undefined
       }
       renew_invitation: {
         Args: { p_invitation_id: string }
@@ -1900,6 +2420,10 @@ export type Database = {
       respond_to_leadership_candidacy: {
         Args: { p_accept: boolean; p_transition_id: string }
         Returns: string
+      }
+      restore_event_visibility: {
+        Args: { p_event_id: string; p_reason: string }
+        Returns: undefined
       }
       restore_post_revision: {
         Args: { p_post_id: string; p_revision_id: string }
@@ -1930,6 +2454,10 @@ export type Database = {
         Args: { p_base: Json; p_organization_id: string; p_patch: Json }
         Returns: number
       }
+      save_event: {
+        Args: { p_event_id: string; p_patch: Json; p_version: number }
+        Returns: Json
+      }
       save_post_revision: {
         Args: {
           p_content: Json
@@ -1959,6 +2487,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_event_bookmark: {
+        Args: { p_event_id: string; p_saved: boolean }
+        Returns: undefined
+      }
+      set_event_pin: {
+        Args: { p_event_id: string; p_pinned: boolean }
+        Returns: undefined
+      }
+      set_event_prominence: {
+        Args: { p_event_id: string; p_prominence: string; p_until?: string }
+        Returns: undefined
+      }
       set_membership_status: {
         Args: { p_membership_id: string; p_reason?: string; p_status: string }
         Returns: undefined
@@ -1974,6 +2514,10 @@ export type Database = {
       }
       set_organization_status: {
         Args: { p_organization_id: string; p_reason?: string; p_status: string }
+        Returns: undefined
+      }
+      set_post_event: {
+        Args: { p_event_id: string; p_post_id: string }
         Returns: undefined
       }
       set_post_pin: {
@@ -1992,6 +2536,10 @@ export type Database = {
         Args: { p_organization_id: string; p_reason?: string }
         Returns: undefined
       }
+      unpublish_event: {
+        Args: { p_event_id: string; p_reason?: string }
+        Returns: undefined
+      }
       unpublish_post: {
         Args: { p_post_id: string; p_reason?: string }
         Returns: undefined
@@ -2007,6 +2555,15 @@ export type Database = {
       }
       update_association_media: {
         Args: { p_alt_text: string; p_media_id: string }
+        Returns: undefined
+      }
+      update_event_category: {
+        Args: {
+          p_archived: boolean
+          p_category_id: string
+          p_label: string
+          p_sort_order: number
+        }
         Returns: undefined
       }
       update_position: {

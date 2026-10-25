@@ -61,6 +61,12 @@ jobs:
           encode() { tr -d '\015' | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}'; }
           grep -E -A3 "not ok|ERROR|Failed|Looks like|Result:|\.sql \.\." "$RUNNER_TEMP/pgtap.txt" | head -c 3500 > "$RUNNER_TEMP/pgtap-failures.txt" || true
           echo "::notice title=pgTAP failures::$(encode < "$RUNNER_TEMP/pgtap-failures.txt")"
+      - name: Registration concurrency (parallel sessions)
+        # Twenty real sessions race for one seat; two cancel at once (Phase 7).
+        run: |
+          DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
+          test -n "$DB_URL"
+          bash supabase/tests/concurrency/registrations.sh "$DB_URL"
       - name: Database lint (plpgsql_check)
         run: supabase db lint --fail-on error
       - uses: actions/setup-node@v5

@@ -369,3 +369,178 @@ begin
   perform set_config('request.jwt.claims', '', true);
 end
 $seed6$;
+
+-- Phase 7: fictional events in every state, created through the event
+-- functions as the fictional people above (local stack only). Dates are
+-- relative to the moment the seed runs.
+--   BDE: an open party with no fixed capacity (featured), a multi-day
+--        week-end registered on an outside site, a draft.
+--   Finance: a workshop with 20 seats, an online webinar with private
+--        joining details, a cancelled conference, a closed registration,
+--        a past event, Lucas's draft.
+--   Sports: a full tournament (2 seats) with a waiting list, an exhibition
+--        with no registration, a session whose registration opens later, a
+--        rescheduled session.
+do $seed7$
+declare
+  v_alice uuid := 'a0000000-0000-4000-8000-000000000001';
+  v_julie uuid := 'a0000000-0000-4000-8000-000000000004';
+  v_lucas uuid := 'a0000000-0000-4000-8000-000000000005';
+  v_emma uuid := 'a0000000-0000-4000-8000-000000000006';
+  v_nina uuid := 'a0000000-0000-4000-8000-000000000007';
+  v_hugo uuid := 'a0000000-0000-4000-8000-000000000008';
+  v_paul uuid := 'a0000000-0000-4000-8000-00000000000a';
+  v_lea uuid := 'a0000000-0000-4000-8000-00000000000b';
+  v_tom uuid := 'a0000000-0000-4000-8000-00000000000c';
+  v_finance uuid := (select id from public.organizations where slug = 'exemple-finance');
+  v_sports uuid := (select id from public.organizations where slug = 'exemple-sports');
+  v_bde uuid := (select id from public.organizations where kind = 'bde');
+  v_day timestamptz := date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris';
+  v_event uuid;
+  v_cat_soiree uuid := (select id from public.event_categories where slug = 'soiree');
+  v_cat_sport uuid := (select id from public.event_categories where slug = 'sport');
+  v_cat_carriere uuid := (select id from public.event_categories where slug = 'carriere');
+  v_cat_culture uuid := (select id from public.event_categories where slug = 'culture');
+  v_cat_weekend uuid := (select id from public.event_categories where slug = 'week-end');
+begin
+  -- ---- BDE (Alice) -------------------------------------------------------------------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_alice, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+
+  v_event := public.create_event(v_bde, 'Soirée de rentrée (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Soirée fictive de démonstration, sans limite de places.',
+    'description', 'Texte fictif écrit pour les données locales.' || chr(10) || chr(10) || 'Un second paragraphe fictif.',
+    'category_id', v_cat_soiree, 'location_type', 'external', 'venue_name', 'Lieu de démonstration (exemple)', 'city', 'Paris',
+    'starts_at', v_day + interval '10 days 21 hours', 'ends_at', v_day + interval '11 days 3 hours',
+    'registration_mode', 'internal'));
+  perform public.publish_event(v_event);
+  perform public.set_event_prominence(v_event, 'featured', null);
+
+  v_event := public.create_event(v_bde, 'Week-end ski (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Week-end fictif sur trois jours, inscription sur un site extérieur.',
+    'category_id', v_cat_weekend, 'location_type', 'external', 'venue_name', 'Station de démonstration (exemple)',
+    'starts_at', v_day + interval '24 days 7 hours', 'ends_at', v_day + interval '26 days 20 hours',
+    'registration_mode', 'external', 'external_url', 'https://inscription.example.test/week-end'));
+  perform public.publish_event(v_event);
+
+  perform public.create_event(v_bde, 'Brouillon du BDE (exemple)');
+
+  -- ---- Finance (Julie, president) ------------------------------------------------------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_julie, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+
+  v_event := public.create_event(v_finance, 'Atelier finance (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Atelier fictif, vingt places.', 'category_id', v_cat_carriere,
+    'location_type', 'campus', 'venue_name', 'Salle de démonstration (exemple)',
+    'starts_at', v_day + interval '6 days 18 hours', 'ends_at', v_day + interval '6 days 20 hours',
+    'registration_mode', 'internal', 'capacity', 20, 'waitlist_enabled', true,
+    'registration_closes_at', v_day + interval '5 days 23 hours 59 minutes', 'cancellation_cutoff_minutes', 120));
+  perform public.publish_event(v_event);
+
+  v_event := public.create_event(v_finance, 'Webinaire carrière (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Webinaire fictif en ligne ; le lien est donné aux inscrit·es.', 'category_id', v_cat_carriere,
+    'location_type', 'online', 'access_details', 'Lien fictif de démonstration : https://visio.example.test/salle',
+    'starts_at', v_day + interval '8 days 12 hours 30 minutes', 'ends_at', v_day + interval '8 days 13 hours 30 minutes',
+    'registration_mode', 'internal', 'capacity', 100));
+  perform public.publish_event(v_event);
+
+  v_event := public.create_event(v_finance, 'Conférence annulée (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Conférence fictive, annulée pour la démonstration.', 'category_id', v_cat_carriere,
+    'location_type', 'campus', 'venue_name', 'Amphithéâtre de démonstration (exemple)',
+    'starts_at', v_day + interval '12 days 18 hours', 'ends_at', v_day + interval '12 days 20 hours',
+    'registration_mode', 'internal', 'capacity', 50));
+  perform public.publish_event(v_event);
+
+  v_event := public.create_event(v_finance, 'Inscriptions closes (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Événement fictif dont les inscriptions sont closes.', 'category_id', v_cat_carriere,
+    'location_type', 'campus', 'venue_name', 'Salle de démonstration (exemple)',
+    'starts_at', v_day + interval '3 days 18 hours', 'ends_at', v_day + interval '3 days 19 hours',
+    'registration_mode', 'internal', 'capacity', 30,
+    'registration_opens_at', now() - interval '3 days', 'registration_closes_at', now() - interval '1 hour'));
+  perform public.publish_event(v_event);
+
+  v_event := public.create_event(v_finance, 'Rencontre passée (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Événement fictif déjà passé.', 'category_id', v_cat_carriere,
+    'location_type', 'campus', 'venue_name', 'Salle de démonstration (exemple)',
+    'starts_at', v_day + interval '1 day 18 hours', 'ends_at', v_day + interval '1 day 20 hours'));
+  perform public.publish_event(v_event);
+  -- Seed only: move it into the past (the functions never allow that).
+  update public.events set starts_at = v_day - interval '7 days' + interval '18 hours',
+                           ends_at = v_day - interval '7 days' + interval '20 hours'
+   where id = v_event;
+
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_lucas, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.create_event(v_finance, 'Brouillon de Lucas (événement exemple)');
+
+  -- ---- Sports (Emma, president) ----------------------------------------------------------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_emma, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+
+  v_event := public.create_event(v_sports, 'Tournoi (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Tournoi fictif à deux places, avec liste d''attente.', 'category_id', v_cat_sport,
+    'location_type', 'campus', 'venue_name', 'Gymnase de démonstration (exemple)',
+    'starts_at', v_day + interval '9 days 14 hours', 'ends_at', v_day + interval '9 days 18 hours',
+    'registration_mode', 'internal', 'capacity', 2, 'waitlist_enabled', true));
+  perform public.publish_event(v_event);
+
+  v_event := public.create_event(v_sports, 'Exposition photo (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Exposition fictive en accès libre, sans inscription.', 'category_id', v_cat_culture,
+    'location_type', 'campus', 'venue_name', 'Hall de démonstration (exemple)',
+    'starts_at', v_day + interval '4 days 10 hours', 'ends_at', v_day + interval '6 days 18 hours'));
+  perform public.publish_event(v_event);
+
+  v_event := public.create_event(v_sports, 'Inscriptions bientôt (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Séance fictive dont les inscriptions ouvrent plus tard.', 'category_id', v_cat_sport,
+    'location_type', 'campus', 'venue_name', 'Gymnase de démonstration (exemple)',
+    'starts_at', v_day + interval '20 days 18 hours', 'ends_at', v_day + interval '20 days 20 hours',
+    'registration_mode', 'internal', 'capacity', 15, 'registration_opens_at', v_day + interval '5 days 9 hours'));
+  perform public.publish_event(v_event);
+
+  v_event := public.create_event(v_sports, 'Initiation escalade (exemple)');
+  perform public.save_event(v_event, 1, jsonb_build_object(
+    'summary', 'Séance fictive, reprogrammée pour la démonstration.', 'category_id', v_cat_sport,
+    'location_type', 'external', 'venue_name', 'Salle d''escalade de démonstration (exemple)',
+    'starts_at', v_day + interval '7 days 18 hours', 'ends_at', v_day + interval '7 days 20 hours',
+    'registration_mode', 'internal', 'capacity', 12));
+  perform public.publish_event(v_event);
+
+  -- ---- Students register --------------------------------------------------------------------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_nina, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  perform public.register_for_event((select id from public.events where title = 'Tournoi (exemple)'));
+  perform public.register_for_event((select id from public.events where title = 'Atelier finance (exemple)'));
+  perform public.register_for_event((select id from public.events where title = 'Conférence annulée (exemple)'));
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_paul, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  perform public.register_for_event((select id from public.events where title = 'Tournoi (exemple)'));
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_lea, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  -- Full: Léa waits.
+  perform public.register_for_event((select id from public.events where title = 'Tournoi (exemple)'));
+  perform public.register_for_event((select id from public.events where title = 'Soirée de rentrée (exemple)'));
+  perform public.register_for_event((select id from public.events where title = 'Atelier finance (exemple)'));
+  perform public.cancel_my_registration((select id from public.events where title = 'Atelier finance (exemple)'));
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_tom, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  perform public.register_for_event((select id from public.events where title = 'Atelier finance (exemple)'));
+  perform public.register_for_event((select id from public.events where title = 'Webinaire carrière (exemple)'));
+  perform public.register_for_event((select id from public.events where title = 'Initiation escalade (exemple)'));
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_hugo, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  perform public.register_for_event((select id from public.events where title = 'Soirée de rentrée (exemple)'));
+
+  -- ---- Changes after registrations --------------------------------------------------------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_emma, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  v_event := (select id from public.events where title = 'Initiation escalade (exemple)');
+  perform public.save_event(v_event, (select version from public.events where id = v_event), jsonb_build_object(
+    'starts_at', v_day + interval '8 days 18 hours', 'ends_at', v_day + interval '8 days 20 hours'));
+
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_julie, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.cancel_event((select id from public.events where title = 'Conférence annulée (exemple)'),
+                              'Annulation fictive de démonstration.');
+
+  perform set_config('request.jwt.claims', '', true);
+end
+$seed7$;
