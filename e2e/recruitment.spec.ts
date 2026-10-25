@@ -54,6 +54,7 @@ let campaignId = "";
 let campaignPath = "";
 let applicationPath = "";
 let documentPath = "";
+let totpOn = false;
 
 async function personIn(browser: Browser, local: string | null): Promise<Page> {
   const context = await browser.newContext();
@@ -64,6 +65,16 @@ async function personIn(browser: Browser, local: string | null): Promise<Page> {
 }
 
 test.afterAll(async () => {
+  // Leave Paul's account as found, even after a failure: registrations.spec signs him in
+  // with the seed password alone.
+  if (paul && totpOn) {
+    await paul.goto("/account/security");
+    const remove = paul.getByRole("button", { name: "Retirer la double authentification" });
+    if (await remove.isVisible().catch(() => false)) {
+      await remove.click();
+      await expect(paul.getByText("Désactivée", { exact: true })).toBeVisible();
+    }
+  }
   for (const c of contexts) await c.close();
   contexts = [];
 });
@@ -79,6 +90,7 @@ test("§110 Paul builds a campaign with the wizard and publishes it", async ({ b
   await paul.getByLabel("Entre le code à 6 chiffres", { exact: false }).fill(await freshTotp(secret));
   await paul.getByRole("button", { name: "Activer" }).click();
   await expect(paul.getByText("C'est activé.")).toBeVisible();
+  totpOn = true;
 
   await paul.goto(`/manage/${ASSO}/recruitment`);
   await expect(paul.getByRole("heading", { name: "Recrutement", exact: true })).toBeVisible();
@@ -207,16 +219,16 @@ test("§113 pause, cancellation and withdrawal follow the campaign's state", asy
 
   const visitor = await personIn(browser, null);
   await visitor.goto(campaignPath);
-  await expect(visitor.getByText("En pause").first()).toBeVisible();
+  await expect(visitor.getByText(/a mis ce recrutement en pause/).filter({ visible: true }).first()).toBeVisible();
   await expect(visitor.getByRole("button", { name: "Candidater à ce poste" })).toHaveCount(0);
 
-  await paul.getByText("Annuler le recrutement").click();
+  await paul.getByText("Annuler le recrutement", { exact: true }).first().click();
   await paul.getByLabel("Raison, lue par les candidat·es").fill(REASON);
-  await paul.getByRole("button", { name: "Annuler le recrutement" }).click();
+  await paul.locator("form").getByRole("button", { name: "Annuler le recrutement" }).click();
   await expect(paul.getByText(/Recrutement annulé\./)).toBeVisible();
 
   await visitor.goto(campaignPath);
-  await expect(visitor.getByText(REASON).first()).toBeVisible();
+  await expect(visitor.getByText(REASON).filter({ visible: true }).first()).toBeVisible();
 
   // Hugo's sent application is kept, he is told, and he may still withdraw it.
   const hugo = await personIn(browser, "hugo.finance");
@@ -228,9 +240,4 @@ test("§113 pause, cancellation and withdrawal follow the campaign's state", asy
   await hugo.getByRole("button", { name: "Oui, retirer" }).click();
   await expect(hugo).toHaveURL(/fait=retiree/);
   await expect(hugo.getByText("Candidature retirée. Elle reste lisible ici.")).toBeVisible();
-
-  // Leave Paul's account as found: registrations.spec signs him in with the seed password.
-  await paul.goto("/account/security");
-  await paul.getByRole("button", { name: "Retirer la double authentification" }).click();
-  await expect(paul.getByText("Désactivée", { exact: true })).toBeVisible();
 });
