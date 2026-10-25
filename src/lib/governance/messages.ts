@@ -136,6 +136,49 @@ export type GovernanceErrorCode =
   | "registration_mode_locked"
   | "waitlist_not_empty"
   | "profile_incomplete"
+  // Phase 8: recruitment
+  | "campaign_not_found"
+  | "campaign_invalid"
+  | "campaign_incomplete"
+  | "campaign_dates_invalid"
+  | "campaign_past"
+  | "campaign_cancelled"
+  | "campaign_hidden"
+  | "campaign_not_hidden"
+  | "campaign_limit"
+  | "campaign_needs_position"
+  | "campaign_not_published"
+  | "campaign_has_applications"
+  | "campaign_closed"
+  | "campaign_still_open"
+  | "campaign_was_published"
+  | "campaign_owner_locked"
+  | "campaign_paused"
+  | "campaign_not_open"
+  | "position_limit"
+  | "position_closed"
+  | "form_invalid"
+  | "form_version_locked"
+  | "form_not_live"
+  | "form_no_draft"
+  | "form_version_changed"
+  | "not_eligible"
+  | "application_limit"
+  | "application_rate_limited"
+  | "application_not_found"
+  | "application_locked"
+  | "application_incomplete"
+  | "application_not_submitted"
+  | "answer_invalid"
+  | "question_not_found"
+  | "document_type_refused"
+  | "document_too_large"
+  | "too_many_documents"
+  | "document_rate_limited"
+  | "document_not_found"
+  | "document_not_uploaded"
+  | "document_unreadable"
+  | "privacy_not_acknowledged"
   | "unavailable"
   | "unexpected";
 
@@ -292,6 +335,52 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
     "Des personnes sont inscrites : le mode d'inscription ne change plus. Annule l'événement si tout change.",
   waitlist_not_empty: "Des personnes attendent : la liste d'attente ne peut pas être fermée.",
   profile_incomplete: "Termine d'abord ton profil (prénom et nom) : c'est ce que voit l'asso qui organise.",
+  campaign_not_found: "Ce recrutement n'existe pas, ou n'est pas en ligne.",
+  campaign_invalid: "Un champ du recrutement n'a pas le bon format. Vérifie les longueurs et les adresses.",
+  campaign_incomplete: "Il manque l'essentiel : un titre, une phrase de présentation, la date d'ouverture et la date limite.",
+  campaign_dates_invalid:
+    "Les dates ne tiennent pas : la date limite doit venir après l'ouverture et être à venir, et un poste ne peut pas fermer après la campagne.",
+  campaign_past: "La date limite est déjà passée : choisis-en une à venir avant de publier.",
+  campaign_cancelled: "Ce recrutement est annulé : il ne se modifie plus.",
+  campaign_hidden: "Ce recrutement est masqué par la modération du BDE.",
+  campaign_not_hidden: "Ce recrutement n'est pas masqué.",
+  campaign_limit: "Trop de recrutements en cours pour cette asso. Archive les anciens d'abord.",
+  campaign_needs_position: "Un recrutement en ligne garde au moins un poste ouvert.",
+  campaign_not_published: "Ce recrutement n'est pas en ligne.",
+  campaign_has_applications:
+    "Des candidatures ont été envoyées : le recrutement ne se retire plus du site. Mets-le en pause, clôture-le ou annule-le.",
+  campaign_closed: "La date limite est passée : les candidatures sont closes.",
+  campaign_still_open: "Clôture d'abord ce recrutement (ou attends sa date limite) pour l'archiver.",
+  campaign_was_published: "Un recrutement qui a été en ligne ne se supprime pas : archive-le.",
+  campaign_owner_locked: "Un recrutement reste dans l'asso qui l'a créé.",
+  campaign_paused: "L'asso a mis ce recrutement en pause : réessaie quand il sera rouvert.",
+  campaign_not_open: "Les candidatures ne sont pas encore ouvertes.",
+  position_limit: "20 postes au plus par recrutement.",
+  position_closed: "Ce poste ne prend plus de candidature.",
+  form_invalid: "Le formulaire a une question incomplète ou un réglage invalide.",
+  form_version_locked: "Une version publiée du formulaire ne se modifie plus : les changements vont dans un nouveau brouillon.",
+  form_not_live: "Publie d'abord le recrutement : sa première version de formulaire part avec lui.",
+  form_no_draft: "Il n'y a pas de brouillon de formulaire à publier.",
+  form_version_changed:
+    "L'asso a publié une nouvelle version du formulaire. Passe à la nouvelle version (tes réponses qui comptent encore sont gardées), puis envoie.",
+  not_eligible: "Ce poste est réservé à d'autres années d'études (d'après l'année indiquée dans ton profil).",
+  application_limit: "Tu as atteint le nombre de postes auxquels ce recrutement permet de candidater.",
+  application_rate_limited: "Trop de candidatures commencées en une heure. Réessaie un peu plus tard.",
+  application_not_found: "Cette candidature n'existe pas, ou n'est pas la tienne.",
+  application_locked: "Cette candidature est envoyée : ses réponses ne se modifient plus.",
+  application_incomplete: "Il manque des réponses obligatoires, ou certaines ne respectent pas les consignes.",
+  application_not_submitted: "Seule une candidature envoyée peut être retirée. Un brouillon se supprime.",
+  answer_invalid: "Une réponse n'a pas le bon format (un choix qui n'existe pas, un nombre attendu…).",
+  question_not_found: "Cette question n'existe pas dans le formulaire.",
+  document_type_refused: "Ce format de fichier n'est pas accepté pour cette question.",
+  document_too_large: "Ce fichier dépasse la taille maximale de la question.",
+  too_many_documents: "Cette question a déjà tous ses fichiers. Remplace ou retire-en un d'abord.",
+  document_rate_limited: "Trop de fichiers envoyés en une heure. Réessaie un peu plus tard.",
+  document_not_found: "Ce document n'existe pas, ou n'est plus dans ta candidature.",
+  document_not_uploaded: "Le fichier n'est pas arrivé. Réessaie.",
+  document_unreadable:
+    "Ce fichier ne correspond pas à son format (ou c'est un document Word avec macros ou objets intégrés). Exporte-le en PDF et réessaie.",
+  privacy_not_acknowledged: "Coche la case pour dire que tu as lu comment tes données sont utilisées.",
   unavailable: "Le service est momentanément indisponible. Réessaie dans un instant.",
   unexpected: "Une erreur inattendue est survenue. Réessaie, et préviens le BDE si ça continue.",
 };

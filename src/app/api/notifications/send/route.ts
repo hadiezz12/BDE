@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/site-url";
 import { renderEventEmail } from "@/lib/events/email";
 import type { EventMessageKind, EventMessagePayload } from "@/lib/events/messages";
+import { isApplicationMessage, renderApplicationEmail, type ApplicationMessagePayload } from "@/lib/recruitment/messages";
 import { getEmailTransport } from "@/lib/notifications/transport";
 
 /**
@@ -14,7 +15,7 @@ import { getEmailTransport } from "@/lib/notifications/transport";
  *
  * It claims up to 20 pending messages (public.claim_notification_emails:
  * skip locked, a 10-minute lease, so two runs never send the same message),
- * renders each one, hands it to the transport, and records the outcome
+ * renders each one (event or application message), hands it to the transport, and records the outcome
  * (complete_notification_email: retries with backoff, "failed" after five
  * attempts). Registrations are never touched: a delivery problem changes
  * nothing about anyone's seat. With no transport configured it claims
@@ -34,8 +35,8 @@ function authorized(request: Request): boolean {
 
 interface Claimed {
   id: number;
-  kind: EventMessageKind;
-  payload: EventMessagePayload;
+  kind: string;
+  payload: EventMessagePayload & ApplicationMessagePayload;
   attempt: number;
   email: string | null;
   name: string | null;
@@ -62,7 +63,9 @@ export async function POST(request: Request) {
     if (!m.email) {
       reason = "no_address";
     } else {
-      const email = renderEventEmail({ kind: m.kind, payload: m.payload, name: m.name, site });
+      const email = isApplicationMessage(m.kind)
+        ? renderApplicationEmail({ kind: m.kind, payload: m.payload, applicationId: null, name: m.name, site })
+        : renderEventEmail({ kind: m.kind as EventMessageKind, payload: m.payload, name: m.name, site });
       const sent = await transport.send({ email: m.email, name: m.name }, email, m.id);
       ok = sent.ok;
       reason = sent.ok ? null : sent.error;

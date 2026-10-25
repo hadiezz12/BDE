@@ -59,7 +59,9 @@ test("constraint errors become sentences, never Postgres text", () => {
   }
 });
 
-const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events"]);
+const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events", "recruitment"]);
+
+const RESOURCE_TYPES = new Set(["recruitment_campaign", "recruitment_position", "recruitment_form", "recruitment_settings"]);
 
 test("every audited action has a sentence", () => {
   // Call shape: (actor, authority, action, category, …). The authority may be
@@ -70,6 +72,8 @@ test("every audited action has a sentence", () => {
     const found = [];
     for (const [, compared, literal] of call.slice(0, call.indexOf(");")).matchAll(/(=\s*)?'([a-z_]+)'/g)) {
       if (compared) continue; // a CASE condition, not a value
+      // A call whose action is a variable (v_action) reaches the resource type: not an action.
+      if (RESOURCE_TYPES.has(literal)) break;
       if (literal.includes("_")) found.push(literal);
       else if (CATEGORIES.has(literal) && found.length) break;
     }

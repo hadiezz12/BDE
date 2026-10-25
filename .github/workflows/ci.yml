@@ -74,7 +74,15 @@ jobs:
           test -n "$DB_URL"
           bash supabase/tests/concurrency/applications.sh "$DB_URL"
       - name: Database lint (plpgsql_check)
-        run: supabase db lint --fail-on error
+        # Findings are also published as a notice (the job log needs a GitHub session).
+        run: |
+          encode() { tr -d '\015' | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}'; }
+          if ! supabase db lint --fail-on error > "$RUNNER_TEMP/lint.txt" 2>&1; then
+            cat "$RUNNER_TEMP/lint.txt"
+            echo "::notice title=Database lint::$(head -c 6000 "$RUNNER_TEMP/lint.txt" | encode)"
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/lint.txt"
       - uses: actions/setup-node@v5
         with:
           node-version: 24

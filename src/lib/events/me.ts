@@ -7,6 +7,7 @@ import type { Notification } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import type { MyEventStatusPayload, MyEventsPayload } from "./model";
 import { eventMessage, type EventMessageKind, type EventMessagePayload } from "./messages";
+import { applicationMessage, isApplicationMessage, type ApplicationMessageKind, type ApplicationMessagePayload } from "@/lib/recruitment/messages";
 
 /**
  * A student's own side of events: their registration for one event (with
@@ -43,9 +44,10 @@ export const getMyEvents = cache(async (): Promise<MyEventsPayload> => {
 
 export interface MyNotification {
   id: number;
-  kind: EventMessageKind;
+  kind: EventMessageKind | ApplicationMessageKind;
   event_id: string | null;
-  payload: EventMessagePayload;
+  application_id: string | null;
+  payload: EventMessagePayload & ApplicationMessagePayload;
   created_at: string;
   read_at: string | null;
 }
@@ -57,7 +59,7 @@ export const getMyNotifications = cache(async (limit = 50): Promise<MyNotificati
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("notification_outbox")
-    .select("id, kind, event_id, payload, created_at, read_at")
+    .select("id, kind, event_id, application_id, payload, created_at, read_at")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
@@ -67,10 +69,24 @@ export const getMyNotifications = cache(async (limit = 50): Promise<MyNotificati
   return data as unknown as MyNotification[];
 });
 
-/** The student's event messages as the account pages list them (same words as the e-mails). */
+/** The student's messages (events and applications) as the account pages list them (same words as the e-mails). */
 export async function getMyEventNotifications(limit = 50): Promise<Notification[]> {
   return (await getMyNotifications(limit)).map((n) => {
-    const message = eventMessage(n.kind, n.payload);
+    if (isApplicationMessage(n.kind)) {
+      const message = applicationMessage(n.kind, n.payload);
+      return {
+        id: String(n.id),
+        userId: "",
+        kind: "candidature",
+        title: message.title,
+        body: message.body,
+        createdAt: n.created_at,
+        read: n.read_at !== null,
+        href: n.application_id ? routes.accountApplication(n.application_id) : routes.accountApplications,
+      };
+    }
+    const kind = n.kind as EventMessageKind;
+    const message = eventMessage(kind, n.payload);
     return {
       id: String(n.id),
       userId: "",
@@ -79,7 +95,7 @@ export async function getMyEventNotifications(limit = 50): Promise<Notification[
       body: message.body,
       createdAt: n.created_at,
       read: n.read_at !== null,
-      href: n.payload.slug && n.kind !== "event_registration_removed" ? routes.event(n.payload.slug) : routes.accountEvents,
+      href: n.payload.slug && kind !== "event_registration_removed" ? routes.event(n.payload.slug) : routes.accountEvents,
     };
   });
 }
