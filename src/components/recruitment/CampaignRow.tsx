@@ -6,7 +6,7 @@ import { CAMPAIGN_STATUS_LABEL, plural } from "@/lib/format";
 import { AssociationIdentity } from "@/components/associations/AssociationIdentity";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Icon } from "@/components/ui/Icon";
-import { STATUS_TONE, countdown, roleTags } from "./campaign-facts";
+import { STATUS_TONE, countdown, isOver, roleTags } from "./campaign-facts";
 
 /**
  * One campaign in the recruitment index: the countdown as a huge numeral,
@@ -28,7 +28,7 @@ export function CampaignRow({
   note?: string;
 }) {
   const H = headingLevel === 2 ? "h2" : "h3";
-  const closed = campaign.status === "cloturee";
+  const closed = isOver(campaign.status);
   const urgent = campaign.status === "derniere-chance";
   const count = countdown(campaign);
   const tags = roleTags(campaign.positions);
@@ -107,7 +107,7 @@ export function CampaignRow({
         <p className={cx("type-meta", urgent ? "font-bold text-accent-text" : "text-muted")}>{count.label}</p>
       </div>
 
-      {/* Seats */}
+      {/* Places when every position announced them, otherwise the number of positions. */}
       <p
         className={cx(
           "flex flex-col gap-1.5 [grid-area:seats] sm:items-end sm:self-start lg:items-start",
@@ -115,12 +115,14 @@ export function CampaignRow({
         )}
       >
         <span aria-hidden className="type-numeral text-[2.6rem] sm:text-[3.4rem]">
-          {campaign.seats}
+          {campaign.seats ?? campaign.positions.length}
         </span>
         <span aria-hidden className="type-meta text-muted">
-          {campaign.seats > 1 ? "places" : "place"}
+          {campaign.seats !== null ? (campaign.seats > 1 ? "places" : "place") : campaign.positions.length > 1 ? "postes" : "poste"}
         </span>
-        <span className="sr-only">{plural(campaign.seats, "place")}</span>
+        <span className="sr-only">
+          {campaign.seats !== null ? plural(campaign.seats, "place") : plural(campaign.positions.length, "poste")}
+        </span>
       </p>
 
       {/* Status + visual CTA (the title link carries the action). */}

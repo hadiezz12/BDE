@@ -1,31 +1,39 @@
 import type { ApplicationItem, ApplicationStatus, CampaignItem, CampaignStatus, RecruitmentPosition } from "@/lib/types";
 import type { StatusTone } from "@/components/ui/StatusBadge";
-import { daysLeft, deadlineLabel, formatDayShort } from "@/lib/format";
+import { daysLeft, deadlineLabel, formatDayShort, plural } from "@/lib/format";
 import { dayDiff } from "@/lib/time";
+import { isOpen } from "@/lib/recruitment/model";
+
+export { isOpen, isOver } from "@/lib/recruitment/model";
 
 /**
  * Small derivations shared by the recruitment components. Pure functions of
  * the campaign and the clock — no data access, no formatting of their own
- * beyond what lib/format provides.
+ * beyond what lib/format provides. Whether a position takes applications is
+ * the database's answer (`accepting`), never recomputed here.
  */
 
-/** Green = open, brand pink = last 48 h (amber is kept for safety), cyan = not yet, grey = closed. */
+/** Green = open, brand pink = last 48 h (amber is kept for safety), cyan = not yet, grey = paused or over. */
 export const STATUS_TONE: Record<CampaignStatus, StatusTone> = {
   ouverte: "ok",
   "derniere-chance": "accent",
   "a-venir": "info",
+  "en-pause": "neutral",
   cloturee: "neutral",
+  annulee: "neutral",
 };
-
-export function isOpen(status: CampaignStatus): boolean {
-  return status === "ouverte" || status === "derniere-chance";
-}
 
 type Timed = Pick<CampaignItem, "status" | "opensAt" | "closesAt">;
 
-/** Role names as tags, seats noted when there is more than one: "Communication ×2". */
+/** Role names as tags, places noted when the association announced more than one: "Communication ×2". */
 export function roleTags(positions: RecruitmentPosition[]): string[] {
-  return positions.map((p) => (p.seats > 1 ? `${p.title} ×${p.seats}` : p.title));
+  return positions.map((p) => (p.openings && p.openings > 1 ? `${p.title} ×${p.openings}` : p.title));
+}
+
+/** "3 postes · 5 places", or "3 postes" when a position did not say how many. */
+export function positionsLine(c: Pick<CampaignItem, "positions" | "seats">): string {
+  const roles = plural(c.positions.length, "poste");
+  return c.seats !== null ? `${roles} · ${plural(c.seats, "place")}` : roles;
 }
 
 /**
@@ -33,7 +41,9 @@ export function roleTags(positions: RecruitmentPosition[]): string[] {
  * plain-language sentence that carries the meaning for everyone.
  */
 export function countdown(c: Timed, now = new Date()): { value: string; unit: string; label: string } {
+  if (c.status === "annulee") return { value: "Annulé", unit: "", label: "Recrutement annulé par l'association" };
   if (c.status === "cloturee") return { value: "Clos", unit: "", label: deadlineLabel(c.closesAt, now) };
+  if (c.status === "en-pause") return { value: "Pause", unit: "", label: "En pause : les candidatures reprendront à la réouverture" };
   if (c.status === "a-venir") {
     const days = dayDiff(now, c.opensAt);
     const label = `Ouvre le ${formatDayShort(c.opensAt)}`;
@@ -57,6 +67,10 @@ export function shortDeadline(c: Timed, now = new Date()): string {
       return `Ouvre le ${formatDayShort(c.opensAt)}`;
     case "ouverte":
       return `Clôture ${formatDayShort(c.closesAt)}`;
+    case "en-pause":
+      return "En pause";
+    case "annulee":
+      return "Annulé";
     default:
       return deadlineLabel(c.closesAt, now);
   }
@@ -72,7 +86,7 @@ export function weeklyCommitment(positions: RecruitmentPosition[]): string | nul
   let min = Infinity;
   let max = 0;
   for (const p of positions) {
-    const m = p.commitment.match(WEEKLY);
+    const m = p.commitment?.match(WEEKLY);
     if (!m) return null;
     const lo = Number(m[1]);
     const hi = m[2] ? Number(m[2]) : lo;
@@ -83,41 +97,38 @@ export function weeklyCommitment(positions: RecruitmentPosition[]): string | nul
   return min === max ? `${min} h` : `${min} à ${max} h`;
 }
 
-/** A role can close before its campaign (e.g. referents who need training first). */
-export function positionClosesAt(position: RecruitmentPosition, campaign: Pick<CampaignItem, "closesAt">): string {
-  return position.closesAt ?? campaign.closesAt;
-}
-
-export function isPositionOpen(
-  position: RecruitmentPosition,
-  campaign: Pick<CampaignItem, "status" | "closesAt">,
-  now = new Date(),
-): boolean {
-  return isOpen(campaign.status) && Date.parse(positionClosesAt(position, campaign)) > now.getTime();
-}
-
 /** Anchor id of a role inside its campaign page. */
 export function positionAnchor(id: string): string {
   return `poste-${id}`;
 }
 
-/** Tone of an application status: info while it moves, ok when accepted, quiet when over. */
+/** Positions taking applications right now (the database's answer). */
+export function openPositions(c: Pick<CampaignItem, "status" | "positions">): RecruitmentPosition[] {
+  return isOpen(c.status) ? c.positions.filter((p) => p.accepting) : [];
+}
+
+/** Draft = quiet, sent = cyan (on its way), withdrawn = quiet. "Envoyée" never means read or accepted. */
 export const APPLICATION_TONE: Record<ApplicationStatus, StatusTone> = {
   brouillon: "neutral",
   envoyee: "info",
-  "en-revue": "info",
-  entretien: "accent",
-  acceptee: "ok",
-  refusee: "neutral",
   retiree: "neutral",
 };
 
 /** Statuses of an application that is still going somewhere. */
 export function isActiveApplication(status: ApplicationStatus): boolean {
-  return status === "brouillon" || status === "envoyee" || status === "en-revue" || status === "entretien";
+  return status === "brouillon" || status === "envoyee";
 }
 
-/** The student's application to a campaign (withdrawn ones don't count), if any. */
-export function findApplication(applications: ApplicationItem[], campaignId: string): ApplicationItem | null {
-  return applications.find((a) => a.campaignId === campaignId && a.status !== "retiree") ?? null;
+/** The student's applications to a campaign that still count (withdrawn ones don't). */
+export function applicationsTo(applications: ApplicationItem[], campaignId: string): ApplicationItem[] {
+  return applications.filter((a) => a.campaign.id === campaignId && a.status !== "retiree");
+}
+
+/** The personal line of a campaign row: "Ton brouillon t'attend", "Candidature envoyée (Trésorerie)". */
+export function personalNote(applications: ApplicationItem[], campaignId: string): string | undefined {
+  const mine = applicationsTo(applications, campaignId);
+  if (mine.length === 0) return undefined;
+  const sent = mine.filter((a) => a.status === "envoyee");
+  if (sent.length > 0) return `Candidature envoyée (${sent.map((a) => a.position.title).join(", ")})`;
+  return "Ton brouillon t'attend";
 }

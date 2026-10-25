@@ -242,28 +242,57 @@ export interface PostItem {
   archived: boolean;
   /** The event the article is about, read live from the event (public events only). */
   event?: EventItem;
+  /** The recruitment campaign the article is about, read live (public campaigns only). */
+  campaign?: CampaignItem;
 }
 
-export type CampaignStatus = "a-venir" | "ouverte" | "derniere-chance" | "cloturee";
+/**
+ * A campaign's state as visitors read it: derived by the database from its
+ * publication, its pause or cancellation and its dates (private.campaign_state),
+ * plus "derniere-chance" in the last 48 hours of an open campaign.
+ */
+export type CampaignStatus = "a-venir" | "ouverte" | "derniere-chance" | "en-pause" | "cloturee" | "annulee";
+
+/** What a document question takes. "image" = JPEG or PNG. */
+export type DocumentKind = "pdf" | "docx" | "image";
+
+/** What the live form asks a candidate to one position, in short (enough to decide to apply). */
+export interface FormSummary {
+  questions: number;
+  required: number;
+  documents: { label: string; type: "file" | "cv"; required: boolean; fileTypes: DocumentKind[] }[];
+}
 
 export interface RecruitmentPosition {
   id: string;
+  slug: string;
   title: string;
   /** Pole/team, e.g. "Pôle partenariats". */
   team?: string;
-  seats: number;
-  summary: string;
+  /** Places the association announced; absent when it did not say. */
+  openings?: number;
+  summary?: string;
+  /** Paragraphs. */
+  description: string[];
   missions: string[];
   expectations: string[];
   /** e.g. "3 à 4 h par semaine". */
-  commitment: string;
-  /** Overrides the campaign deadline when a role closes earlier. */
-  closesAt?: string;
+  commitment?: string;
+  /** When this position stops taking applications (its own, earlier date, or the campaign's). */
+  closesAt: string;
+  closesEarly: boolean;
+  /** Self-declared study years allowed to apply; absent = every student. */
+  eligibleYears?: number[];
+  /** Takes applications right now (decided by the database). */
+  accepting: boolean;
+  /** What the live form asks (campaign and position pages only). */
+  form?: FormSummary;
 }
 
 export interface RecruitmentStep {
   label: string;
   detail: string;
+  /** A day ("2026-11-20"), no time. */
   date?: string;
 }
 
@@ -273,82 +302,63 @@ export interface RecruitmentCampaign {
   associationId: string;
   title: string;
   intro: string;
+  /** Paragraphs (campaign page only). */
+  description: string[];
+  /** "2026-2027". */
+  academicYear?: string;
   opensAt: string;
   closesAt: string;
   status: CampaignStatus;
+  cancellationReason?: string;
+  /** How many positions of this campaign one student may apply to. */
+  maxApplications: number;
+  /** Self-declared study years allowed to apply; absent = every student. */
+  eligibleYears?: number[];
+  eligibilityNote?: string;
+  archived: boolean;
   positions: RecruitmentPosition[];
   process: RecruitmentStep[];
-  /** What the applicant will be asked to provide. */
-  requirements: string[];
   faq: { question: string; answer: string }[];
   cover?: Photo;
-  /** Who answers questions about this campaign. */
-  contact: { name: string; role: string; email: string };
-}
-
-export type ApplicationStatus =
-  | "brouillon"
-  | "envoyee"
-  | "en-revue"
-  | "entretien"
-  | "acceptee"
-  | "refusee"
-  | "retiree";
-
-export interface ApplicationEvent {
-  status: ApplicationStatus;
-  at: string;
-  note?: string;
-}
-
-export interface ApplicationSummary {
-  id: string;
-  userId: string;
-  campaignId: string;
-  positionId: string;
-  status: ApplicationStatus;
-  createdAt: string;
-  submittedAt?: string;
+  /** Who answers questions about this campaign, when the association named someone. */
+  contact?: { name?: string; role?: string; email?: string };
   updatedAt: string;
-  nextStep?: { label: string; date?: string; location?: string };
-  timeline: ApplicationEvent[];
-  /** What the student submitted, shown back to them verbatim. */
-  answers: { question: string; answer: string }[];
-  attachments: { name: string; sizeKb: number }[];
 }
 
-/** One question of a campaign's application form (the role choice is always asked first). */
-export interface ApplicationQuestion {
+/**
+ * Where a student's application stands. Phase 8 knows these three only:
+ * "envoyée" never means read or accepted (the review states come with Phase 9).
+ */
+export type ApplicationStatus = "brouillon" | "envoyee" | "retiree";
+
+/** The campaign of one of the student's applications (the page may be offline). */
+export interface ApplicationCampaign {
   id: string;
-  label: string;
-  hint?: string;
-  /** long = textarea, short = one line, tel = phone number, choice = pick one of `options`. */
-  kind: "long" | "short" | "tel" | "choice";
-  options?: string[];
-  optional?: boolean;
-  maxLength?: number;
-  /** Asked only for these position ids; every role otherwise. */
-  onlyFor?: string[];
+  /** Absent when the campaign is no longer online (hidden, unpublished). */
+  slug?: string;
+  title: string;
+  association: AssociationRef;
+  status: CampaignStatus;
+  closesAt: string;
+  cancellationReason?: string;
 }
 
-/** A file the applicant is asked for (CV, portfolio, audio demo…). */
-export interface ApplicationAttachmentSpec {
+export interface ApplicationItem {
   id: string;
-  label: string;
-  hint?: string;
-  /** Value of the file input's accept attribute, e.g. ".pdf". */
-  accept: string;
-  optional?: boolean;
-  onlyFor?: string[];
-}
-
-/** The application form of a campaign. */
-export interface ApplicationFormSpec {
-  campaignId: string;
-  /** Lets the applicant name a second role, by order of preference. */
-  secondChoice?: boolean;
-  questions: ApplicationQuestion[];
-  attachments: ApplicationAttachmentSpec[];
+  status: ApplicationStatus;
+  /** Shown once submitted ("Référence K7Q2M9XA"). */
+  reference?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastSavedAt?: string;
+  submittedAt?: string;
+  withdrawnAt?: string;
+  /** A draft that can no longer be sent says why (a database code: campaign_closed…). */
+  refusal?: string;
+  /** A draft's completion (required questions still missing). */
+  progress?: { required: number; missing: number; complete: boolean };
+  campaign: ApplicationCampaign;
+  position: { id: string; slug: string; title: string; team?: string; closesAt: string };
 }
 
 export interface Membership {
@@ -407,16 +417,6 @@ export type NotificationPreferences = Record<NotificationKind, Record<Notificati
 
 /* ---- Management-side shapes ------------------------------------------- */
 
-export interface Applicant {
-  id: string;
-  campaignId: string;
-  positionId: string;
-  name: string;
-  programme: string;
-  submittedAt: string;
-  status: ApplicationStatus;
-}
-
 export interface ManageTask {
   id: string;
   associationId: string;
@@ -462,13 +462,8 @@ export type EventItem = CampusEvent & { association: AssociationRef };
 
 export type CampaignItem = RecruitmentCampaign & {
   association: AssociationRef;
-  /** Total seats across positions. */
-  seats: number;
-};
-
-export type ApplicationItem = ApplicationSummary & {
-  campaign: CampaignItem;
-  position: RecruitmentPosition;
+  /** Places across positions, only when every position announced its number. */
+  seats: number | null;
 };
 
 /* ---- Session (Phase 1 demo only) -------------------------------------- */

@@ -93,6 +93,10 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
   with the provider, set `EMAIL_TRANSPORT`, `EMAIL_FROM`, the provider key and a long random
   `NOTIFICATIONS_WORKER_SECRET`, then schedule a POST to `/api/notifications/send` every few
   minutes ([events.md](events.md#messages)).
+- Recruitment (Phase 8): `pg_cron` also runs `enqueue-recruitment-reminders` (hourly) and
+  `purge-recruitment-data` (nightly, applies the BDE's retention). Set a long random
+  `MAINTENANCE_WORKER_SECRET` and schedule a POST to `/api/maintenance/storage-cleanup` (hourly is
+  plenty) so removed application files leave Storage ([recruitment.md](recruitment.md#documents-cvs-and-files)).
 
 ## Variables
 
@@ -100,8 +104,9 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | public (inlined into the browser bundle) | all three clients | project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public (inlined into the browser bundle) | browser and server clients | Dashboard → Settings → API Keys → publishable (`sb_publishable_…`) |
-| `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — only the e-mail worker (Phase 7) | API Keys → secret (`sb_secret_…`). Leave empty until e-mail is set up. |
+| `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — only the e-mail worker (Phase 7) and the Storage cleanup worker (Phase 8) | API Keys → secret (`sb_secret_…`). Leave empty until a worker is set up. |
 | `NOTIFICATIONS_WORKER_SECRET` | **secret**, server only | the e-mail worker's bearer token (32+ characters); empty = endpoint not found | a random string you generate |
+| `MAINTENANCE_WORKER_SECRET` | **secret**, server only | the Storage cleanup worker's bearer token (32+ characters); empty = endpoint not found | a random string you generate |
 | `EMAIL_TRANSPORT` | server only, not secret | empty (no e-mail), `log` (development only) or `brevo` | the operator's choice |
 | `EMAIL_FROM` | server only, not secret | the sender, e.g. `Very Pink Club <adresse@domaine-du-bde>` | the BDE's domain, once bought |
 | `BREVO_API_KEY` | **secret**, server only | the `brevo` transport | the provider's dashboard |

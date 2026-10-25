@@ -11,6 +11,8 @@ import { PostEditor } from "@/components/manage/post-editor/PostEditor";
 import { PostUnavailable } from "@/components/manage/post-editor/PostUnavailable";
 import { PostEventLink } from "@/components/manage/post-editor/PostEventLink";
 import { getPostEventOptions } from "@/lib/events/editor";
+import { PostCampaignLink } from "@/components/manage/post-editor/PostCampaignLink";
+import { getPostCampaignOptions } from "@/lib/recruitment/editor";
 
 type Params = Promise<{ asso: string; post: string }>;
 
@@ -45,8 +47,8 @@ export default async function PostEditorPage({ params }: { params: Params }) {
   if (!editor.data) return <PostUnavailable ctx={ctx} code="unexpected" />;
   const data = editor.data;
   if (data.organization.slug !== asso) redirect(routes.manageContentPost(data.organization.slug, data.post.id));
-  // The event the article is about (Phase 7). The editor still opens if it cannot be read.
-  const eventOptions = await getPostEventOptions(data.post.id);
+  // The event and the recruitment the article is about (Phases 7 and 8). The editor still opens if they cannot be read.
+  const [eventOptions, campaignOptions] = await Promise.all([getPostEventOptions(data.post.id), getPostCampaignOptions(data.post.id)]);
 
   return (
     <PostEditor
@@ -57,6 +59,7 @@ export default async function PostEditorPage({ params }: { params: Params }) {
       canPublishPage={ctx.can("organization.page.publish")}
       today={instantToParisLocal(new Date().toISOString()).date}
       eventLink={eventOptions.ok ? <PostEventLink postId={data.post.id} data={eventOptions.data} /> : null}
+      campaignLink={campaignOptions.ok ? <PostCampaignLink postId={data.post.id} data={campaignOptions.data} /> : null}
     />
   );
 }

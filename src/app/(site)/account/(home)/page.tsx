@@ -5,7 +5,7 @@ import { routes } from "@/lib/routes";
 import { formatDateLong, formatDayFull, formatTime, plural, relativeDay } from "@/lib/format";
 import { getSession } from "@/lib/session";
 import { getAssociationsByIds, getBde, toRef } from "@/lib/data/associations";
-import { getApplications } from "@/lib/data/users";
+import { getMyApplications } from "@/lib/recruitment/me";
 import { getMyEventNotifications, getMyEvents } from "@/lib/events/me";
 import { getMyMfaStatus } from "@/lib/auth/mfa";
 import { AssociationRow } from "@/components/associations/AssociationRow";
@@ -46,7 +46,7 @@ function nextOutLine(next: EventItem | undefined, now: Date): string {
 
 /**
  * "Mon espace": hello, the carte cotisante (pointer tilt), the next ticket,
- * then what deserves a look today — applications that moved, unread
+ * then what deserves a look today — drafts still to send, unread
  * notifications — and the associations the student belongs to.
  */
 export default async function AccountHomePage() {
@@ -56,7 +56,7 @@ export default async function AccountHomePage() {
   const now = new Date();
   const [my, applications, notifications, associations, mfa] = await Promise.all([
     getMyEvents(),
-    getApplications(user.id),
+    getMyApplications(),
     getMyEventNotifications(20),
     getAssociationsByIds([...new Set([...user.memberships.map((m) => m.associationId), ...user.managedAssociationIds])]),
     getMyMfaStatus(),
@@ -64,7 +64,7 @@ export default async function AccountHomePage() {
 
   const { tickets, saved } = splitMyEvents(my, now);
   const next = tickets[0];
-  const attention = applications.filter((a) => needsAttention(a, now));
+  const attention = applications.filter((a) => needsAttention(a));
   const ongoing = applications.filter(isOngoing);
   const unread = notifications.filter((n) => !n.read);
   const byId = new Map(associations.map((a) => [a.id, a]));
@@ -192,7 +192,7 @@ export default async function AccountHomePage() {
         <section aria-labelledby="candidatures-titre" className="lg:col-span-7">
           <SectionHeader
             id="candidatures-titre"
-            kicker={plural(attention.length, "à regarder", "à regarder")}
+            kicker={plural(attention.length, "brouillon à envoyer", "brouillons à envoyer")}
             title="Tes candidatures"
             action={
               applications.length > 0
@@ -210,7 +210,7 @@ export default async function AccountHomePage() {
             <EmptyState
               tone="quiet"
               className="mt-6"
-              title={applications.length ? "Rien qui bouge aujourd'hui." : "Aucune candidature pour l'instant."}
+              title={applications.length ? "Aucun brouillon en attente." : "Aucune candidature pour l'instant."}
               actions={
                 <ButtonLink href={applications.length ? routes.accountApplications : routes.recruitment} variant="secondary" icon="arrow-right">
                   {applications.length ? "Mes candidatures" : "Voir les recrutements"}
@@ -218,8 +218,8 @@ export default async function AccountHomePage() {
               }
             >
               {applications.length
-                ? "Pas d'entretien à venir ni de réponse cette semaine : les bureaux lisent, ça viendra."
-                : "Quand une asso ouvre un recrutement et que tu candidates, tu suis ta candidature ici, étape par étape."}
+                ? "Tes candidatures envoyées et retirées sont dans Mes candidatures."
+                : "Quand une asso ouvre un recrutement et que tu commences une candidature, tu la retrouves ici, brouillon compris."}
             </EmptyState>
           )}
         </section>

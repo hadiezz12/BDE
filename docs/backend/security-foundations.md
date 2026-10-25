@@ -59,6 +59,7 @@ It is reserved for narrowly defined trusted operations, each listed here before 
 | Operation | Why it cannot use the user's client | Added in |
 | --- | --- | --- |
 | The e-mail worker, `POST /api/notifications/send` | it claims and completes other people's messages (`claim_notification_emails`, `complete_notification_email` are granted to `service_role` only) and reads their address to send them; it runs without a user, behind `NOTIFICATIONS_WORKER_SECRET` | Phase 7 |
+| The Storage cleanup worker, `POST /api/maintenance/storage-cleanup` | it deletes files of documents their candidate removed or the retention purged (`claim_storage_cleanup`, `complete_storage_cleanup` are granted to `service_role` only); only the paths and bucket the queue names; it runs without a user, behind `MAINTENANCE_WORKER_SECRET` | Phase 8 |
 
 A permission problem in a page is fixed with a policy, never by switching to this client.
 

@@ -233,6 +233,32 @@ private helpers, `security definer`, about the caller only: `private.my_event_te
 `claim_notification_emails`, `complete_notification_email`. The reminders function is executable
 by no API role; the pg_cron job `enqueue-event-reminders` runs it every 15 minutes.
 
+## Phase 8: recruitment
+
+Tables `recruitment_campaigns`, `recruitment_campaign_slug_history`, `recruitment_positions`,
+`recruitment_form_versions`, `applications`, `application_events`, `application_documents` and
+`recruitment_settings` are read-only for the API roles: writes go only through the recruitment
+functions ([recruitment.md](recruitment.md)). `private.storage_cleanup_queue` is not exposed.
+Policies:
+
+| Table | Who reads |
+| --- | --- |
+| `recruitment_campaigns`, `recruitment_positions`, `recruitment_form_versions` | the campaign's team (`recruitment.*` in its association). Visitors read through `public_recruitment_*` only |
+| `applications`, `application_events`, `application_documents` | **the candidate only**, their own rows. Teams and the BDE read counts through `recruitment_dashboard`, `recruitment_editor`, `platform_recruitment` |
+| `recruitment_settings` | everyone (the privacy notice is public) |
+
+Storage, bucket `recruitment-documents` (private): insert only a path the caller reserved for
+their own draft (`private.can_upload_application_document`), read and delete only their own
+documents (`can_read_application_document`, `can_delete_application_document`). No organizer,
+BDE or guardian policy. Each table has a restrictive policy requiring the second factor when the
+person enrolled one. Private helpers granted to `authenticated` (caller only):
+`private.my_recruitment_organization_ids()`, `private.my_application_ids()` and the three
+document helpers. Granted to `anon` and `authenticated`: `public_recruitment_campaigns`,
+`public_recruitment_campaign`, `public_recruitment_position`, `public_recruitment_facets`,
+`public_association_recruitment`, `public_recruitment_sitemap`, `public_recruitment_privacy`.
+Granted to `service_role` only: `claim_storage_cleanup`, `complete_storage_cleanup`. The
+reminders and purge functions are executable by no API role; pg_cron runs them.
+
 ## Performance (brief §61)
 
 - Policies call the helpers through `(select …)` subqueries (initPlan, once per statement).

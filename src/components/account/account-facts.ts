@@ -156,57 +156,34 @@ export function shortEventName(title: string): string {
 
 /* ---- Applications ------------------------------------------------------------ */
 
-const ANSWERED_RECENTLY_DAYS = 7;
-
-/**
- * Worth a look today: an interview to come, a draft not yet sent (while the
- * campaign can still take it), or an answer that arrived this week.
- */
-export function needsAttention(a: ApplicationItem, now = new Date()): boolean {
-  switch (a.status) {
-    case "entretien":
-      return !a.nextStep?.date || Date.parse(a.nextStep.date) > now.getTime();
-    case "brouillon":
-      return a.campaign.status !== "cloturee";
-    case "acceptee":
-    case "refusee":
-      return dayDiff(a.updatedAt, now) <= ANSWERED_RECENTLY_DAYS;
-    default:
-      return false;
-  }
+/** Worth a look today: a draft not yet sent while its position can still take it. */
+export function needsAttention(a: ApplicationItem): boolean {
+  return a.status === "brouillon" && !a.refusal;
 }
 
-/** One line under the status when there is no dated next step. */
+/**
+ * One line under the status. "Envoyée" never means read or accepted: the
+ * review of applications comes later, nothing here pretends otherwise.
+ */
 export function applicationHint(a: ApplicationItem, now = new Date()): string {
   switch (a.status) {
     case "brouillon":
-      if (a.campaign.status === "a-venir")
-        return `Pas encore envoyée : l'envoi ouvre le ${formatDayShort(a.campaign.opensAt)} à ${formatTime(a.campaign.opensAt)}`;
-      if (a.campaign.status === "cloturee") return "Pas envoyée : le recrutement est clos";
-      return `Pas encore envoyée : à envoyer avant le ${formatDayShort(a.campaign.closesAt)} à ${formatTime(a.campaign.closesAt)}`;
+      if (a.campaign.status === "en-pause") return "Pas encore envoyée : le recrutement est en pause";
+      if (a.campaign.status === "annulee") return "Pas envoyée : le recrutement est annulé";
+      if (a.refusal) return "Pas envoyée : ce poste ne prend plus de candidature";
+      return a.position.closesAt
+        ? `Pas encore envoyée : à envoyer avant le ${formatDayShort(a.position.closesAt)} à ${formatTime(a.position.closesAt)}`
+        : "Pas encore envoyée";
     case "envoyee":
-      return `Envoyée ${sinceWords(a.submittedAt ?? a.updatedAt, now)}`;
-    case "en-revue":
-      return `En lecture depuis ${sinceWords(a.updatedAt, now)}`;
-    case "entretien":
-      return `Entretien calé ${sinceWords(a.updatedAt, now)}`;
-    case "acceptee":
-    case "refusee":
-      return `Réponse reçue ${sinceWords(a.updatedAt, now)}`;
+      return `Envoyée ${sinceWords(a.submittedAt ?? a.updatedAt, now)}${a.reference ? ` · réf. ${a.reference}` : ""}`;
     case "retiree":
-      return `Retirée ${sinceWords(a.updatedAt, now)}`;
+      return `Retirée ${sinceWords(a.withdrawnAt ?? a.updatedAt, now)}`;
   }
 }
 
-/** Still going somewhere (draft, sent, being read, interview). */
+/** Still going somewhere (a draft, or sent and not withdrawn). */
 export function isOngoing(a: Pick<ApplicationItem, "status">): boolean {
-  return a.status === "brouillon" || a.status === "envoyee" || a.status === "en-revue" || a.status === "entretien";
-}
-
-/** "184 Ko" · "2,3 Mo" */
-export function formatFileSize(kb: number): string {
-  if (kb < 1000) return `${Math.max(1, Math.round(kb)).toLocaleString("fr-FR")} Ko`;
-  return `${(kb / 1024).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
+  return a.status === "brouillon" || a.status === "envoyee";
 }
 
 /* ---- People ----------------------------------------------------------------- */

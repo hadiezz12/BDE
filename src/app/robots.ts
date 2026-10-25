@@ -19,6 +19,7 @@ export default function robots(): MetadataRoute.Robots {
         "/account",
         "/login",
         "/auth",
+        "/api",
         "/media/apercu",
         "/associations/*/apercu",
         // Article previews: /campus/apercu/<post id>. The trailing slash keeps
@@ -26,6 +27,8 @@ export default function robots(): MetadataRoute.Robots {
         `${routes.campus}/apercu/`,
         // Event previews: /events/apercu/<event id> ("apercu" is a reserved event address).
         "/events/apercu/",
+        // Recruitment previews: /recruitment/apercu/<campaign id> ("apercu" is a reserved campaign address).
+        "/recruitment/apercu/",
         // Calendar files are copies of the event pages.
         "/events/*/ics",
       ],

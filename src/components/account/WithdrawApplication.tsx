@@ -1,81 +1,88 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { withdrawApplication } from "@/app/actions/recruitment";
+import type { GovernanceActionState } from "@/app/actions/governance";
 import { Button } from "@/components/ui/Button";
-import { DemoNotice } from "@/components/manage/DemoNotice";
+import { Field, Textarea } from "@/components/ui/Field";
 
 /**
- * Withdraw an application (or drop a draft), PHASE 1: asks once, in words,
- * what would happen, then says plainly that nothing was sent. The
- * application keeps its status. Focus follows the step so keyboard and
- * screen-reader users are never left on a vanished button.
+ * Withdraws a sent application (withdraw_application): asks once, in words,
+ * what will happen, with an optional reason. The application stays readable,
+ * marked "Retirée"; the position frees up for another application. Focus
+ * follows the step so keyboard and screen-reader users are never left on a
+ * vanished button.
  */
-export function WithdrawApplication({ associationName, draft }: { associationName: string; draft: boolean }) {
-  const [step, setStep] = useState<"idle" | "confirm" | "done">("idle");
+export function WithdrawApplication({ applicationId, associationName }: { applicationId: string; associationName: string }) {
+  const [confirming, setConfirming] = useState(false);
+  const [state, action, pending] = useActionState<GovernanceActionState, FormData>(withdrawApplication, { status: "idle" });
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const confirmRef = useRef<HTMLDivElement>(null);
-  const doneRef = useRef<HTMLDivElement>(null);
+  const confirmRef = useRef<HTMLFormElement>(null);
   const moved = useRef(false);
   const questionId = useId();
 
   useEffect(() => {
-    // Only move focus after an interaction, never on first render.
     if (!moved.current) return;
-    if (step === "confirm") confirmRef.current?.focus();
-    else if (step === "done") doneRef.current?.focus();
+    if (confirming) confirmRef.current?.focus();
     else triggerRef.current?.focus();
-  }, [step]);
+  }, [confirming]);
 
-  const go = (next: typeof step) => {
-    moved.current = true;
-    setStep(next);
-  };
-
-  const action = draft ? "Abandonner le brouillon" : "Retirer ma candidature";
-
-  if (step === "confirm") {
+  if (confirming) {
     return (
-      <div
+      <form
         ref={confirmRef}
+        action={action}
         tabIndex={-1}
-        role="group"
         aria-labelledby={questionId}
         className="flex flex-col gap-3 rounded-sm border-2 border-danger p-4 outline-none"
       >
+        <input type="hidden" name="application_id" value={applicationId} />
         <p id={questionId} className="font-bold leading-snug">
-          {draft ? "Abandonner ce brouillon ?" : "Retirer ta candidature ?"}
+          Retirer ta candidature&nbsp;?
         </p>
         <p className="type-small text-muted">
-          {draft
-            ? "Tes réponses et tes pièces jointes seraient effacées. Tu pourrais toujours recommencer depuis la fiche de poste."
-            : `Le bureau de ${associationName} serait prévenu et ta candidature passerait en « Retirée ». Tes réponses ne seraient plus lues.`}
+          Elle passera en «&nbsp;Retirée&nbsp;» : {associationName} ne la comptera plus parmi les candidatures envoyées. Elle restera lisible ici. Tu pourras
+          candidater de nouveau à ce poste tant que le recrutement est ouvert.
         </p>
+        <Field label="Pourquoi tu la retires" optional hint="Gardé avec ta candidature. 500 caractères au plus.">
+          {({ id, describedBy }) => <Textarea id={id} aria-describedby={describedBy} name="reason" rows={3} maxLength={500} className="min-h-20" />}
+        </Field>
         <div className="flex flex-wrap gap-2.5">
-          <Button variant="danger" size="sm" onClick={() => go("done")}>
-            {draft ? "Oui, abandonner" : "Oui, retirer"}
+          <Button type="submit" variant="danger" size="sm" disabled={pending}>
+            {pending ? "Un instant…" : "Oui, retirer"}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => go("idle")}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              moved.current = true;
+              setConfirming(false);
+            }}
+          >
             Annuler
           </Button>
         </div>
-      </div>
+        {state.status === "error" && state.message && (
+          <p role="alert" className="type-small font-semibold text-danger">
+            {state.message}
+          </p>
+        )}
+      </form>
     );
   }
 
   return (
-    <div className="flex flex-col items-start gap-3">
-      <Button ref={triggerRef} variant="danger" size="sm" onClick={() => go("confirm")}>
-        {action}
-      </Button>
-      <div ref={doneRef} tabIndex={-1} role="status" className="outline-none">
-        {step === "done" && (
-          <DemoNotice>
-            {draft
-              ? "rien n'est effacé pour l'instant : ton brouillon reste là."
-              : `rien n'est envoyé pour l'instant. Ta candidature reste telle quelle et ${associationName} n'a reçu aucun message.`}
-          </DemoNotice>
-        )}
-      </div>
-    </div>
+    <Button
+      ref={triggerRef}
+      variant="danger"
+      size="sm"
+      onClick={() => {
+        moved.current = true;
+        setConfirming(true);
+      }}
+    >
+      Retirer ma candidature
+    </Button>
   );
 }

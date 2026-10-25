@@ -14,7 +14,7 @@ import {
   type AssociationSort,
 } from "@/lib/data/associations";
 import { cleanQuery } from "@/lib/associations/search";
-import { getCampaigns } from "@/lib/data/recruitment";
+import { getOpenCampaigns } from "@/lib/data/recruitment";
 import { getMemberCardOffer } from "@/lib/data/member-card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
@@ -68,7 +68,7 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
 
   const [list, openCampaigns, access] = await Promise.all([
     getAssociations({ category, q: q || undefined, sort }),
-    getCampaigns({ scope: "open" }),
+    getOpenCampaigns(100),
     user ? getMyAccess() : Promise.resolve(null),
   ]);
 
@@ -81,14 +81,15 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
     return titles.length > 0 ? titles.join(" · ") : "Membre";
   };
 
-  // Recruitment still comes from the Phase 1 layer (BDE only), keyed by mock id.
-  const seatsByAssociation = new Map<string, number>();
+  // Open recruitment, by association: "Recrute · 3 places" when every position announced its places.
+  const recruitingBy = new Map<string, number | null>();
   for (const c of openCampaigns) {
-    seatsByAssociation.set(c.associationId, (seatsByAssociation.get(c.associationId) ?? 0) + c.seats);
+    const before = recruitingBy.get(c.associationId);
+    recruitingBy.set(c.associationId, before === undefined ? c.seats : before === null || c.seats === null ? null : before + c.seats);
   }
   const stickerFor = (a: Association) => {
-    const seats = seatsByAssociation.get(legacyId(a));
-    return seats === undefined ? undefined : recruitingSticker(seats);
+    if (!recruitingBy.has(a.id)) return undefined;
+    return recruitingSticker(recruitingBy.get(a.id) ?? undefined);
   };
 
   const bde = list.find((a) => a.isBde);
@@ -123,9 +124,9 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
           </>
         }
         aside={
-          seatsByAssociation.size > 0 ? (
+          recruitingBy.size > 0 ? (
             <Sticker tone="ok" tilt={-3}>
-              {plural(seatsByAssociation.size, "asso recrute", "assos recrutent")}
+              {plural(recruitingBy.size, "asso recrute", "assos recrutent")}
             </Sticker>
           ) : undefined
         }
@@ -339,10 +340,10 @@ export default async function AssociationsPage({ searchParams }: { searchParams:
         </section>
       )}
 
-      {list.length > 0 && seatsByAssociation.size > 0 && (
+      {list.length > 0 && recruitingBy.size > 0 && (
         <p className="wrap pt-16">
           <Link
-            href={`${routes.recruitment}?scope=open`}
+            href={`${routes.recruitment}?vue=ouverts`}
             className="group inline-flex min-h-10 items-center gap-1.5 type-label hover:text-accent-text"
           >
             Tous les postes ouverts, asso par asso

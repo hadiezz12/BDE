@@ -10,8 +10,8 @@ import { getMyEvents } from "@/lib/events/me";
 import { personalStates } from "@/lib/events/model";
 import { getMemberCardOffer } from "@/lib/data/member-card";
 import { getAssociationPosts } from "@/lib/data/posts";
-import { getCampaigns } from "@/lib/data/recruitment";
-import { getApplications } from "@/lib/data/users";
+import { getAssociationRecruitment } from "@/lib/data/recruitment";
+import { getMyApplications } from "@/lib/recruitment/me";
 import type { ProfileViewer } from "./AssociationProfile";
 
 /**
@@ -30,12 +30,22 @@ export async function loadProfileModules(association: Association, userId?: stri
     getAssociationEvents(association.slug, "past", 4),
     userId ? getMyEvents() : Promise.resolve({ registrations: [], bookmarks: [] }),
     getEventSeries({ associationId: id }),
-    getCampaigns({ associationId: id }),
+    getAssociationRecruitment(association.slug),
     getAssociationPosts(association.slug, 4),
     getMemberCardOffer(id),
-    userId ? getApplications(userId) : Promise.resolve<ApplicationItem[]>([]),
+    userId ? getMyApplications() : Promise.resolve<ApplicationItem[]>([]),
   ]);
-  return { events, pastEvents, personal: personalStates(my), series, campaigns, posts, offer, applications };
+  return {
+    events,
+    pastEvents,
+    personal: personalStates(my),
+    series,
+    campaigns: campaigns.current,
+    pastCampaigns: campaigns.past,
+    posts,
+    offer,
+    applications,
+  };
 }
 
 export type ProfileModules = Awaited<ReturnType<typeof loadProfileModules>>;

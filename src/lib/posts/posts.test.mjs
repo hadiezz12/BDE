@@ -806,6 +806,7 @@ test("a published post as lists show it, nothing more", () => {
     "archived",
     "association",
     "authorName",
+    "campaign",
     "category",
     "cover",
     "event",

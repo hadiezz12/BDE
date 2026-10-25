@@ -18,8 +18,8 @@ export function AssociationsRail({
   index,
 }: {
   associations: Association[];
-  /** Open seats per association id, from the open campaigns. */
-  recruitingSeats: Map<string, number>;
+  /** Open recruitment per association id: its places, or null when a position did not say. */
+  recruitingSeats: Map<string, number | null>;
   index?: string;
 }) {
   if (associations.length === 0) return null;
@@ -37,12 +37,13 @@ export function AssociationsRail({
         />
         <ul className="rail mt-10 py-2">
           {associations.map((a) => {
-            const seats = recruitingSeats.get(a.id);
+            const recruiting = recruitingSeats.has(a.id);
+            const seats = recruitingSeats.get(a.id) ?? undefined;
             return (
               <li key={a.id} className="w-[15rem] sm:w-[16.5rem]">
                 <AssociationTile
                   association={a}
-                  sticker={seats !== undefined ? recruitingSticker(seats) : undefined}
+                  sticker={recruiting ? recruitingSticker(seats) : undefined}
                   sizes="(min-width: 640px) 16.5rem, 15rem"
                   className="h-full"
                 />

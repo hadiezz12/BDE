@@ -71,14 +71,9 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     label: "Recrutement",
     icon: "megaphone",
     href: routes.manageRecruitment,
-    requires: [
-      "recruitment.campaigns.manage",
-      "recruitment.questions.manage",
-      "recruitment.applications.view",
-      "recruitment.applications.review",
-      "recruitment.applications.export",
-    ],
-    soon: true,
+    // Phase 8: campaigns, positions, the form, publication. Reading
+    // applications (recruitment.applications.*) comes with the review phase.
+    requires: ["recruitment.campaigns.manage", "recruitment.questions.manage", "recruitment.campaigns.publish"],
   },
   { key: "media", label: "Médias", icon: "image", href: routes.manageMedia, requires: ["media.manage"] },
   { key: "analytics", label: "Statistiques", icon: "chart", href: routes.manageAnalytics, requires: ["analytics.view"], soon: true },

@@ -126,15 +126,13 @@ export const CAMPAIGN_STATUS_LABEL: Record<CampaignStatus, string> = {
   "a-venir": "Bientôt",
   ouverte: "Candidatures ouvertes",
   "derniere-chance": "Dernière ligne droite",
+  "en-pause": "En pause",
   cloturee: "Clôturé",
+  annulee: "Annulé",
 };
 
 export const APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {
   brouillon: "Brouillon",
   envoyee: "Envoyée",
-  "en-revue": "En cours de lecture",
-  entretien: "Entretien prévu",
-  acceptee: "Acceptée",
-  refusee: "Non retenue",
   retiree: "Retirée",
 };

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ApplicationItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
-import { APPLICATION_STATUS_LABEL, formatWhen } from "@/lib/format";
+import { APPLICATION_STATUS_LABEL } from "@/lib/format";
 import { AssociationLogo } from "@/components/associations/AssociationLogo";
 import { APPLICATION_TONE } from "@/components/recruitment/campaign-facts";
 import { Icon } from "@/components/ui/Icon";
@@ -12,8 +12,8 @@ import { applicationHint } from "./account-facts";
 
 /**
  * One of the student's applications: who and which role, where it stands in
- * words, and the next step with its date when there is one. The whole row is
- * one link (stretched from the role) to the application page. Lays itself
+ * words (a draft's deadline and completion, when it was sent). The whole row
+ * is one link (stretched from the role) to the application page. Lays itself
  * out from its own width (container query), so it fits the home column and
  * the full list alike.
  */
@@ -29,9 +29,9 @@ export function ApplicationRow({
   className?: string;
 }) {
   const H = `h${headingLevel}` as "h2" | "h3" | "h4";
-  const { campaign, position, status, nextStep } = application;
+  const { campaign, position, status, progress } = application;
   const association = campaign.association;
-  const over = status === "refusee" || status === "retiree";
+  const over = status === "retiree";
 
   return (
     <article
@@ -65,19 +65,13 @@ export function ApplicationRow({
 
         <div className="col-start-2 flex min-w-0 flex-col gap-1.5 @2xl:col-start-3">
           <StatusBadge tone={APPLICATION_TONE[status]}>{APPLICATION_STATUS_LABEL[status]}</StatusBadge>
-          {nextStep && status === "entretien" ? (
-            <p className="type-small">
-              <span className="font-bold">{nextStep.label}</span>
-              {nextStep.date && (
-                <>
-                  <br />
-                  <span className="font-mono text-[0.8125rem]">{formatWhen(nextStep.date, now)}</span>
-                </>
-              )}
-              {nextStep.location && <span className="text-muted"> · {nextStep.location}</span>}
+          <p className="type-small text-muted">{applicationHint(application, now)}</p>
+          {status === "brouillon" && progress && progress.required > 0 && (
+            <p className="type-small font-semibold">
+              {progress.complete
+                ? "Prête à envoyer"
+                : `${progress.missing} point${progress.missing > 1 ? "s" : ""} à compléter avant l'envoi`}
             </p>
-          ) : (
-            <p className="type-small text-muted">{applicationHint(application, now)}</p>
           )}
         </div>
 

@@ -1,46 +1,68 @@
 import type { Metadata } from "next";
-import type { ApplicationStatus } from "@/lib/types";
+import type { ApplicationItem, ApplicationStatus } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { APPLICATION_STATUS_LABEL, plural } from "@/lib/format";
 import { getSession } from "@/lib/session";
-import { getApplications } from "@/lib/data/users";
+import { getMyApplications } from "@/lib/recruitment/me";
+import { matchesFilter, type ApplicationFilter } from "@/lib/recruitment/model";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { APPLICATION_TONE } from "@/components/recruitment/campaign-facts";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { FilterChips } from "@/components/ui/FilterChips";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ApplicationRow } from "@/components/account/ApplicationRow";
-import { isOngoing } from "@/components/account/account-facts";
+import { DoneNotice } from "@/components/manage/governance/Notices";
 
 export const metadata: Metadata = {
   title: "Mes candidatures",
-  description: "Où en sont tes candidatures aux assos, et la prochaine étape de chacune.",
+  description: "Tes brouillons, tes candidatures envoyées et celles que tu as retirées.",
 };
 
-/** The path an application usually takes, explained once, in the margin. */
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
+/** The statuses that exist today, explained once, in the margin. */
 const PATH: Array<{ status: ApplicationStatus; detail: string }> = [
-  { status: "brouillon", detail: "Enregistrée chez toi, pas encore envoyée." },
-  { status: "envoyee", detail: "Le bureau de l'asso l'a reçue." },
-  { status: "en-revue", detail: "Le bureau lit les candidatures. Pas de nouvelles, pas de mauvaises nouvelles." },
-  { status: "entretien", detail: "La date et le lieu sont dans ta candidature, et dans tes notifications." },
-  { status: "acceptee", detail: "Bienvenue dans l'équipe. Le bureau te dit la suite." },
-  { status: "refusee", detail: "Pas pour cette fois. Si le bureau a laissé un mot, il est dans ta candidature." },
+  { status: "brouillon", detail: "Enregistré chez toi au fur et à mesure, pas encore envoyé. L'association ne le voit pas." },
+  { status: "envoyee", detail: "Reçue par le site avant la date limite. Envoyée ne veut pas dire acceptée." },
+  { status: "retiree", detail: "Tu l'as retirée. Elle reste lisible ici." },
 ];
 
+const FILTERS: { value: ApplicationFilter; param: string | null; label: string }[] = [
+  { value: "tous", param: null, label: "Toutes" },
+  { value: "brouillons", param: "brouillons", label: "Brouillons" },
+  { value: "envoyees", param: "envoyees", label: "Envoyées" },
+  { value: "retirees", param: "retirees", label: "Retirées" },
+  { value: "closes", param: "closes", label: "Recrutements clos" },
+];
+
+const DONE: Record<string, string> = {
+  "brouillon-supprime": "Brouillon supprimé, avec ses documents.",
+};
+
 /**
- * Mes candidatures: the ones still moving first, each with its status in
- * words and the next step (date, place) when there is one; finished ones
- * below. A short legend of the statuses sits in the margin.
+ * Mes candidatures: the student's own applications only (my_applications),
+ * drafts first, then sent, then withdrawn. Nothing here says an application
+ * was read, reviewed or answered: those steps come with the review system.
  */
-export default async function AccountApplicationsPage() {
+export default async function AccountApplicationsPage({ searchParams }: { searchParams: SearchParams }) {
   const { user } = await getSession();
   if (!user) return null;
+  const sp = await searchParams;
+  const raw = Array.isArray(sp.filtre) ? sp.filtre[0] : sp.filtre;
+  const filter = FILTERS.find((f) => f.param === raw)?.value ?? "tous";
+  const done = DONE[(Array.isArray(sp.fait) ? sp.fait[0] : sp.fait) ?? ""] ?? null;
 
   const now = new Date();
-  const applications = await getApplications(user.id);
-  const ongoing = applications.filter(isOngoing);
-  const done = applications.filter((a) => !isOngoing(a));
+  const applications = await getMyApplications();
+  const shown = applications.filter((a) => matchesFilter(a, filter));
+  const groups: { key: ApplicationStatus; title: string; list: ApplicationItem[] }[] = [
+    { key: "brouillon", title: "Brouillons", list: shown.filter((a) => a.status === "brouillon") },
+    { key: "envoyee", title: "Envoyées", list: shown.filter((a) => a.status === "envoyee") },
+    { key: "retiree", title: "Retirées", list: shown.filter((a) => a.status === "retiree") },
+  ];
+  const count = (f: ApplicationFilter) => applications.filter((a) => matchesFilter(a, f)).length;
 
   return (
     <>
@@ -48,19 +70,20 @@ export default async function AccountApplicationsPage() {
         variant="document"
         kicker="Mon espace"
         title="Mes candidatures"
-        intro="Où en est chacune, et ce qui vient ensuite. Les plus récemment mises à jour en haut."
+        intro="Tes brouillons, ce que tu as envoyé, et ce que tu as retiré. Les plus récemment modifiés en haut."
         meta={
           applications.length > 0 ? (
             <>
-              <span>{plural(ongoing.length, "en cours", "en cours")}</span>
-              <span>{plural(done.length, "terminée", "terminées")}</span>
+              <span>{plural(count("brouillons"), "brouillon")}</span>
+              <span>{plural(count("envoyees"), "envoyée", "envoyées")}</span>
             </>
           ) : undefined
         }
       />
 
       <div className="wrap grid gap-x-8 gap-y-16 lg:grid-cols-12">
-        <div className="flex flex-col gap-16 lg:col-span-8">
+        <div className="flex min-w-0 flex-col gap-10 lg:col-span-8">
+          <DoneNotice message={done} />
           {applications.length === 0 ? (
             <EmptyState
               title="Tu n'as encore candidaté nulle part."
@@ -70,45 +93,35 @@ export default async function AccountApplicationsPage() {
                 </ButtonLink>
               }
             >
-              Les assos publieront leurs recrutements sur la page Recrutements. Quand tu envoies une candidature, tu la
-              suis ici, étape par étape.
+              Les assos publient leurs recrutements sur la page Recrutements. Quand tu commences une candidature, tu la retrouves
+              ici, brouillon compris.
             </EmptyState>
           ) : (
             <>
-              <section aria-labelledby="en-cours-titre">
-                <SectionHeader id="en-cours-titre" kicker={plural(ongoing.length, "candidature", "candidatures")} title="En cours" />
-                {ongoing.length > 0 ? (
-                  <div className="mt-6 border-b border-line-strong">
-                    {ongoing.map((a) => (
-                      <ApplicationRow key={a.id} application={a} now={now} />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState
-                    className="mt-6"
-                    tone="quiet"
-                    title="Plus rien en cours."
-                    actions={
-                      <ButtonLink href={routes.recruitment} variant="secondary" icon="arrow-right">
-                        Voir les recrutements
-                      </ButtonLink>
-                    }
-                  >
-                    Toutes tes candidatures ont reçu une réponse. Les nouveaux recrutements s&apos;affichent sur la page
-                    Recrutements.
-                  </EmptyState>
-                )}
-              </section>
-
-              {done.length > 0 && (
-                <section aria-labelledby="terminees-titre">
-                  <SectionHeader id="terminees-titre" kicker={plural(done.length, "candidature", "candidatures")} title="Terminées" />
-                  <div className="mt-6 border-b border-line-strong">
-                    {done.map((a) => (
-                      <ApplicationRow key={a.id} application={a} now={now} />
-                    ))}
-                  </div>
-                </section>
+              <FilterChips
+                label="Filtrer mes candidatures"
+                param="filtre"
+                basePath={routes.accountApplications}
+                current={FILTERS.find((f) => f.value === filter)?.param ?? null}
+                options={FILTERS.map((f) => ({ value: f.param, label: f.label, count: count(f.value) }))}
+              />
+              {shown.length === 0 ? (
+                <EmptyState tone="quiet" title="Rien dans cette liste.">
+                  Choisis un autre filtre pour voir tes autres candidatures.
+                </EmptyState>
+              ) : (
+                groups
+                  .filter((g) => g.list.length > 0)
+                  .map((g) => (
+                    <section key={g.key} aria-labelledby={`${g.key}-titre`}>
+                      <SectionHeader id={`${g.key}-titre`} kicker={plural(g.list.length, "candidature")} title={g.title} />
+                      <div className="mt-6 border-b border-line-strong">
+                        {g.list.map((a) => (
+                          <ApplicationRow key={a.id} application={a} now={now} />
+                        ))}
+                      </div>
+                    </section>
+                  ))
               )}
             </>
           )}
@@ -117,7 +130,7 @@ export default async function AccountApplicationsPage() {
         <aside aria-labelledby="parcours-titre" className="lg:col-span-4">
           <div className="border-2 border-fg bg-raised p-5 sm:p-6">
             <h2 id="parcours-titre" className="type-label">
-              Le parcours d&apos;une candidature
+              Ce que dit chaque statut
             </h2>
             <ol className="mt-4 flex flex-col">
               {PATH.map((step) => (
@@ -128,7 +141,7 @@ export default async function AccountApplicationsPage() {
               ))}
             </ol>
             <p className="mt-5 border-t border-line pt-4 type-small text-muted">
-              Tu peux retirer une candidature tant que le bureau n&apos;a pas répondu, depuis sa page.
+              Tu peux retirer une candidature envoyée depuis sa page. Un brouillon se supprime, avec ses documents.
             </p>
           </div>
         </aside>

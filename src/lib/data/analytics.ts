@@ -1,5 +1,5 @@
 import "server-only";
-import { addDaysToKey, parisDateKey, parisISO } from "@/lib/time";
+import { parisDateKey, parisISO } from "@/lib/time";
 import type {
   ApplicationStatus,
   CampaignItem,
@@ -7,8 +7,6 @@ import type {
   PostKind,
   RecruitmentPosition,
 } from "@/lib/types";
-import { getCampaigns } from "./recruitment";
-import { getApplicants } from "./users";
 
 /**
  * Statistics of one association (/manage/[asso]/analytics). Counts only, all
@@ -16,7 +14,7 @@ import { getApplicants } from "./users";
  * applications, publications. No page views, no "reach": nothing is tracked.
  *
  * The shapes are kept for the analytics phase, which will fill them from
- * SQL aggregates; until then only recruitment is derived.
+ * SQL aggregates; until then nothing is derived from mock data.
  */
 
 /** One day of a daily series. `key` is the Paris date ("2026-10-08"); `iso` is noon that day. */
@@ -99,23 +97,10 @@ function seasonOf(now: Date) {
   };
 }
 
-function dayRange(fromKey: string, toKey: string): string[] {
-  const keys: string[] = [];
-  for (let k = fromKey; k <= toKey && keys.length < 400; k = addDaysToKey(k, 1)) keys.push(k);
-  return keys;
-}
-
 const noon = (key: string) => parisISO(key, "12:00");
 
-export async function getAssociationAnalytics(associationId: string, now = new Date()): Promise<AssociationAnalytics> {
+export async function getAssociationAnalytics(_associationId: string, now = new Date()): Promise<AssociationAnalytics> {
   const season = seasonOf(now);
-  const todayKey = parisDateKey(now);
-
-  const campaigns = await getCampaigns({ associationId, scope: "all" });
-  // Unsent applications never reach the bureau, so they are not counted.
-  const applicants = campaigns.length
-    ? (await getApplicants({ campaignIds: campaigns.map((c) => c.id) })).filter((a) => a.status !== "brouillon")
-    : [];
 
   /*
    * Events: registrations now live in the database (Phase 7) and the bureau
@@ -127,27 +112,12 @@ export async function getAssociationAnalytics(associationId: string, now = new D
   const uncounted: UncountedEvent[] = [];
   const sales: SalesStats[] = [];
 
-  /* Applications per campaign: by status, by role, per day. */
-  const campaignStats: CampaignStats[] = campaigns.map((campaign) => {
-    const mine = applicants.filter((a) => a.campaignId === campaign.id);
-    const byStatus: Partial<Record<ApplicationStatus, number>> = {};
-    for (const a of mine) byStatus[a.status] = (byStatus[a.status] ?? 0) + 1;
-    const byPosition = campaign.positions.map((position) => ({
-      position,
-      count: mine.filter((a) => a.positionId === position.id).length,
-    }));
-    const openKey = parisDateKey(campaign.opensAt);
-    const closeKey = parisDateKey(campaign.closesAt);
-    const lastKey = closeKey < todayKey ? closeKey : todayKey;
-    const perDay = openKey <= lastKey
-      ? dayRange(openKey, lastKey).map((key) => ({
-          key,
-          iso: noon(key),
-          count: mine.filter((a) => parisDateKey(a.submittedAt) === key).length,
-        }))
-      : [];
-    return { campaign, total: mine.length, byStatus, byPosition, perDay };
-  });
+  /*
+   * Applications: recruitment lives in the database (Phase 8) and the team
+   * reads its counts on the recruitment desk; per-day and per-status series
+   * come with the analytics phase.
+   */
+  const campaignStats: CampaignStats[] = [];
 
   /*
    * Posts per month: the publishing records now live in the database

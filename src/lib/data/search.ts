@@ -1,6 +1,6 @@
 import "server-only";
 import { routes } from "@/lib/routes";
-import type { EventItem, PostItem, SearchEntry } from "@/lib/types";
+import type { CampaignItem, EventItem, PostItem, SearchEntry } from "@/lib/types";
 import { formatDayShort, formatTime } from "@/lib/format";
 import { POST_KIND_LABEL } from "@/components/campus/labels";
 import { getAssociations } from "./associations";
@@ -24,7 +24,8 @@ export async function getSearchIndex(): Promise<SearchEntry[]> {
     getAssociations(),
     getEventSeries(),
     getUpcomingEvents().catch(() => [] as EventItem[]),
-    getCampaigns({ scope: "all" }),
+    // Current campaigns (open, paused, opening later); the /search page asks the database for the rest.
+    getCampaigns({ view: "current", limit: 100 }).catch(() => [] as CampaignItem[]),
     // Same memoised read as the article page's "Ailleurs sur le campus"; the site still works without it.
     getLatestPosts(30).catch(() => [] as PostItem[]),
   ]);
@@ -50,17 +51,7 @@ export async function getSearchIndex(): Promise<SearchEntry[]> {
       keywords: [s.description, producers.get(s.associationId)].filter(Boolean).join(" "),
     })),
     ...upcoming.map(eventSearchEntry),
-    ...campaigns
-      .filter((c) => c.status !== "cloturee")
-      .map<SearchEntry>((c) => ({
-        kind: "recrutement",
-        id: c.id,
-        title: `${c.association.name} — ${c.title}`,
-        context: `${c.positions.length} rôle${c.positions.length > 1 ? "s" : ""} · ${c.seats} place${c.seats > 1 ? "s" : ""}`,
-        href: routes.campaign(c.slug),
-        accent: c.association.accent,
-        keywords: c.positions.map((p) => `${p.title} ${p.team ?? ""}`).join(" "),
-      })),
+    ...campaigns.map(campaignSearchEntry),
     ...posts.map(postSearchEntry),
   ];
 }
@@ -94,5 +85,19 @@ export function eventSearchEntry(e: EventItem): SearchEntry {
     href: routes.event(e.slug),
     accent: e.association.accent,
     keywords: [e.summary, e.category?.label, e.venue.name, e.venue.city, e.association.name].filter(Boolean).join(" "),
+  };
+}
+
+/** A published campaign as a search result: its positions and teams as words that match. */
+export function campaignSearchEntry(c: CampaignItem): SearchEntry {
+  const roles = `${c.positions.length} poste${c.positions.length > 1 ? "s" : ""}`;
+  return {
+    kind: "recrutement",
+    id: c.id,
+    title: `${c.association.name} — ${c.title}`,
+    context: c.seats !== null ? `${roles} · ${c.seats} place${c.seats > 1 ? "s" : ""}` : roles,
+    href: routes.campaign(c.slug),
+    accent: c.association.accent,
+    keywords: [c.intro, ...c.positions.map((p) => `${p.title} ${p.team ?? ""}`)].join(" "),
   };
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Association, CampaignItem, EventItem, PostItem as Post, UserProfile } from "@/lib/types";
 import { routes } from "@/lib/routes";
-import { APPLICATION_STATUS_LABEL, formatDayMonth, plural } from "@/lib/format";
+import { formatDayMonth, plural } from "@/lib/format";
 import { AssociationLogo } from "@/components/associations/AssociationLogo";
 import { SocialLinks } from "@/components/associations/SocialLinks";
 import { TeamList } from "@/components/associations/TeamList";
@@ -15,7 +15,7 @@ import { Breadcrumbs } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { MediaFrame } from "@/components/media/MediaFrame";
 import { CampaignRow } from "@/components/recruitment/CampaignRow";
-import { findApplication, isOpen } from "@/components/recruitment/campaign-facts";
+import { isOpen, personalNote, openPositions } from "@/components/recruitment/campaign-facts";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
@@ -69,7 +69,7 @@ export function AssociationProfile({
   /** The draft shown to its page team: no personal marks, no links that act. */
   preview?: boolean;
 }) {
-  const { events, pastEvents, personal, series, campaigns, posts, offer, applications } = modules;
+  const { events, pastEvents, personal, series, campaigns, pastCampaigns, posts, offer, applications } = modules;
   const now = new Date();
   const user = preview ? null : viewer.user;
   const { accent } = association;
@@ -77,21 +77,16 @@ export function AssociationProfile({
 
   const open = campaigns.filter((c) => isOpen(c.status));
   const soon = campaigns.filter((c) => c.status === "a-venir");
-  const recruiting = open.length > 0 ? open : soon;
-  const openSeats = open.reduce((n, c) => n + c.seats, 0);
+  // Open first, then paused, then opening later (the database orders by closing date).
+  const recruiting = [...open, ...campaigns.filter((c) => c.status === "en-pause"), ...soon];
+  const openRoles = open.reduce((n, c) => n + openPositions(c).length, 0);
 
   const [nextEvent, ...laterEvents] = events;
   const shownLater = laterEvents.slice(0, EVENT_LIMIT - 1);
   const personalFor = (e: EventItem): PersonalState | undefined => (user ? personal.get(e.id) : undefined);
   const agendaOfThem = agendaHref({ association: association.slug });
 
-  const noteFor = (c: CampaignItem) => {
-    const mine = findApplication(applications, c.id);
-    if (!mine) return undefined;
-    return mine.status === "brouillon"
-      ? "Ton brouillon t'attend"
-      : `Ta candidature : ${APPLICATION_STATUS_LABEL[mine.status].toLowerCase()}`;
-  };
+  const noteFor = (c: CampaignItem) => (user ? personalNote(applications, c.id) : undefined);
 
   const [leadPost, ...morePosts] = posts;
   const kicker = categoryKicker(association.categories);
@@ -143,7 +138,7 @@ export function AssociationProfile({
             </div>
             {open.length > 0 && (
               <Sticker tone="ok" tilt={-4} className="absolute right-0 top-3 sm:right-5 sm:top-5">
-                Recrute · {plural(openSeats, "place")}
+                Recrute · {plural(openRoles, "poste")}
               </Sticker>
             )}
             {/* The mark, stuck across the cover's bottom edge like on the tiles. */}
@@ -435,14 +430,18 @@ export function AssociationProfile({
               index={nextIndex()}
               kicker={
                 open.length > 0
-                  ? `${plural(open.length, "recrutement")} · ${plural(openSeats, "place")}`
-                  : `Ouverture le ${formatDayMonth(soon[0].opensAt)}`
+                  ? `${plural(open.length, "recrutement")} · ${plural(openRoles, "poste ouvert", "postes ouverts")}`
+                  : soon[0]
+                    ? `Ouverture le ${formatDayMonth(soon[0].opensAt)}`
+                    : "En pause"
               }
-              title={open.length > 0 ? `${association.name} recrute` : "Recrutement à venir"}
+              title={open.length > 0 ? `${association.name} recrute` : soon.length > 0 ? "Recrutement à venir" : "Recrutement en pause"}
               description={
                 open.length > 0
                   ? "Chaque fiche dit ce que tu feras, combien de temps ça prend et jusqu'à quand candidater."
-                  : "La fiche est déjà lisible. Tu pourras candidater dès l'ouverture."
+                  : soon.length > 0
+                    ? "La fiche est déjà lisible. Tu pourras candidater dès l'ouverture."
+                    : "L'association a mis son recrutement en pause : les candidatures reprendront à la réouverture."
               }
             />
             <div className="mt-6 border-b border-line-strong">
@@ -450,7 +449,14 @@ export function AssociationProfile({
                 <CampaignRow key={c.id} campaign={c} note={noteFor(c)} />
               ))}
             </div>
+            {pastCampaigns.length > 0 && <PastCampaigns campaigns={pastCampaigns} />}
           </div>
+        </section>
+      )}
+      {recruiting.length === 0 && pastCampaigns.length > 0 && (
+        <section aria-labelledby="recrutements-passes" className="wrap pt-[var(--section)]">
+          <SectionHeader id="recrutements-passes" index={nextIndex()} kicker="Pour mémoire" title="Ses derniers recrutements" />
+          <PastCampaigns campaigns={pastCampaigns} />
         </section>
       )}
 
@@ -519,6 +525,24 @@ function MorePosts({ posts }: { posts: Post[] }) {
       {posts.map((p) => (
         <li key={p.id} className="py-5">
           <PostItem post={p} size="sm" withImage={p.kind !== "breve"} showPinned />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Closed or cancelled campaigns of the association (the last three), as plain links. */
+function PastCampaigns({ campaigns }: { campaigns: CampaignItem[] }) {
+  return (
+    <ul className="mt-6 flex flex-col">
+      {campaigns.map((c) => (
+        <li key={c.id} className="border-t border-line py-3 first:border-t-0">
+          <Link href={routes.campaign(c.slug)} className="inline-flex flex-wrap items-baseline gap-x-3 font-semibold hover:text-assoc-text">
+            {c.title}
+            <span className="type-meta font-normal text-muted">
+              {c.status === "annulee" ? "Annulé" : `Clos le ${formatDayMonth(c.closesAt)}`}
+            </span>
+          </Link>
         </li>
       ))}
     </ul>

@@ -9,9 +9,7 @@
 export { associations } from "./associations";
 export { eventSeries } from "./event-series";
 export { events } from "./events";
-export { campaigns } from "./recruitment";
 export { users } from "./users";
-export { applications, applicants } from "./applications";
 export { notifications } from "./notifications";
 export { tasks } from "./manage";
 export { ticketSales } from "./analytics";

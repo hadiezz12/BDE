@@ -58,6 +58,11 @@ export default async function PlatformLayout({ children }: { children: ReactNode
       label: "Événements",
       show: can("platform.content.moderate") || can("platform.content.feature"),
     },
+    {
+      href: routes.managePlatformRecruitment,
+      label: "Recrutements",
+      show: can("platform.content.moderate") || can("platform.organizations.manage"),
+    },
     { href: routes.managePlatformHistory, label: "Historique", show: can("platform.audit.view") },
   ];
   return (

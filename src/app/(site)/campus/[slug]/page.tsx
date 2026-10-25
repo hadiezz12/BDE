@@ -13,6 +13,7 @@ import { PostItem } from "@/components/campus/PostItem";
 import { ReportPost } from "@/components/campus/ReportPost";
 import { ShareArticle } from "@/components/campus/ShareArticle";
 import { RelatedEventTicket, type EventAttendance } from "@/components/campus/RelatedEventTicket";
+import { CampaignCard } from "@/components/recruitment/CampaignCard";
 import { getMyEvents } from "@/lib/events/me";
 import { personalStates } from "@/lib/events/model";
 import { campusRssAlternate } from "@/components/campus/campus-rss";
@@ -100,6 +101,7 @@ export default async function CampusPostPage({ params }: { params: Params }) {
         post={post}
         tagline={association?.tagline}
         event={post.event ? <RelatedEventTicket event={post.event} attendance={attendance} /> : undefined}
+        campaign={post.campaign ? <CampaignCard campaign={post.campaign} headingLevel={3} className="max-w-md" /> : undefined}
         actions={
           <>
             <ShareArticle title={post.title} path={path} />

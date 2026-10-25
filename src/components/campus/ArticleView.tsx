@@ -40,6 +40,7 @@ export function ArticleView({
   post,
   tagline,
   event,
+  campaign,
   actions,
   className,
 }: {
@@ -48,6 +49,8 @@ export function ArticleView({
   tagline?: string | null;
   /** The event the article is about, as a live ticket (public page only). */
   event?: ReactNode;
+  /** The recruitment campaign the article is about, as a live card (public page only). */
+  campaign?: ReactNode;
   /** Share and report, closing the text. */
   actions?: ReactNode;
   className?: string;
@@ -146,6 +149,15 @@ export function ArticleView({
                   L&apos;événement
                 </h2>
                 {event}
+              </section>
+            )}
+
+            {campaign && (
+              <section aria-labelledby="article-recrutement" className="mt-12 flex flex-col gap-4">
+                <h2 id="article-recrutement" className="type-label text-muted">
+                  Le recrutement
+                </h2>
+                {campaign}
               </section>
             )}
 

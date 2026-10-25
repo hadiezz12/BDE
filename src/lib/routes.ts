@@ -21,6 +21,13 @@ export const routes = {
   associationPreview: (slug: string) => `/associations/${slug}/apercu`,
   recruitment: "/recruitment",
   campaign: (slug: string) => `/recruitment/${slug}`,
+  campaignPosition: (slug: string, position: string) => `/recruitment/${slug}/${position}`,
+  /**
+   * A campaign and its form as candidates will see them, for its team only
+   * (never indexed). "apercu" is a reserved campaign slug.
+   */
+  campaignPreview: (campaignId: string, positionId?: string) =>
+    `/recruitment/apercu/${campaignId}${positionId ? `?poste=${positionId}` : ""}`,
   campus: "/campus",
   /** The fil filtered to one association. */
   campusFor: (asso: string) => `/campus?asso=${encodeURIComponent(asso)}`,
@@ -45,6 +52,9 @@ export const routes = {
   accountEvents: "/account/events",
   accountApplications: "/account/applications",
   accountApplication: (id: string) => `/account/applications/${id}`,
+  /** Upload (POST) a document to one's own draft; download (GET) one's own document. */
+  applicationUpload: (applicationId: string) => `/api/applications/${applicationId}/documents`,
+  applicationDocument: (documentId: string) => `/api/applications/documents/${documentId}`,
   accountNotifications: "/account/notifications",
   accountProfile: "/account/profile",
   accountSecurity: "/account/security",
@@ -82,6 +92,10 @@ export const routes = {
   manageRole: (asso: string, positionId: string) => `/manage/${asso}/roles/${positionId}`,
   manageGovernance: (asso: string) => `/manage/${asso}/governance`,
   manageRecruitment: (asso: string) => `/manage/${asso}/recruitment`,
+  manageRecruitmentNew: (asso: string) => `/manage/${asso}/recruitment/new`,
+  /** One campaign in the wizard (by id: drafts have no address yet); `step` opens a step. */
+  manageCampaign: (asso: string, campaignId: string, step?: string) =>
+    `/manage/${asso}/recruitment/${campaignId}${step ? `?etape=${step}` : ""}`,
   manageMedia: (asso: string) => `/manage/${asso}/media`,
   manageAnalytics: (asso: string) => `/manage/${asso}/analytics`,
   /** The public page editor: content (index), then the tabs below. */
@@ -109,5 +123,7 @@ export const routes = {
   managePlatformFeatured: "/manage/plateforme/une",
   /** The site's events: moderation and the front page (public information only). */
   managePlatformEvents: "/manage/plateforme/evenements",
+  /** The site's recruitment: moderation, privacy notice and retention (public information and counts only). */
+  managePlatformRecruitment: "/manage/plateforme/recrutements",
   manageContinuity: "/manage/continuite",
 } as const;

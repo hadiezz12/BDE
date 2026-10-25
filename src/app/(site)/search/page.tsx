@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { SearchEntry, SearchKind } from "@/lib/types";
-import { eventSearchEntry, getSearchIndex, postSearchEntry } from "@/lib/data/search";
+import { campaignSearchEntry, eventSearchEntry, getSearchIndex, postSearchEntry } from "@/lib/data/search";
+import { getCampaigns } from "@/lib/data/recruitment";
 import { getEventPage } from "@/lib/data/events";
 import { getFeed, getPostFacets } from "@/lib/data/posts";
 import { normaliseQuery, searchEntries, SEARCH_KIND_LABEL } from "@/lib/search";
@@ -119,6 +120,21 @@ async function searchEventsInDatabase(q: string): Promise<SearchEntry[] | null> 
   }
 }
 
+/**
+ * Recruitment from the database's search (public_recruitment_campaigns:
+ * campaign texts, association names, position titles, accents ignored),
+ * current ones first, closed ones too. Null when the index must answer.
+ */
+async function searchCampaignsInDatabase(q: string): Promise<SearchEntry[] | null> {
+  if (normaliseQuery(q).replace(/\s+/g, "").length < 2) return null;
+  try {
+    const found = await getCampaigns({ view: "all", q, limit: RESULTS_PER_KIND });
+    return found.map(campaignSearchEntry);
+  } catch {
+    return null;
+  }
+}
+
 /** One block of results: the count as a big numeral, the rubrique, the rows. */
 function ResultGroup({
   id,
@@ -162,23 +178,29 @@ function ResultGroup({
 
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const q = readQuery((await searchParams).q);
-  const [index, facets, found, foundEvents] = await Promise.all([
+  const [index, facets, found, foundEvents, foundCampaigns] = await Promise.all([
     getSearchIndex(),
     getPostFacets().catch(() => null),
     q ? searchArticlesInDatabase(q) : Promise.resolve(null),
     q ? searchEventsInDatabase(q) : Promise.resolve(null),
+    q ? searchCampaignsInDatabase(q) : Promise.resolve(null),
   ]);
   // Associations, the events of the year and recruitment: the local index, as in the ⌘K dialog.
   // Dated events come from the database when it answers (past ones included), else from the index.
   const dated = (e: SearchEntry) => e.kind === "evenement" && /^[0-9a-f]{8}-/.test(e.id);
-  const others = index.filter((e) => e.kind !== "article" && !(foundEvents && dated(e)));
+  // Recruitment too: the database's answer (closed campaigns included) replaces the index's current ones.
+  const others = index.filter(
+    (e) => e.kind !== "article" && !(foundEvents && dated(e)) && !(foundCampaigns && e.kind === "recrutement"),
+  );
   const articles = q
     ? (found ?? searchEntries(index.filter((e) => e.kind === "article"), q, RESULTS_PER_KIND))
     : [];
 
   // The fil counts every published article, not just the ones the index carries.
   const counts = { ...countByKind(index), ...(facets ? { article: facets.total } : {}) };
-  const results = q ? [...searchEntries(others, q, RESULTS_PER_KIND), ...(foundEvents ?? []), ...articles] : [];
+  const results = q
+    ? [...searchEntries(others, q, RESULTS_PER_KIND), ...(foundEvents ?? []), ...(foundCampaigns ?? []), ...articles]
+    : [];
   const pages: SitePage[] = q ? matchPages(q) : [];
   const groups = rankGroups(groupByKind(results), q);
   const total = results.length + pages.length;

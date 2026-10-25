@@ -511,3 +511,85 @@ foundational choice.
   is not a cancellation).
 - **Reason:** found while building the screens and checking them on the development project.
 - **Consequence:** same signatures and grants; covered by new checks in `events.test.sql`.
+
+## D51. A campaign's state is derived; three stored concerns (Phase 8)
+
+- **Decision:** a campaign stores its publication (draft/published/unpublished), its status
+  (scheduled/paused/closed/cancelled, cancelled irreversible) and BDE moderation (hidden) apart;
+  what visitors read (open, upcoming, paused, closed, cancelled) is computed by
+  `private.campaign_state` from them and the clock. Positions close with the campaign or earlier.
+- **Reason:** no job to flip campaigns open or closed (one that fails would leave a deadline open);
+  the deadline is decided by the database at the moment it receives a submission.
+- **Consequence:** a campaign that received submissions is paused, closed or cancelled, never taken
+  off the site or deleted; a cancelled one stays readable with its reason.
+
+## D52. The form is one versioned JSON document, not normalized tables (Phase 8)
+
+- **Decision:** each form version is a single validated document (sections, questions with stable
+  ids, options with stable ids) in `recruitment_form_versions.schema`, instead of the brief's
+  suggested question/option tables. One draft and one published version at a time; a published
+  version is frozen by trigger and superseded, never rewritten; submitted applications point to
+  their version.
+- **Reason:** a version must be immutable as a whole (answers read against the questions as they
+  were); one document is validated, frozen, duplicated and compared in one place, and a builder edits
+  it without dozens of row-level writes. Whitelisted keys per type keep it data, never code.
+- **Consequence:** answers are a JSON object keyed by question id, checked by
+  `application_answer_errors` (and mirrored in TypeScript for early messages). Phase 9 reads
+  answers through the same schema.
+
+## D53. A candidate's steps are not governance audit lines (Phase 8)
+
+- **Decision:** starting, saving, uploading, submitting and withdrawing are recorded in
+  `application_events`, read by the candidate only; the governance audit records the team's and the
+  BDE's actions on campaigns, positions, forms and settings, and the purge in counts.
+- **Reason:** `audit.view` is held by association officers; it must never reveal who applied, or
+  that someone withdrew.
+- **Consequence:** the desk shows counts; who applied becomes visible only to Phase 9 reviewers, with
+  their own audit.
+
+## D54. Nobody but the candidate reads an application in Phase 8 (Phase 8)
+
+- **Decision:** applications, their answers, history and documents are readable by their candidate
+  only (RLS and Storage policies); team reads (`recruitment_dashboard`, `recruitment_editor`) and
+  the BDE list return counts; `recruitment.applications.*` stay inactive.
+- **Reason:** the brief forbids giving the president, the BDE or the guardian bulk access before the
+  review system exists, and Phase 9 designs reviewer access per campaign and position.
+- **Consequence:** campaigns can run end to end, but no one can read submissions until Phase 9: the
+  BDE must not open real campaigns before then (report, manual steps).
+
+## D55. Documents are reserved, uploaded with the candidate's session, then confirmed (Phase 8)
+
+- **Decision:** a private bucket; the upload route checks the real content (magic bytes, no macros
+  or embedded objects), the database reserves an anonymous path for the caller's own draft, the file
+  is stored with the candidate's session (the Storage policy allows only that reserved path), and a
+  confirmation makes it count. Downloads stream through an authorized route as attachments; no
+  signed URL is handed out. Deleted files are queued and removed by a service-role worker.
+- **Reason:** no privileged client in the user's path; a path no one reserved can never be written;
+  a file never served inline cannot run in the site's origin.
+- **Consequence:** no malware scanner exists (disclosed); the BDE decides one before Phase 9
+  reviewers open files.
+
+## D56. Eligibility is the self-declared study year (Phase 8)
+
+- **Decision:** a campaign (or a position) may restrict applications to study years, compared with
+  the year the student declared in their profile; anything else is a free note on the fiche.
+- **Reason:** the site is not validated by the school: there is no directory to check a programme,
+  a campus or a year, and the profile's programme is free text.
+- **Consequence:** the fiche says the rule depends on the profile; a student without a declared
+  year cannot apply to a restricted position.
+
+## D57. Articles point to a campaign, shown live (Phase 8)
+
+- **Decision:** as for events (D44's link, Phase 7), an article stores only a campaign id
+  (`posts.recruitment_campaign_id`); its page shows the campaign's state, deadline and positions
+  live, and nothing when the campaign is not public.
+- **Reason:** "Finance recrute !" articles must never advertise a closed or hidden campaign as open.
+- **Consequence:** changing the link on an article that is online needs `posts.publish`.
+
+## D58. Recruitment fixed forward (Phase 8)
+
+- **Decision:** `20261026090400_recruitment_fixes`: `private.form_invalid` (which only raises) is
+  `volatile` (declared immutable, plpgsql_check saw it evaluated with constant arguments); an image
+  uploaded by a recruitment manager is audited under `recruitment.campaigns.manage`.
+- **Reason:** found by the CI lint and while building the wizard's cover upload.
+- **Consequence:** same signatures and grants.

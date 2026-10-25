@@ -6,14 +6,16 @@ import { deadlineLabel, formatDayMonth, formatDayShort, formatTime } from "@/lib
 /**
  * The deadline as a rubber stamp on the fiche: tilted, double-ruled, condensed
  * caps, worn ink. Colour follows urgency (green open, pink text in the last
- * 48 h, cyan before opening, grey once closed) and the plain-language label is
- * always there for screen readers — the stamp itself is decorative.
+ * 48 h, cyan before opening, grey when paused or over) and the plain-language
+ * label is always there for screen readers — the stamp itself is decorative.
  */
 const TONE: Record<CampaignStatus, string> = {
   ouverte: "text-ok",
   "derniere-chance": "text-accent-text",
   "a-venir": "text-info",
+  "en-pause": "text-subtle",
   cloturee: "text-subtle",
+  annulee: "text-subtle",
 };
 
 const SIZE = {
@@ -47,12 +49,14 @@ export function DeadlineStamp({
 }) {
   const upcoming = status === "a-venir" && opensAt;
   const iso = upcoming ? opensAt : closesAt;
-  const head = upcoming ? "Ouvre le" : status === "cloturee" ? "Clos le" : "Clôture";
+  const head = upcoming ? "Ouvre le" : status === "annulee" ? "Annulé" : status === "cloturee" ? "Clos le" : "Clôture";
   const spoken = upcoming
     ? `Ouverture le ${formatDayMonth(opensAt)} à ${formatTime(opensAt)}`
-    : status === "cloturee"
-      ? deadlineLabel(closesAt)
-      : `${deadlineLabel(closesAt)} : clôture le ${formatDayMonth(closesAt)} à ${formatTime(closesAt)}`;
+    : status === "annulee"
+      ? "Recrutement annulé"
+      : status === "cloturee"
+        ? deadlineLabel(closesAt)
+        : `${deadlineLabel(closesAt)} : clôture le ${formatDayMonth(closesAt)} à ${formatTime(closesAt)}`;
   const s = SIZE[size];
 
   return (

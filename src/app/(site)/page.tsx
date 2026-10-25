@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import type { ApplicationItem, Association, PostItem } from "@/lib/types";
+import type { ApplicationItem, Association, CampaignItem, PostItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { getSession } from "@/lib/session";
 import { getEvents, getFeaturedEvents, getUpcomingEvents } from "@/lib/data/events";
@@ -9,11 +9,11 @@ import { personalStates } from "@/lib/events/model";
 import { agendaWindow } from "@/lib/events/filters";
 import { getEventSeries } from "@/lib/data/event-series";
 import { getAssociations, getAssociationsByIds, getBde, legacyId } from "@/lib/data/associations";
-import { getCampaigns } from "@/lib/data/recruitment";
+import { getOpenCampaigns } from "@/lib/data/recruitment";
 import { getFeaturedPosts, getFeed } from "@/lib/data/posts";
 import { getSafetyDirectory } from "@/lib/data/safety";
 import { getMemberCardOffer } from "@/lib/data/member-card";
-import { getApplications } from "@/lib/data/users";
+import { getMyApplications } from "@/lib/recruitment/me";
 import { splitMyEvents } from "@/components/account/account-facts";
 import { memberCardHref, memberDiscount } from "@/components/events/series-facts";
 import { isActiveApplication } from "@/components/recruitment/campaign-facts";
@@ -84,14 +84,15 @@ async function HomeContent() {
       getEvents({ from: now.toISOString(), to: weekSpan.to }).catch(none),
       getUpcomingEvents().catch(none),
       getFeaturedEvents().catch(none),
-      getCampaigns({ scope: "open" }),
+      // Recruitment is one block among many too.
+      getOpenCampaigns().catch(() => [] as CampaignItem[]),
       getAssociations(),
       // The fil is one block among many: the front door still opens if it cannot be read.
       getFeed({ limit: 8 }).catch(() => ({ items: [] as PostItem[], next: null })),
       getFeaturedPosts().catch(() => ({ featured: [] as PostItem[], important: [] as PostItem[] })),
       getSafetyDirectory(),
       getBde(),
-      user ? getApplications(user.id) : Promise.resolve<ApplicationItem[]>([]),
+      user ? getMyApplications() : Promise.resolve<ApplicationItem[]>([]),
       getMyEvents(),
       user ? getAssociationsByIds(user.managedAssociationIds) : Promise.resolve<Association[]>([]),
     ]);
@@ -127,8 +128,12 @@ async function HomeContent() {
 
   // The BDE has its own sections; the rail is for the other associations, once they have a page.
   const otherAssociations = associations.filter((a) => a.id !== bde?.id);
-  const recruitingSeats = new Map<string, number>();
-  for (const c of campaigns) recruitingSeats.set(c.associationId, (recruitingSeats.get(c.associationId) ?? 0) + c.seats);
+  // Open recruitment per association: its places when every position announced them, otherwise null ("Recrute").
+  const recruitingSeats = new Map<string, number | null>();
+  for (const c of campaigns) {
+    const before = recruitingSeats.get(c.associationId);
+    recruitingSeats.set(c.associationId, before === undefined ? c.seats : before === null || c.seats === null ? null : before + c.seats);
+  }
 
   // Section numbers follow what is actually rendered.
   let n = 0;

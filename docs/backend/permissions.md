@@ -61,8 +61,10 @@ Database guards: an ordinary position may only carry grantable organization keys
 | `events.publish` (publish, take off the site, cancel, change dates, place or registration of a published event, pin, change an address) | events | ✓ | ✓ | | ✓ (Phase 7) |
 | `events.attendees.view`, `.manage` (remove a registration with a reason), `.export` (CSV, audited) | events | ✓ | | ✓ | ✓ (Phase 7) |
 | `media.manage` (the image library) | media | ✓ | ✓ | | ✓ (Phase 5) |
-| `recruitment.campaigns.manage`, `recruitment.questions.manage` | recruitment | ✓ | ✓ | | later |
-| `recruitment.applications.view`, `.review`, `.export` | recruitment | ✓ | | ✓ | later |
+| `recruitment.campaigns.manage` (campaigns, positions, dates, eligibility, duplicate, archive, images) | recruitment | ✓ | ✓ | | ✓ (Phase 8) |
+| `recruitment.questions.manage` (the draft application form) | recruitment | ✓ | ✓ | | ✓ (Phase 8) |
+| `recruitment.campaigns.publish` (publish, take off, pause, close, reopen, cancel; publish a form version; change a published campaign's dates, years or limit; change an address) | recruitment | ✓ | ✓ | | ✓ (Phase 8) |
+| `recruitment.applications.view`, `.review`, `.export` | recruitment | ✓ | | ✓ | later (Phase 9) |
 | `analytics.view` | insights | ✓ | ✓ | | later |
 
 Keys that hand out power (`members.manage`, `positions.*`, `delegations.manage`) are not delegable:

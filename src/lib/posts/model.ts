@@ -10,6 +10,8 @@ import type { AccentKey, AssociationRef, CategoryRef, Photo, PostItem, PostKind 
 import { BDE_BADGE, mediaUrl, toPhoto, type MediaPayload } from "../associations/model.ts";
 import type { PostDocument } from "./document";
 import { toEventItem, type EventCardPayload } from "../events/model.ts";
+// A cycle (recruitment/model uses organizationRef): safe, both only call each other's functions.
+import { toCampaignItem, type CampaignCardPayload } from "../recruitment/model.ts";
 
 export const POST_KINDS: PostKind[] = ["article", "annonce", "recap", "breve"];
 
@@ -42,6 +44,8 @@ export interface PostCardPayload {
   author_name: string | null;
   /** The event the article is about, live (public events only; Phase 7). */
   event?: EventCardPayload | null;
+  /** The recruitment campaign the article is about, live (public campaigns only; Phase 8). */
+  campaign?: CampaignCardPayload | null;
 }
 
 export interface PublicPostPayload extends PostCardPayload {
@@ -97,6 +101,7 @@ export function toPostItem(p: PostCardPayload, { preview = false }: { preview?: 
     pinned: p.pinned,
     archived: p.archived,
     event: p.event ? toEventItem(p.event, { preview }) : undefined,
+    campaign: p.campaign ? toCampaignItem(p.campaign, { preview }) : undefined,
   };
 }
 

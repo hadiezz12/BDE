@@ -17,7 +17,9 @@ import { prepareImage, UPLOAD_MAX_BYTES, type MediaKind } from "@/lib/associatio
  *   1. the server re-encodes the image (src/lib/associations/images.ts);
  *   2. it stores it under a fresh name, with the person's own session, so the
  *      Storage policy checks media.manage (or posts.create: since Phase 6,
- *      authors add the images of their articles) for that folder;
+ *      authors add the images of their articles; events.create and
+ *      recruitment.campaigns.manage likewise for events and campaigns) for
+ *      that folder;
  *   3. it records it (public.register_association_media checks again, and
  *      audits). If that fails, the file is deleted; if even that fails, it is
  *      an orphan no one can see, listed for cleanup (docs: media lifecycle).
@@ -51,7 +53,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ ass
   if (ctx.status !== "authenticated") return json(401, { error: governanceErrorMessage("not_authenticated") });
 
   const organization = await getAccessOrganization(asso);
-  const canUpload = organization?.permissions.some((k) => k === "media.manage" || k === "posts.create" || k === "events.create");
+  const canUpload = organization?.permissions.some(
+    (k) => k === "media.manage" || k === "posts.create" || k === "events.create" || k === "recruitment.campaigns.manage",
+  );
   if (!organization || !canUpload) {
     return json(403, { error: governanceErrorMessage("insufficient_permission") });
   }

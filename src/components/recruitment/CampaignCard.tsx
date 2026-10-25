@@ -2,11 +2,11 @@ import Link from "next/link";
 import type { CampaignItem } from "@/lib/types";
 import { cx } from "@/lib/cx";
 import { routes } from "@/lib/routes";
-import { CAMPAIGN_STATUS_LABEL, plural } from "@/lib/format";
+import { CAMPAIGN_STATUS_LABEL } from "@/lib/format";
 import { AssociationIdentity } from "@/components/associations/AssociationIdentity";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Icon } from "@/components/ui/Icon";
-import { STATUS_TONE, shortDeadline } from "./campaign-facts";
+import { STATUS_TONE, positionsLine, shortDeadline } from "./campaign-facts";
 
 /**
  * Compact campaign for rails (home, association page, student space, the
@@ -25,8 +25,6 @@ export function CampaignCard({
 }) {
   const H = `h${headingLevel}` as "h2" | "h3" | "h4";
   const urgent = campaign.status === "derniere-chance";
-  const roles = plural(campaign.positions.length, "rôle");
-  const seats = plural(campaign.seats, "place");
 
   return (
     <article
@@ -46,9 +44,7 @@ export function CampaignCard({
           {campaign.title}
         </Link>
       </H>
-      <p className="type-meta text-muted">
-        {roles} · {seats}
-      </p>
+      <p className="type-meta text-muted">{positionsLine(campaign)}</p>
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
         <div className="flex min-w-0 flex-col gap-1">
           <StatusBadge tone={STATUS_TONE[campaign.status]} pulse={urgent}>

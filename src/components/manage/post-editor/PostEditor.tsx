@@ -87,6 +87,7 @@ export function PostEditor({
   canPublishPage,
   today,
   eventLink = null,
+  campaignLink = null,
 }: {
   asso: string;
   data: PostEditorData;
@@ -97,6 +98,8 @@ export function PostEditor({
   today: string;
   /** The event the article is about (server-rendered panel, saved on its own). */
   eventLink?: ReactNode;
+  /** The recruitment campaign the article is about (server-rendered panel, saved on its own). */
+  campaignLink?: ReactNode;
 }) {
   const router = useRouter();
   const { post, working, can, organization } = data;
@@ -693,6 +696,12 @@ export function PostEditor({
             {eventLink && (
               <PanelSection title="Événement" className={cx(panel !== "reglages" && "max-xl:hidden")}>
                 {eventLink}
+              </PanelSection>
+            )}
+
+            {campaignLink && (
+              <PanelSection title="Recrutement" className={cx(panel !== "reglages" && "max-xl:hidden")}>
+                {campaignLink}
               </PanelSection>
             )}
 

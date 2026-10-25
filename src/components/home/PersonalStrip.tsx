@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { ApplicationItem, Association, EventItem, UserProfile } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
-import { APPLICATION_STATUS_LABEL, formatDayMonth, formatTime, plural, relativeDay } from "@/lib/format";
+import { APPLICATION_STATUS_LABEL, formatDayMonth, plural } from "@/lib/format";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -73,7 +73,8 @@ export function PersonalStrip({
     );
   }
 
-  const highlight = applications.find((a) => a.nextStep?.date) ?? applications[0] ?? null;
+  // A draft still to send first: that is the one that needs the student.
+  const highlight = applications.find((a) => a.status === "brouillon") ?? applications[0] ?? null;
 
   return (
     <section aria-labelledby="ton-espace" className="wrap pt-8 sm:pt-10">
@@ -147,9 +148,7 @@ export function PersonalStrip({
                 <span className="text-muted">
                   {" "}
                   ·{" "}
-                  {highlight.nextStep?.date
-                    ? `${highlight.nextStep.label}, ${relativeDay(highlight.nextStep.date, now).toLowerCase()} à ${formatTime(highlight.nextStep.date)}`
-                    : APPLICATION_STATUS_LABEL[highlight.status]}
+                  {highlight.position.title} · {APPLICATION_STATUS_LABEL[highlight.status].toLowerCase()}
                 </span>
               </p>
               <CellLink href={routes.accountApplications}>Mes candidatures</CellLink>

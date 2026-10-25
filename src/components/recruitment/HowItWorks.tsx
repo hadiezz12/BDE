@@ -15,16 +15,16 @@ const STEPS = [
     text: "Missions, heures par semaine, places et date limite : tout est écrit avant que tu te lances.",
   },
   {
-    title: "Tu candidates ici",
-    text: "Le poste, quelques lignes, parfois un CV : l'asso dit sur sa fiche ce qu'elle demande. Ça se remplit depuis ton téléphone.",
+    title: "Tu prépares ta candidature",
+    text: "Tes réponses s'enregistrent toutes seules, même depuis ton téléphone. La fiche dit d'avance ce qu'on te demandera (un CV ? un lien ?).",
   },
   {
-    title: "Tu rencontres l'équipe",
-    text: "Entretien, appel ou café : chaque asso annonce son process sur sa fiche, dates comprises.",
+    title: "Tu relis, puis tu envoies",
+    text: "Avant la date limite : le site refuse un envoi qui arrive après, même d'une minute. Envoyée ne veut pas dire acceptée.",
   },
   {
-    title: "Tu suis la réponse",
-    text: "Envoyée, lue, entretien, réponse : ta candidature avance sous tes yeux, dans ton espace.",
+    title: "Tu gardes la main",
+    text: "Ta candidature reste lisible dans ton espace, avec ses documents. Tu peux la retirer si tu changes d'avis.",
   },
 ];
 

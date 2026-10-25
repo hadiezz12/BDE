@@ -1,11 +1,11 @@
 import type { ApplicationItem, CampaignItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
-import { APPLICATION_STATUS_LABEL, plural } from "@/lib/format";
+import { plural } from "@/lib/format";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CampaignRow } from "@/components/recruitment/CampaignRow";
-import { findApplication } from "@/components/recruitment/campaign-facts";
+import { openPositions, personalNote } from "@/components/recruitment/campaign-facts";
 
 /**
  * Open recruitment, most urgent first, as the index's big rows (countdown,
@@ -18,24 +18,17 @@ export function HomeRecruitment({
   index,
   max = 3,
 }: {
-  /** Open campaigns, already sorted by urgency (getCampaigns({ scope: "open" })). */
+  /** Open campaigns, already sorted by urgency (getOpenCampaigns()). */
   campaigns: CampaignItem[];
   /** The student's applications; empty for a visitor. */
   applications: ApplicationItem[];
   index?: string;
   max?: number;
 }) {
-  const seats = campaigns.reduce((n, c) => n + c.seats, 0);
+  const roles = campaigns.reduce((n, c) => n + openPositions(c).length, 0);
   const shown = campaigns.slice(0, max);
   const more = campaigns.length - shown.length;
-
-  const noteFor = (c: CampaignItem) => {
-    const mine = findApplication(applications, c.id);
-    if (!mine) return undefined;
-    return mine.status === "brouillon"
-      ? "Ton brouillon t'attend"
-      : `Ta candidature : ${APPLICATION_STATUS_LABEL[mine.status].toLowerCase()}`;
-  };
+  const noteFor = (c: CampaignItem) => personalNote(applications, c.id);
 
   return (
     <section aria-labelledby="ca-recrute" className="wrap py-section">
@@ -44,12 +37,12 @@ export function HomeRecruitment({
         index={index}
         kicker={
           campaigns.length > 0
-            ? `${plural(campaigns.length, "recrutement ouvert", "recrutements ouverts")} · ${plural(seats, "place")}`
+            ? `${plural(campaigns.length, "recrutement ouvert", "recrutements ouverts")} · ${plural(roles, "poste")}`
             : "Recrutements"
         }
         title="Ça recrute"
         action={{
-          href: campaigns.length > 0 ? `${routes.recruitment}?scope=open` : routes.recruitment,
+          href: campaigns.length > 0 ? `${routes.recruitment}?vue=ouverts` : routes.recruitment,
           label: more > 0 ? `Les ${campaigns.length} recrutements` : "Tous les recrutements",
         }}
         description="Sur chaque fiche : les missions, le temps demandé et la date limite. Pas de surprise après."
