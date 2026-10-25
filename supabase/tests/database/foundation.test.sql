@@ -49,7 +49,9 @@ select is_empty(
           'portrait_object_is_public',
           'my_post_editor_organization_ids', -- Phase 6: content read policies
           'my_readable_post_ids',
-          'my_media_organization_ids'
+          'my_media_organization_ids',
+          'my_event_team_organization_ids', -- Phase 7: event read policies (caller only)
+          'my_readable_event_ids'
         ) $$,
   'authenticated can execute only the allowlisted private helpers'
 );

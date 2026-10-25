@@ -147,4 +147,10 @@ test("a presidency changes hands only with the successor's second factor", async
   await expect(emma.getByText("Tu fais partie de l'asso, sans poste de gestion pour l'instant.", { exact: false })).toBeVisible();
   await expect(sections(emma).getByRole("link", { name: "Gouvernance" })).toHaveCount(0);
   await emma.context().close();
+
+  // Leave Paul's account as found (his aal2 session may remove the factor): later specs
+  // (registrations.spec.ts) sign him in with the seed password and turn it on themselves.
+  await page.goto("/account/security");
+  await page.getByRole("button", { name: "Retirer la double authentification" }).click();
+  await expect(page.getByText("Désactivée", { exact: true })).toBeVisible();
 });

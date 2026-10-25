@@ -5,20 +5,21 @@ import { freshTotp, solidPng } from "./helpers";
 /**
  * Phase 7, brief §100–103: an event from creation to cancellation, through
  * the interface, on the local stack (fictional accounts only).
- *   Emma (Sports president) creates "Match de démonstration (exemple e2e)"
+ *   Paul (Sports president since governance.spec handed it over) creates
+ *   "Match de démonstration (exemple e2e)"
  *   with the wizard (cover, campus, two seats, a waiting list, a deadline),
  *   previews and publishes it; visitors find it in the agenda, the calendar
  *   and on the Sports page. Nina and Tom take the two seats, Léa and Hugo
  *   join the waiting list; Nina cancels and Léa is promoted (and told), Hugo
- *   moves up. Emma reads the participants and exports them; a Finance member
- *   reads nothing. Emma cancels: the page says so with the reason, and the
+ *   moves up. Paul reads the participants and exports them; a Finance member
+ *   reads nothing. Paul cancels: the page says so with the reason, and the
  *   students' spaces follow.
  * The database tests prove each rule and the race for the last seat; this
  * proves the screens follow them.
  *
- * File order matters (one worker, alphabetical): Emma turns on two-factor
- * authentication here, so this runs after governance and publishing, which
- * sign her in without it.
+ * File order matters (one worker, alphabetical): governance.spec makes Paul
+ * the Sports president (and removes the second factor it turned on); Paul
+ * turns it on again here, after every spec that signs him in without it.
  */
 
 // The seed's LOCAL-ONLY password (supabase/seed.sql): fictional accounts on the CI stack.
@@ -60,7 +61,7 @@ async function enrollTotp(page: Page) {
 }
 
 let contexts: BrowserContext[] = [];
-let emma: Page;
+let paul: Page;
 let eventPath = "";
 let editorPath = "";
 
@@ -86,61 +87,61 @@ async function register(page: Page, expected: RegExp) {
 }
 
 test("§100 the Sports president creates, previews and publishes an event", async ({ browser }) => {
-  emma = await personIn(browser, "emma.sports");
-  await enrollTotp(emma);
+  paul = await personIn(browser, "paul.sports");
+  await enrollTotp(paul);
 
-  await emma.goto(`/manage/${ASSO}/events`);
-  await emma.getByRole("link", { name: "Nouvel événement" }).first().click();
-  await emma.locator('input[name="title"]').fill(TITLE);
-  await emma.getByRole("button", { name: "Ouvrir le brouillon" }).click();
-  await expect(emma).toHaveURL(/etape=infos/);
-  editorPath = new URL(emma.url()).pathname;
+  await paul.goto(`/manage/${ASSO}/events`);
+  await paul.getByRole("link", { name: "Nouvel événement" }).first().click();
+  await paul.locator('input[name="title"]').fill(TITLE);
+  await paul.getByRole("button", { name: "Ouvrir le brouillon" }).click();
+  await expect(paul).toHaveURL(/etape=infos/);
+  editorPath = new URL(paul.url()).pathname;
 
-  await emma.locator('textarea[name="summary"]').fill(SUMMARY);
-  await emma.locator('textarea[name="description"]').fill("Premier paragraphe fictif.\n\nSecond paragraphe fictif.");
-  await emma.locator('select[name="category_id"]').selectOption({ label: "Sport" });
-  await emma.getByRole("button", { name: "Enregistrer et passer au lieu" }).click();
-  await expect(emma).toHaveURL(/etape=lieu/);
+  await paul.locator('textarea[name="summary"]').fill(SUMMARY);
+  await paul.locator('textarea[name="description"]').fill("Premier paragraphe fictif.\n\nSecond paragraphe fictif.");
+  await paul.locator('select[name="category_id"]').selectOption({ label: "Sport" });
+  await paul.getByRole("button", { name: "Enregistrer et passer au lieu" }).click();
+  await expect(paul).toHaveURL(/etape=lieu/);
 
-  await emma.locator('input[name="starts_date"]').fill(DAY);
-  await emma.locator('input[name="starts_time"]').fill("18:00");
-  await emma.locator('input[name="ends_date"]').fill(DAY);
-  await emma.locator('input[name="ends_time"]').fill("20:00");
-  await emma.getByText("Sur le campus", { exact: true }).click();
-  await emma.locator('input[name="venue_name"]').fill(VENUE);
-  await emma.getByRole("button", { name: "Enregistrer et passer au visuel" }).click();
-  await expect(emma).toHaveURL(/etape=visuels/);
+  await paul.locator('input[name="starts_date"]').fill(DAY);
+  await paul.locator('input[name="starts_time"]').fill("18:00");
+  await paul.locator('input[name="ends_date"]').fill(DAY);
+  await paul.locator('input[name="ends_time"]').fill("20:00");
+  await paul.getByText("Sur le campus", { exact: true }).click();
+  await paul.locator('input[name="venue_name"]').fill(VENUE);
+  await paul.getByRole("button", { name: "Enregistrer et passer au visuel" }).click();
+  await expect(paul).toHaveURL(/etape=visuels/);
 
-  await emma.getByLabel("Description de l'image").fill("Aplat vert fictif envoyé par le test");
-  await emma
+  await paul.getByLabel("Description de l'image").fill("Aplat vert fictif envoyé par le test");
+  await paul
     .locator('input[type="file"]')
     .setInputFiles({ name: "match.png", mimeType: "image/png", buffer: solidPng(1600, 1000, [30, 150, 90]) });
-  await expect(emma.getByRole("img", { name: "Aplat vert fictif envoyé par le test" })).toBeVisible();
-  await emma.getByRole("button", { name: "Enregistrer et passer aux inscriptions" }).click();
-  await expect(emma).toHaveURL(/etape=inscriptions/);
+  await expect(paul.getByRole("img", { name: "Aplat vert fictif envoyé par le test" })).toBeVisible();
+  await paul.getByRole("button", { name: "Enregistrer et passer aux inscriptions" }).click();
+  await expect(paul).toHaveURL(/etape=inscriptions/);
 
-  await emma.getByText("Inscription ici", { exact: true }).click();
-  await emma.getByText("Un nombre de places", { exact: true }).click();
-  await emma.locator('input[name="capacity"]').fill("2");
-  await emma.locator('input[name="waitlist_enabled"]').check();
-  await emma.locator('input[name="closes_date"]').fill(DAY);
-  await emma.locator('input[name="closes_time"]').fill("12:00");
-  await emma.locator('select[name="cancellation_cutoff_minutes"]').selectOption("0");
-  await emma.locator('textarea[name="access_details"]').fill(ACCESS);
-  await emma.getByRole("button", { name: "Enregistrer et voir l'aperçu" }).click();
-  await expect(emma).toHaveURL(/etape=apercu/);
+  await paul.getByText("Inscription ici", { exact: true }).click();
+  await paul.getByText("Un nombre de places", { exact: true }).click();
+  await paul.locator('input[name="capacity"]').fill("2");
+  await paul.locator('input[name="waitlist_enabled"]').check();
+  await paul.locator('input[name="closes_date"]').fill(DAY);
+  await paul.locator('input[name="closes_time"]').fill("12:00");
+  await paul.locator('select[name="cancellation_cutoff_minutes"]').selectOption("0");
+  await paul.locator('textarea[name="access_details"]').fill(ACCESS);
+  await paul.getByRole("button", { name: "Enregistrer et voir l'aperçu" }).click();
+  await expect(paul).toHaveURL(/etape=apercu/);
 
   // The preview: the public layout, for the team only, never indexed.
-  const preview = await emma.context().newPage();
+  const preview = await paul.context().newPage();
   await preview.goto(`/events/apercu/${editorPath.split("/").pop()}`);
   await expect(preview.getByRole("heading", { level: 1, name: TITLE })).toBeVisible();
   await expect(preview.getByText(ACCESS)).toHaveCount(0);
   await preview.close();
 
-  await emma.getByRole("link", { name: "Passer à la publication" }).click();
-  await emma.getByRole("button", { name: "Publier l'événement" }).click();
-  await expect(emma.getByText("Publié : l'événement est dans l'agenda")).toBeVisible();
-  eventPath = (await emma.getByRole("link", { name: "En ligne" }).first().getAttribute("href")) ?? "";
+  await paul.getByRole("link", { name: "Passer à la publication" }).click();
+  await paul.getByRole("button", { name: "Publier l'événement" }).click();
+  await expect(paul.getByText("Publié : l'événement est dans l'agenda")).toBeVisible();
+  eventPath = (await paul.getByRole("link", { name: "En ligne" }).first().getAttribute("href")) ?? "";
   expect(eventPath).toMatch(/^\/events\/match-de-demonstration-exemple-e2e/);
 });
 
@@ -203,10 +204,10 @@ test("§101–102 two seats, a waiting list, a cancellation and an automatic pro
 });
 
 test("§104 the team reads and exports its participants; another association reads nothing", async ({ browser }) => {
-  await emma.goto(`${editorPath}/participants`);
-  await expect(emma.getByText("Tom Exemple")).toBeVisible();
-  await expect(emma.getByText("Léa Exemple")).toBeVisible();
-  const [download] = await Promise.all([emma.waitForEvent("download"), emma.getByRole("button", { name: "Exporter (CSV)" }).click()]);
+  await paul.goto(`${editorPath}/participants`);
+  await expect(paul.getByText("Tom Exemple")).toBeVisible();
+  await expect(paul.getByText("Léa Exemple")).toBeVisible();
+  const [download] = await Promise.all([paul.waitForEvent("download"), paul.getByRole("button", { name: "Exporter (CSV)" }).click()]);
   const csv = readFileSync((await download.path()) ?? "", "utf8");
   expect(csv.charCodeAt(0)).toBe(0xfeff);
   expect(csv).toContain("Tom Exemple");
@@ -222,11 +223,11 @@ test("§104 the team reads and exports its participants; another association rea
 });
 
 test("§103 the organizer cancels: the reason is shown, students are told, nothing can be booked", async ({ browser }) => {
-  await emma.goto(`${editorPath}?etape=publication`);
-  await emma.getByText("Annuler l'événement", { exact: true }).first().click();
-  await emma.getByLabel("Raison, lue par les inscrit·es").fill(REASON);
-  await emma.locator("form").getByRole("button", { name: "Annuler l'événement" }).click();
-  await expect(emma.getByText(/Événement annulé\. Sa page l'indique/)).toBeVisible();
+  await paul.goto(`${editorPath}?etape=publication`);
+  await paul.getByText("Annuler l'événement", { exact: true }).first().click();
+  await paul.getByLabel("Raison, lue par les inscrit·es").fill(REASON);
+  await paul.locator("form").getByRole("button", { name: "Annuler l'événement" }).click();
+  await expect(paul.getByText(/Événement annulé\. Sa page l'indique/)).toBeVisible();
 
   const visitor = await personIn(browser, null);
   await visitor.goto(eventPath);
