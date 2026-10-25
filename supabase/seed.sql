@@ -544,3 +544,183 @@ begin
   perform set_config('request.jwt.claims', '', true);
 end
 $seed7$;
+
+-- Phase 8: fictional recruitment in every state, created through the
+-- recruitment functions as the fictional people above (local stack only).
+-- Dates are relative to the moment the seed runs.
+--   Finance (Julie): "Recrutement 2027 (exemple)", open, three positions,
+--        shared and position questions, a CV required; Tom's unfinished
+--        draft. "Pôle partenariats 2027 (exemple)", a draft never published.
+--   Sports (Emma): "Recrutement 2027 (exemple)", open, CV optional; Nina's
+--        submitted application, Léa's withdrawn one. "Tournoi de printemps
+--        (exemple)", published, opening later.
+--   BDE (Alice): "Équipe soirées 2026 (exemple)", closed, with Hugo's draft
+--        that was never sent; "Bénévoles gala (exemple)", paused.
+do $seed8$
+declare
+  v_alice uuid := 'a0000000-0000-4000-8000-000000000001';
+  v_julie uuid := 'a0000000-0000-4000-8000-000000000004';
+  v_emma uuid := 'a0000000-0000-4000-8000-000000000006';
+  v_nina uuid := 'a0000000-0000-4000-8000-000000000007';
+  v_hugo uuid := 'a0000000-0000-4000-8000-000000000008';
+  v_lea uuid := 'a0000000-0000-4000-8000-00000000000b';
+  v_tom uuid := 'a0000000-0000-4000-8000-00000000000c';
+  v_finance uuid := (select id from public.organizations where slug = 'exemple-finance');
+  v_sports uuid := (select id from public.organizations where slug = 'exemple-sports');
+  v_bde uuid := (select id from public.organizations where kind = 'bde');
+  v_day timestamptz := date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris';
+  v_campaign uuid;
+  v_treso uuid;
+  v_com uuid;
+  v_sponso uuid;
+  v_events uuid;
+  v_social uuid;
+  v_tournois uuid;
+  v_position uuid;
+  v_app jsonb;
+  v_version integer;
+begin
+  -- ---- Finance (Julie, president) ----------------------------------------------------------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_julie, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+
+  v_campaign := public.create_recruitment_campaign(v_finance, 'Recrutement 2027 (exemple)');
+  perform public.save_recruitment_campaign(v_campaign, 1, jsonb_build_object(
+    'summary', 'Campagne fictive de démonstration : trois postes, un CV demandé.',
+    'description', 'Texte fictif écrit pour les données locales.' || chr(10) || chr(10) || 'Un second paragraphe fictif.',
+    'academic_year', '2026-2027', 'opens_at', v_day - interval '3 days', 'closes_at', v_day + interval '10 days 23 hours 59 minutes',
+    'max_applications', 2, 'contact_name', 'Contact fictif (exemple)', 'contact_role', 'Présidence (exemple)',
+    'contact_email', 'recrutement@finance.example.test',
+    'process', jsonb_build_array(jsonb_build_object('label', 'Candidature en ligne', 'detail', 'Étape fictive.'),
+                                 jsonb_build_object('label', 'Échange avec le bureau', 'detail', 'Étape fictive.'))));
+  v_treso := public.add_recruitment_position(v_campaign, 'Trésorerie (exemple)');
+  perform public.save_recruitment_position(v_treso, jsonb_build_object(
+    'summary', 'Poste fictif : suivre le budget de l''asso.', 'missions', 'Mission fictive une' || chr(10) || 'Mission fictive deux',
+    'expectations', 'Attente fictive', 'commitment', '2 à 3 h par semaine', 'openings', 1, 'template_key', 'treasurer'));
+  v_com := public.add_recruitment_position(v_campaign, 'Communication (exemple)');
+  perform public.save_recruitment_position(v_com, jsonb_build_object(
+    'summary', 'Poste fictif : les réseaux de l''asso.', 'commitment', '3 h par semaine', 'openings', 2));
+  v_sponso := public.add_recruitment_position(v_campaign, 'Sponsoring (exemple)');
+  perform public.save_recruitment_position(v_sponso, jsonb_build_object(
+    'summary', 'Poste fictif réservé aux 2e à 5e années (déclarées).', 'eligible_years', jsonb_build_array(2, 3, 4, 5)));
+  perform public.save_recruitment_form(v_campaign, 1, jsonb_build_object(
+    'sections', jsonb_build_array(jsonb_build_object('id', 's1', 'title', 'Toi'),
+                                  jsonb_build_object('id', 's2', 'title', 'Tes documents')),
+    'questions', jsonb_build_array(
+      jsonb_build_object('id', 'motivation', 'type', 'long_text', 'scope', 'shared', 'section', 's1',
+                         'label', 'Pourquoi veux-tu rejoindre l''asso ? (question fictive)', 'required', true, 'max_length', 1500),
+      jsonb_build_object('id', 'hours', 'type', 'number', 'scope', 'shared', 'section', 's1',
+                         'label', 'Combien d''heures par semaine peux-tu y consacrer ?', 'required', true, 'min', 0, 'max', 40, 'integer', true),
+      jsonb_build_object('id', 'skills', 'type', 'multiple_choice', 'scope', 'shared', 'section', 's1',
+                         'label', 'Ce que tu sais déjà faire', 'required', false, 'max_selected', 3,
+                         'options', jsonb_build_array(jsonb_build_object('id', 'excel', 'label', 'Tableurs'),
+                                                      jsonb_build_object('id', 'design', 'label', 'Graphisme'),
+                                                      jsonb_build_object('id', 'oral', 'label', 'Prise de parole'),
+                                                      jsonb_build_object('id', 'events', 'label', 'Organisation d''événements'))),
+      jsonb_build_object('id', 'cv', 'type', 'cv', 'scope', 'shared', 'section', 's2', 'label', 'Ton CV',
+                         'required', true, 'file_types', jsonb_build_array('pdf', 'docx'), 'max_size_mb', 5),
+      jsonb_build_object('id', 'budget', 'type', 'yes_no', 'scope', v_treso, 'label', 'As-tu déjà tenu un budget ?', 'required', true),
+      jsonb_build_object('id', 'portfolio', 'type', 'url', 'scope', v_com, 'label', 'Lien vers ton portfolio', 'required', false),
+      jsonb_build_object('id', 'targets', 'type', 'long_text', 'scope', v_sponso,
+                         'label', 'Quelles entreprises aimerais-tu démarcher ?', 'required', false, 'max_length', 800))));
+  perform public.publish_recruitment_campaign(v_campaign);
+
+  v_campaign := public.create_recruitment_campaign(v_finance, 'Pôle partenariats 2027 (exemple)');
+  perform public.add_recruitment_position(v_campaign, 'Chargé·e de partenariats (exemple)');
+
+  -- ---- Sports (Emma, president) ---------------------------------------------------------------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_emma, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+
+  v_campaign := public.create_recruitment_campaign(v_sports, 'Recrutement 2027 (exemple)');
+  perform public.save_recruitment_campaign(v_campaign, 1, jsonb_build_object(
+    'summary', 'Campagne fictive de démonstration : CV facultatif, un seul poste par personne.',
+    'description', 'Texte fictif écrit pour les données locales.',
+    'academic_year', '2026-2027', 'opens_at', v_day - interval '5 days', 'closes_at', v_day + interval '6 days 18 hours',
+    'max_applications', 1));
+  v_events := public.add_recruitment_position(v_campaign, 'Événements (exemple)');
+  perform public.save_recruitment_position(v_events, jsonb_build_object('summary', 'Poste fictif.', 'openings', 2));
+  v_social := public.add_recruitment_position(v_campaign, 'Réseaux sociaux (exemple)');
+  perform public.save_recruitment_position(v_social, jsonb_build_object('summary', 'Poste fictif.'));
+  v_tournois := public.add_recruitment_position(v_campaign, 'Tournois (exemple)');
+  perform public.save_recruitment_position(v_tournois, jsonb_build_object('summary', 'Poste fictif.'));
+  perform public.save_recruitment_form(v_campaign, 1, jsonb_build_object(
+    'sections', jsonb_build_array(jsonb_build_object('id', 's1', 'title', 'Ta candidature')),
+    'questions', jsonb_build_array(
+      jsonb_build_object('id', 'motivation', 'type', 'long_text', 'scope', 'shared', 'section', 's1',
+                         'label', 'Ta motivation en quelques lignes (question fictive)', 'required', true),
+      jsonb_build_object('id', 'sport', 'type', 'single_choice', 'scope', 'shared', 'section', 's1',
+                         'label', 'Ton sport préféré', 'required', true,
+                         'options', jsonb_build_array(jsonb_build_object('id', 'foot', 'label', 'Football'),
+                                                      jsonb_build_object('id', 'basket', 'label', 'Basket'),
+                                                      jsonb_build_object('id', 'autre', 'label', 'Autre'))),
+      jsonb_build_object('id', 'cv', 'type', 'cv', 'scope', 'shared', 'section', 's1', 'label', 'Ton CV (facultatif)',
+                         'required', false, 'file_types', jsonb_build_array('pdf')),
+      jsonb_build_object('id', 'tournament', 'type', 'yes_no', 'scope', v_tournois,
+                         'label', 'As-tu déjà organisé un tournoi ?', 'required', true))));
+  perform public.publish_recruitment_campaign(v_campaign);
+
+  v_campaign := public.create_recruitment_campaign(v_sports, 'Tournoi de printemps (exemple)');
+  perform public.save_recruitment_campaign(v_campaign, 1, jsonb_build_object(
+    'summary', 'Campagne fictive publiée, qui ouvre plus tard.', 'academic_year', '2026-2027',
+    'opens_at', v_day + interval '20 days 9 hours', 'closes_at', v_day + interval '34 days 23 hours 59 minutes'));
+  v_position := public.add_recruitment_position(v_campaign, 'Arbitrage (exemple)');
+  perform public.save_recruitment_position(v_position, jsonb_build_object('summary', 'Poste fictif.'));
+  perform public.publish_recruitment_campaign(v_campaign);
+
+  -- ---- BDE (Alice, president) -------------------------------------------------------------------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_alice, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+
+  v_campaign := public.create_recruitment_campaign(v_bde, 'Équipe soirées 2026 (exemple)');
+  perform public.save_recruitment_campaign(v_campaign, 1, jsonb_build_object(
+    'summary', 'Campagne fictive close : un brouillon jamais envoyé y reste.', 'academic_year', '2025-2026',
+    'opens_at', v_day - interval '1 day', 'closes_at', v_day + interval '2 days'));
+  v_position := public.add_recruitment_position(v_campaign, 'Bénévole soirées (exemple)');
+  perform public.save_recruitment_position(v_position, jsonb_build_object('summary', 'Poste fictif.'));
+  perform public.save_recruitment_form(v_campaign, 1, jsonb_build_object(
+    'sections', jsonb_build_array(jsonb_build_object('id', 's1', 'title', 'Ta candidature')),
+    'questions', jsonb_build_array(
+      jsonb_build_object('id', 'motivation', 'type', 'short_text', 'scope', 'shared', 'section', 's1',
+                         'label', 'Un mot pour te présenter (question fictive)', 'required', true, 'max_length', 200))));
+  perform public.publish_recruitment_campaign(v_campaign);
+
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_hugo, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  v_app := public.start_application(v_position);
+  perform public.save_application_answers((v_app ->> 'application_id')::uuid, 1, '{"motivation": "Brouillon fictif jamais envoyé."}'::jsonb);
+  -- Moved to the past afterwards: the draft stays, no longer submittable.
+  update public.recruitment_campaigns set opens_at = v_day - interval '40 days', closes_at = v_day - interval '10 days'
+   where id = v_campaign;
+
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_alice, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  v_campaign := public.create_recruitment_campaign(v_bde, 'Bénévoles gala (exemple)');
+  perform public.save_recruitment_campaign(v_campaign, 1, jsonb_build_object(
+    'summary', 'Campagne fictive mise en pause.', 'academic_year', '2026-2027',
+    'opens_at', v_day - interval '2 days', 'closes_at', v_day + interval '15 days'));
+  v_position := public.add_recruitment_position(v_campaign, 'Accueil (exemple)');
+  perform public.save_recruitment_position(v_position, jsonb_build_object('summary', 'Poste fictif.'));
+  perform public.publish_recruitment_campaign(v_campaign);
+  perform public.set_recruitment_status(v_campaign, 'paused');
+
+  -- ---- Students ------------------------------------------------------------------------------------
+  -- Tom: an unfinished draft for Finance · Communication (the CV is missing).
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_tom, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  v_app := public.start_application(v_com);
+  perform public.save_application_answers((v_app ->> 'application_id')::uuid, 1,
+    '{"motivation": "Brouillon fictif de Tom.", "hours": 4, "skills": ["design"]}'::jsonb);
+
+  -- Nina: a submitted application to Sports · Événements.
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_nina, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  v_app := public.start_application(v_events);
+  v_version := (public.save_application_answers((v_app ->> 'application_id')::uuid, 1,
+    '{"motivation": "Candidature fictive de Nina.", "sport": "basket"}'::jsonb) ->> 'version')::integer;
+  perform public.submit_application((v_app ->> 'application_id')::uuid, v_version, true);
+
+  -- Léa: submitted to Sports · Réseaux sociaux, then withdrawn.
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_lea, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  v_app := public.start_application(v_social);
+  v_version := (public.save_application_answers((v_app ->> 'application_id')::uuid, 1,
+    '{"motivation": "Candidature fictive de Léa.", "sport": "foot"}'::jsonb) ->> 'version')::integer;
+  perform public.submit_application((v_app ->> 'application_id')::uuid, v_version, true);
+  perform public.withdraw_application((v_app ->> 'application_id')::uuid, 'Retrait fictif.');
+
+  perform set_config('request.jwt.claims', null, true);
+end;
+$seed8$;

@@ -14,6 +14,173 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_documents: {
+        Row: {
+          application_id: string
+          confirmed_at: string | null
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string
+          object_path: string
+          question_id: string
+          removed_at: string | null
+          size_bytes: number
+          status: string
+        }
+        ComputedFields: never
+        Insert: {
+          application_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type: string
+          object_path: string
+          question_id: string
+          removed_at?: string | null
+          size_bytes: number
+          status?: string
+        }
+        Update: {
+          application_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string
+          object_path?: string
+          question_id?: string
+          removed_at?: string | null
+          size_bytes?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_events: {
+        Row: {
+          action: string
+          application_id: string
+          details: Json
+          id: number
+          occurred_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          action: string
+          application_id: string
+          details?: Json
+          id?: never
+          occurred_at?: string
+        }
+        Update: {
+          action?: string
+          application_id?: string
+          details?: Json
+          id?: never
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_events_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      applications: {
+        Row: {
+          answers: Json
+          campaign_id: string
+          candidate_id: string
+          candidate_snapshot: Json | null
+          created_at: string
+          form_version_id: string
+          id: string
+          last_saved_at: string | null
+          position_id: string
+          privacy_acknowledged_at: string | null
+          reference: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          version: number
+          withdrawal_reason: string | null
+          withdrawn_at: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          answers?: Json
+          campaign_id: string
+          candidate_id: string
+          candidate_snapshot?: Json | null
+          created_at?: string
+          form_version_id: string
+          id?: string
+          last_saved_at?: string | null
+          position_id: string
+          privacy_acknowledged_at?: string | null
+          reference?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          version?: number
+          withdrawal_reason?: string | null
+          withdrawn_at?: string | null
+        }
+        Update: {
+          answers?: Json
+          campaign_id?: string
+          candidate_id?: string
+          candidate_snapshot?: Json | null
+          created_at?: string
+          form_version_id?: string
+          id?: string
+          last_saved_at?: string | null
+          position_id?: string
+          privacy_acknowledged_at?: string | null
+          reference?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          version?: number
+          withdrawal_reason?: string | null
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_form_version_id_fkey"
+            columns: ["form_version_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_form_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       association_categories: {
         Row: {
           archived_at: string | null
@@ -1101,6 +1268,7 @@ export type Database = {
       }
       notification_outbox: {
         Row: {
+          application_id: string | null
           created_at: string
           dedupe_key: string
           email_attempts: number
@@ -1117,6 +1285,7 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          application_id?: string | null
           created_at?: string
           dedupe_key: string
           email_attempts?: number
@@ -1132,6 +1301,7 @@ export type Database = {
           recipient_id: string
         }
         Update: {
+          application_id?: string | null
           created_at?: string
           dedupe_key?: string
           email_attempts?: number
@@ -1147,6 +1317,13 @@ export type Database = {
           recipient_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notification_outbox_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notification_outbox_event_id_fkey"
             columns: ["event_id"]
@@ -1943,6 +2120,7 @@ export type Database = {
           published_at: string | null
           published_by: string | null
           published_revision_id: string | null
+          recruitment_campaign_id: string | null
           schedule_attempted_at: string | null
           schedule_attempts: number
           schedule_error: string | null
@@ -1976,6 +2154,7 @@ export type Database = {
           published_at?: string | null
           published_by?: string | null
           published_revision_id?: string | null
+          recruitment_campaign_id?: string | null
           schedule_attempted_at?: string | null
           schedule_attempts?: number
           schedule_error?: string | null
@@ -2008,6 +2187,7 @@ export type Database = {
           published_at?: string | null
           published_by?: string | null
           published_revision_id?: string | null
+          recruitment_campaign_id?: string | null
           schedule_attempted_at?: string | null
           schedule_attempts?: number
           schedule_error?: string | null
@@ -2041,6 +2221,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "post_revisions"
             referencedColumns: ["id", "post_id"]
+          },
+          {
+            foreignKeyName: "posts_recruitment_campaign_id_fkey"
+            columns: ["recruitment_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_campaigns"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "posts_scheduled_revision_fkey"
@@ -2098,11 +2285,374 @@ export type Database = {
         }
         Relationships: []
       }
+      recruitment_campaign_slug_history: {
+        Row: {
+          campaign_id: string
+          replaced_at: string
+          slug: string
+        }
+        ComputedFields: never
+        Insert: {
+          campaign_id: string
+          replaced_at?: string
+          slug: string
+        }
+        Update: {
+          campaign_id?: string
+          replaced_at?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_campaign_slug_history_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitment_campaigns: {
+        Row: {
+          academic_year: string | null
+          active_form_version_id: string | null
+          archived_at: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          closed_at: string | null
+          closes_at: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_role: string | null
+          cover_media_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duplicated_from: string | null
+          eligibility_note: string | null
+          eligible_years: number[] | null
+          faq: Json
+          first_published_at: string | null
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
+          id: string
+          max_applications: number
+          opens_at: string | null
+          organization_id: string
+          paused_at: string | null
+          process: Json
+          publication: string
+          published_at: string | null
+          search: unknown
+          slug: string | null
+          status: string
+          summary: string | null
+          timezone: string
+          title: string
+          unpublished_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        ComputedFields: never
+        Insert: {
+          academic_year?: string | null
+          active_form_version_id?: string | null
+          archived_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          closed_at?: string | null
+          closes_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_role?: string | null
+          cover_media_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duplicated_from?: string | null
+          eligibility_note?: string | null
+          eligible_years?: number[] | null
+          faq?: Json
+          first_published_at?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          max_applications?: number
+          opens_at?: string | null
+          organization_id: string
+          paused_at?: string | null
+          process?: Json
+          publication?: string
+          published_at?: string | null
+          search?: never
+          slug?: string | null
+          status?: string
+          summary?: string | null
+          timezone?: string
+          title?: string
+          unpublished_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          academic_year?: string | null
+          active_form_version_id?: string | null
+          archived_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          closed_at?: string | null
+          closes_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_role?: string | null
+          cover_media_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duplicated_from?: string | null
+          eligibility_note?: string | null
+          eligible_years?: number[] | null
+          faq?: Json
+          first_published_at?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          max_applications?: number
+          opens_at?: string | null
+          organization_id?: string
+          paused_at?: string | null
+          process?: Json
+          publication?: string
+          published_at?: string | null
+          search?: never
+          slug?: string | null
+          status?: string
+          summary?: string | null
+          timezone?: string
+          title?: string
+          unpublished_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_campaigns_active_form_version_id_fkey"
+            columns: ["active_form_version_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_form_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruitment_campaigns_cover_media_id_fkey"
+            columns: ["cover_media_id"]
+            isOneToOne: false
+            referencedRelation: "association_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruitment_campaigns_duplicated_from_fkey"
+            columns: ["duplicated_from"]
+            isOneToOne: false
+            referencedRelation: "recruitment_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruitment_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitment_form_versions: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string | null
+          edit_version: number
+          id: string
+          number: number
+          published_at: string | null
+          published_by: string | null
+          schema: Json
+          status: string
+          superseded_at: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by?: string | null
+          edit_version?: number
+          id?: string
+          number: number
+          published_at?: string | null
+          published_by?: string | null
+          schema?: Json
+          status?: string
+          superseded_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string | null
+          edit_version?: number
+          id?: string
+          number?: number
+          published_at?: string | null
+          published_by?: string | null
+          schema?: Json
+          status?: string
+          superseded_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_form_versions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruitment_positions: {
+        Row: {
+          campaign_id: string
+          closes_at: string | null
+          commitment: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          eligible_years: number[] | null
+          expectations: string | null
+          id: string
+          missions: string | null
+          openings: number | null
+          retired_at: string | null
+          slug: string
+          summary: string | null
+          team: string | null
+          template_key: string | null
+          title: string
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          campaign_id: string
+          closes_at?: string | null
+          commitment?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          eligible_years?: number[] | null
+          expectations?: string | null
+          id?: string
+          missions?: string | null
+          openings?: number | null
+          retired_at?: string | null
+          slug: string
+          summary?: string | null
+          team?: string | null
+          template_key?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          closes_at?: string | null
+          commitment?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          eligible_years?: number[] | null
+          expectations?: string | null
+          id?: string
+          missions?: string | null
+          openings?: number | null
+          retired_at?: string | null
+          slug?: string
+          summary?: string | null
+          team?: string | null
+          template_key?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_positions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recruitment_positions_template_key_fkey"
+            columns: ["template_key"]
+            isOneToOne: false
+            referencedRelation: "position_templates"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      recruitment_settings: {
+        Row: {
+          draft_retention_months: number | null
+          id: boolean
+          privacy_contact: string | null
+          privacy_notice: string | null
+          submitted_retention_months: number | null
+          updated_at: string
+          updated_by: string | null
+          withdrawn_retention_months: number | null
+        }
+        ComputedFields: never
+        Insert: {
+          draft_retention_months?: number | null
+          id?: boolean
+          privacy_contact?: string | null
+          privacy_notice?: string | null
+          submitted_retention_months?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          withdrawn_retention_months?: number | null
+        }
+        Update: {
+          draft_retention_months?: number | null
+          id?: boolean
+          privacy_contact?: string | null
+          privacy_notice?: string | null
+          submitted_retention_months?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          withdrawn_retention_months?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      add_recruitment_position: {
+        Args: { p_campaign_id: string; p_title: string }
+        Returns: string
+      }
       approve_bde_succession: {
         Args: { p_transition_id: string }
         Returns: string
@@ -2113,6 +2663,10 @@ export type Database = {
       }
       archive_post: {
         Args: { p_archive?: boolean; p_post_id: string }
+        Returns: undefined
+      }
+      archive_recruitment_campaign: {
+        Args: { p_archived: boolean; p_campaign_id: string }
         Returns: undefined
       }
       assign_position: {
@@ -2139,6 +2693,10 @@ export type Database = {
       }
       cancel_my_registration: { Args: { p_event_id: string }; Returns: Json }
       cancel_post_schedule: { Args: { p_post_id: string }; Returns: undefined }
+      cancel_recruitment_campaign: {
+        Args: { p_campaign_id: string; p_reason: string }
+        Returns: number
+      }
       change_event_slug: {
         Args: { p_event_id: string; p_slug: string }
         Returns: string
@@ -2151,10 +2709,23 @@ export type Database = {
         Args: { p_post_id: string; p_slug: string }
         Returns: string
       }
+      change_recruitment_slug: {
+        Args: { p_campaign_id: string; p_slug: string }
+        Returns: string
+      }
       claim_notification_emails: { Args: { p_limit?: number }; Returns: Json }
+      claim_storage_cleanup: { Args: { p_limit?: number }; Returns: Json }
       complete_notification_email: {
         Args: { p_error?: string; p_id: number; p_ok: boolean }
         Returns: undefined
+      }
+      complete_storage_cleanup: {
+        Args: { p_error?: string; p_id: number; p_ok: boolean }
+        Returns: undefined
+      }
+      confirm_application_document: {
+        Args: { p_document_id: string; p_replaces?: string }
+        Returns: Json
       }
       content_dashboard: { Args: { p_organization_id: string }; Returns: Json }
       create_association_category: {
@@ -2209,11 +2780,31 @@ export type Database = {
         Args: { p_label: string; p_slug: string; p_sort_order?: number }
         Returns: string
       }
+      create_recruitment_campaign: {
+        Args: { p_organization_id: string; p_title: string }
+        Returns: string
+      }
+      delete_application_draft: {
+        Args: { p_application_id: string }
+        Returns: undefined
+      }
       delete_event_draft: { Args: { p_event_id: string }; Returns: undefined }
       delete_post_draft: { Args: { p_post_id: string }; Returns: undefined }
+      delete_recruitment_draft: {
+        Args: { p_campaign_id: string }
+        Returns: undefined
+      }
+      discard_recruitment_form_draft: {
+        Args: { p_campaign_id: string }
+        Returns: undefined
+      }
       dismiss_report: {
         Args: { p_note?: string; p_report_id: string }
         Returns: undefined
+      }
+      duplicate_recruitment_campaign: {
+        Args: { p_campaign_id: string; p_title: string }
+        Returns: string
       }
       end_assignment: {
         Args: { p_assignment_id: string; p_reason?: string }
@@ -2250,6 +2841,10 @@ export type Database = {
         Args: { p_post_id: string; p_reason: string }
         Returns: undefined
       }
+      hide_recruitment_campaign: {
+        Args: { p_campaign_id: string; p_reason: string }
+        Returns: undefined
+      }
       invite_member: {
         Args: {
           p_email: string
@@ -2263,7 +2858,17 @@ export type Database = {
       member_access: { Args: { p_membership_id: string }; Returns: Json }
       moderated_post: { Args: { p_post_id: string }; Returns: Json }
       moderation_queue: { Args: never; Returns: Json }
+      move_recruitment_position: {
+        Args: { p_direction: number; p_position_id: string }
+        Returns: undefined
+      }
       my_access: { Args: never; Returns: Json }
+      my_application: { Args: { p_application_id: string }; Returns: Json }
+      my_application_document: {
+        Args: { p_document_id: string }
+        Returns: Json
+      }
+      my_applications: { Args: never; Returns: Json }
       my_event_status: { Args: { p_event_id: string }; Returns: Json }
       my_events: { Args: never; Returns: Json }
       my_governance_inbox: { Args: never; Returns: Json }
@@ -2277,6 +2882,11 @@ export type Database = {
         Returns: Json
       }
       platform_organizations: { Args: never; Returns: Json }
+      platform_recruitment: {
+        Args: { p_q?: string; p_view?: string }
+        Returns: Json
+      }
+      post_campaign_options: { Args: { p_post_id: string }; Returns: Json }
       post_editor: { Args: { p_post_id: string }; Returns: Json }
       post_event_options: { Args: { p_post_id: string }; Returns: Json }
       post_preview: {
@@ -2329,6 +2939,10 @@ export type Database = {
         Args: { p_limit?: number; p_slug: string }
         Returns: Json
       }
+      public_association_recruitment: {
+        Args: { p_slug: string }
+        Returns: Json
+      }
       public_associations: { Args: never; Returns: Json }
       public_event: { Args: { p_slug: string }; Returns: Json }
       public_event_facets: { Args: never; Returns: Json }
@@ -2370,6 +2984,25 @@ export type Database = {
         }
         Returns: Json
       }
+      public_recruitment_campaign: { Args: { p_slug: string }; Returns: Json }
+      public_recruitment_campaigns: {
+        Args: {
+          p_academic_year?: string
+          p_limit?: number
+          p_offset?: number
+          p_organization_slug?: string
+          p_q?: string
+          p_view?: string
+        }
+        Returns: Json
+      }
+      public_recruitment_facets: { Args: never; Returns: Json }
+      public_recruitment_position: {
+        Args: { p_campaign_slug: string; p_position_slug: string }
+        Returns: Json
+      }
+      public_recruitment_privacy: { Args: never; Returns: Json }
+      public_recruitment_sitemap: { Args: never; Returns: Json }
       public_series_events: { Args: { p_series_key: string }; Returns: Json }
       publish_association_page: {
         Args: { p_expected_revision: number; p_organization_id: string }
@@ -2379,6 +3012,27 @@ export type Database = {
       publish_post: {
         Args: { p_post_id: string; p_revision_id: string }
         Returns: string
+      }
+      publish_recruitment_campaign: {
+        Args: { p_campaign_id: string }
+        Returns: string
+      }
+      publish_recruitment_form: {
+        Args: { p_campaign_id: string }
+        Returns: Json
+      }
+      recruitment_dashboard: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      recruitment_editor: { Args: { p_campaign_id: string }; Returns: Json }
+      recruitment_form_preview: {
+        Args: { p_campaign_id: string; p_position_id: string; p_which?: string }
+        Returns: Json
+      }
+      refresh_application_form: {
+        Args: { p_application_id: string }
+        Returns: Json
       }
       register_association_media: {
         Args: {
@@ -2397,6 +3051,10 @@ export type Database = {
         Args: { p_organization_id: string; p_reason: string }
         Returns: undefined
       }
+      remove_application_document: {
+        Args: { p_document_id: string }
+        Returns: Json
+      }
       remove_association_media: {
         Args: { p_media_id: string }
         Returns: string
@@ -2405,6 +3063,10 @@ export type Database = {
         Args: { p_reason: string; p_registration_id: string }
         Returns: undefined
       }
+      remove_recruitment_position: {
+        Args: { p_position_id: string }
+        Returns: string
+      }
       renew_invitation: {
         Args: { p_invitation_id: string }
         Returns: undefined
@@ -2412,6 +3074,16 @@ export type Database = {
       report_post: {
         Args: { p_details?: string; p_post_id: string; p_reason: string }
         Returns: undefined
+      }
+      reserve_application_document: {
+        Args: {
+          p_application_id: string
+          p_file_name: string
+          p_mime_type: string
+          p_question_id: string
+          p_size_bytes: number
+        }
+        Returns: Json
       }
       respond_to_invitation: {
         Args: { p_accept: boolean; p_invitation_id: string }
@@ -2433,6 +3105,10 @@ export type Database = {
         Args: { p_post_id: string; p_reason: string }
         Returns: undefined
       }
+      restore_recruitment_campaign: {
+        Args: { p_campaign_id: string; p_reason: string }
+        Returns: undefined
+      }
       review_post_revision: {
         Args: {
           p_decision: string
@@ -2450,6 +3126,10 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
+      save_application_answers: {
+        Args: { p_answers: Json; p_application_id: string; p_version: number }
+        Returns: Json
+      }
       save_association_draft: {
         Args: { p_base: Json; p_organization_id: string; p_patch: Json }
         Returns: number
@@ -2466,6 +3146,18 @@ export type Database = {
           p_version: number
         }
         Returns: Json
+      }
+      save_recruitment_campaign: {
+        Args: { p_campaign_id: string; p_patch: Json; p_version: number }
+        Returns: Json
+      }
+      save_recruitment_form: {
+        Args: { p_campaign_id: string; p_edit_version: number; p_schema: Json }
+        Returns: Json
+      }
+      save_recruitment_position: {
+        Args: { p_patch: Json; p_position_id: string }
+        Returns: undefined
       }
       schedule_post: {
         Args: { p_at: string; p_post_id: string; p_revision_id: string }
@@ -2516,6 +3208,10 @@ export type Database = {
         Args: { p_organization_id: string; p_reason?: string; p_status: string }
         Returns: undefined
       }
+      set_post_campaign: {
+        Args: { p_campaign_id: string; p_post_id: string }
+        Returns: undefined
+      }
       set_post_event: {
         Args: { p_event_id: string; p_post_id: string }
         Returns: undefined
@@ -2527,6 +3223,29 @@ export type Database = {
       set_post_prominence: {
         Args: { p_post_id: string; p_prominence: string; p_until?: string }
         Returns: undefined
+      }
+      set_recruitment_settings: {
+        Args: {
+          p_draft_months: number
+          p_privacy_contact: string
+          p_privacy_notice: string
+          p_submitted_months: number
+          p_withdrawn_months: number
+        }
+        Returns: undefined
+      }
+      set_recruitment_status: {
+        Args: { p_campaign_id: string; p_status: string }
+        Returns: string
+      }
+      start_application: { Args: { p_position_id: string }; Returns: Json }
+      submit_application: {
+        Args: {
+          p_application_id: string
+          p_privacy_acknowledged: boolean
+          p_version: number
+        }
+        Returns: Json
       }
       submit_post_revision: {
         Args: { p_post_id: string; p_revision_id: string }
@@ -2542,6 +3261,10 @@ export type Database = {
       }
       unpublish_post: {
         Args: { p_post_id: string; p_reason?: string }
+        Returns: undefined
+      }
+      unpublish_recruitment_campaign: {
+        Args: { p_campaign_id: string; p_reason?: string }
         Returns: undefined
       }
       update_association_category: {
@@ -2583,6 +3306,10 @@ export type Database = {
           p_sort_order: number
         }
         Returns: undefined
+      }
+      withdraw_application: {
+        Args: { p_application_id: string; p_reason?: string }
+        Returns: Json
       }
       withdraw_bde_approval: {
         Args: { p_transition_id: string }

@@ -67,6 +67,12 @@ jobs:
           DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
           test -n "$DB_URL"
           bash supabase/tests/concurrency/registrations.sh "$DB_URL"
+      - name: Application concurrency (parallel sessions)
+        # Five tabs start and submit at once; ten students race the limit (Phase 8).
+        run: |
+          DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
+          test -n "$DB_URL"
+          bash supabase/tests/concurrency/applications.sh "$DB_URL"
       - name: Database lint (plpgsql_check)
         run: supabase db lint --fail-on error
       - uses: actions/setup-node@v5

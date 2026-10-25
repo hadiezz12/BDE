@@ -51,7 +51,12 @@ select is_empty(
           'my_readable_post_ids',
           'my_media_organization_ids',
           'my_event_team_organization_ids', -- Phase 7: event read policies (caller only)
-          'my_readable_event_ids'
+          'my_readable_event_ids',
+          'my_recruitment_organization_ids', -- Phase 8: recruitment read policies (caller only)
+          'my_application_ids',
+          'can_upload_application_document', -- Phase 8: Storage policies (candidate's own paths)
+          'can_read_application_document',
+          'can_delete_application_document'
         ) $$,
   'authenticated can execute only the allowlisted private helpers'
 );
