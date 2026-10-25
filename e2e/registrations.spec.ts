@@ -205,8 +205,8 @@ test("§101–102 two seats, a waiting list, a cancellation and an automatic pro
 
 test("§104 the team reads and exports its participants; another association reads nothing", async ({ browser }) => {
   await paul.goto(`${editorPath}/participants`);
-  await expect(paul.getByText("Tom Exemple")).toBeVisible();
-  await expect(paul.getByText("Léa Exemple")).toBeVisible();
+  await expect(paul.getByText("Tom Exemple", { exact: true })).toBeVisible();
+  await expect(paul.getByText("Léa Exemple", { exact: true })).toBeVisible();
   const [download] = await Promise.all([paul.waitForEvent("download"), paul.getByRole("button", { name: "Exporter (CSV)" }).click()]);
   const csv = readFileSync((await download.path()) ?? "", "utf8");
   expect(csv.charCodeAt(0)).toBe(0xfeff);
