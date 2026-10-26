@@ -19,7 +19,8 @@ import { freshTotp, solidPng } from "./helpers";
  *
  * File order matters (one worker, alphabetical): governance.spec makes Paul
  * the Sports president (and removes the second factor it turned on); Paul
- * turns it on again here, after every spec that signs him in without it.
+ * turns it on again here and removes it at the end, for review.spec, which
+ * signs him in with the seed password alone.
  */
 
 // The seed's LOCAL-ONLY password (supabase/seed.sql): fictional accounts on the CI stack.
@@ -74,6 +75,15 @@ async function personIn(browser: Browser, local: string | null): Promise<Page> {
 }
 
 test.afterAll(async () => {
+  // Leave Paul's account as found, even after a failure.
+  if (paul) {
+    await paul.goto("/account/security");
+    const remove = paul.getByRole("button", { name: "Retirer la double authentification" });
+    if (await remove.isVisible().catch(() => false)) {
+      await remove.click();
+      await expect(paul.getByText("Désactivée", { exact: true })).toBeVisible();
+    }
+  }
   for (const c of contexts) await c.close();
   contexts = [];
 });
