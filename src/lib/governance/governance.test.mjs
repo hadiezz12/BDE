@@ -61,7 +61,10 @@ test("constraint errors become sentences, never Postgres text", () => {
 
 const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events", "recruitment"]);
 
-const RESOURCE_TYPES = new Set(["recruitment_campaign", "recruitment_position", "recruitment_form", "recruitment_settings"]);
+const RESOURCE_TYPES = new Set([
+  "recruitment_campaign", "recruitment_position", "recruitment_form", "recruitment_settings",
+  "application", "recruitment_committee_member", "recruitment_rubric", "recruitment_offer",
+]);
 
 test("every audited action has a sentence", () => {
   // Call shape: (actor, authority, action, category, …). The authority may be
@@ -74,11 +77,19 @@ test("every audited action has a sentence", () => {
       if (compared) continue; // a CASE condition, not a value
       // A call whose action is a variable (v_action) reaches the resource type: not an action.
       if (RESOURCE_TYPES.has(literal)) break;
+      // 'recruitment_offer_' || v_status: a prefix, its endings are listed below.
+      if (literal.endsWith("_")) continue;
       if (literal.includes("_")) found.push(literal);
       else if (CATEGORIES.has(literal) && found.length) break;
     }
     found.forEach((a) => actions.add(a));
   }
+  // Phase 9: private.log_application_audit(actor, application, power, action, …).
+  for (const call of migrations.split("perform private.log_application_audit(").slice(1)) {
+    const action = /'([a-z]+_[a-z_]+)'/.exec(call.slice(0, call.indexOf(");")));
+    if (action) actions.add(action[1]);
+  }
+  ["recruitment_offer_accepted", "recruitment_offer_declined"].forEach((a) => actions.add(a));
   assert.ok(actions.size > 20, `the audit calls were read (${actions.size})`);
   const missing = [...actions].filter((a) => !(a in AUDIT_ACTION_LABEL));
   assert.deepEqual(missing, []);

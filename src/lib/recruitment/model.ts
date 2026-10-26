@@ -25,6 +25,7 @@ import { toPhoto, type MediaPayload } from "../associations/model.ts";
 import { organizationRef, type OrganizationCardPayload } from "../posts/model.ts";
 import { paragraphs } from "../events/model.ts";
 import type { FormSchema } from "./form.ts";
+import type { CandidateClarification, CandidateInterview, CandidateOutcome, CandidateStage } from "./candidate.ts";
 
 // ---- Payloads ------------------------------------------------------------------------------------
 
@@ -149,6 +150,8 @@ export interface MyApplicationsItemPayload {
     withdrawn_at: string | null;
     refusal: string | null;
     progress: { required: number; missing: number; complete: boolean } | null;
+    /** What the candidate is told about where it stands (Phase 9; never the team pipeline). */
+    stage: CandidateStage;
   };
   campaign: CampaignCardPayload | UnavailableCampaignPayload;
   position: { id: string; slug: string; title: string; team: string | null; closes_at: string | null };
@@ -192,6 +195,10 @@ export interface MyApplicationPayload {
   candidate: CandidatePayload;
   history: { action: ApplicationHistoryAction; at: string; details: Record<string, unknown> | null }[];
   privacy: RecruitmentPrivacy;
+  /** Phase 9: the live interview, the questions asked, the released outcome. */
+  interview: CandidateInterview | null;
+  clarifications: CandidateClarification[];
+  outcome: CandidateOutcome | null;
 }
 
 export type ApplicationHistoryAction =
@@ -201,7 +208,22 @@ export type ApplicationHistoryAction =
   | "document_added"
   | "document_replaced"
   | "document_removed"
-  | "form_updated";
+  | "form_updated"
+  | "review_started"
+  | "interview_invited"
+  | "interview_scheduled"
+  | "interview_rescheduled"
+  | "interview_cancelled"
+  | "interview_completed"
+  | "clarification_requested"
+  | "clarification_extended"
+  | "clarification_answered"
+  | "clarification_cancelled"
+  | "decision_released"
+  | "offer_accepted"
+  | "offer_declined"
+  | "offer_expired"
+  | "offer_withdrawn";
 
 // ---- Mapping --------------------------------------------------------------------------------------
 
@@ -386,6 +408,21 @@ export const HISTORY_LABEL: Record<ApplicationHistoryAction, string> = {
   document_replaced: "Document remplacé",
   document_removed: "Document retiré",
   form_updated: "Passage au nouveau formulaire",
+  review_started: "Candidature en cours d'examen",
+  interview_invited: "Invitation à un entretien",
+  interview_scheduled: "Entretien réservé",
+  interview_rescheduled: "Entretien déplacé",
+  interview_cancelled: "Entretien annulé",
+  interview_completed: "Entretien passé",
+  clarification_requested: "Question de l'association",
+  clarification_extended: "Délai de réponse prolongé",
+  clarification_answered: "Réponse envoyée",
+  clarification_cancelled: "Question retirée par l'association",
+  decision_released: "Réponse de l'association",
+  offer_accepted: "Proposition acceptée",
+  offer_declined: "Proposition déclinée",
+  offer_expired: "Proposition expirée",
+  offer_withdrawn: "Proposition retirée par l'association",
 };
 
 /**

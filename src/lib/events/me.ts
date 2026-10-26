@@ -7,7 +7,14 @@ import type { Notification } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import type { MyEventStatusPayload, MyEventsPayload } from "./model";
 import { eventMessage, type EventMessageKind, type EventMessagePayload } from "./messages";
-import { applicationMessage, isApplicationMessage, type ApplicationMessageKind, type ApplicationMessagePayload } from "@/lib/recruitment/messages";
+import {
+  applicationMessage,
+  isApplicationMessage,
+  isTeamMessage,
+  teamLink,
+  type ApplicationMessageKind,
+  type ApplicationMessagePayload,
+} from "@/lib/recruitment/messages";
 
 /**
  * A student's own side of events: their registration for one event (with
@@ -82,7 +89,12 @@ export async function getMyEventNotifications(limit = 50): Promise<Notification[
         body: message.body,
         createdAt: n.created_at,
         read: n.read_at !== null,
-        href: n.application_id ? routes.accountApplication(n.application_id) : routes.accountApplications,
+        // A team message opens the workspace (where access is checked again); the candidate, their own application.
+        href: isTeamMessage(n.kind)
+          ? (teamLink(n.payload) ?? routes.manage)
+          : n.application_id
+            ? routes.accountApplication(n.application_id)
+            : routes.accountApplications,
       };
     }
     const kind = n.kind as EventMessageKind;

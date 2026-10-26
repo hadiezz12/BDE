@@ -179,6 +179,85 @@ export type GovernanceErrorCode =
   | "document_not_uploaded"
   | "document_unreadable"
   | "privacy_not_acknowledged"
+  | "already_on_committee"
+  | "already_waitlisted"
+  | "application_decided"
+  | "application_withdrawn"
+  | "candidate_in_campaign"
+  | "cannot_change_own_appointment"
+  | "cannot_resolve_own_conflict"
+  | "capacity_reached"
+  | "clarification_closed"
+  | "clarification_limit"
+  | "clarification_locked"
+  | "clarification_not_found"
+  | "comment_invalid"
+  | "comment_locked"
+  | "comment_not_found"
+  | "committee_member_not_found"
+  | "conflict_not_found"
+  | "decision_closed"
+  | "decision_locked"
+  | "decision_not_found"
+  | "decision_pending"
+  | "documents_not_requested"
+  | "filter_invalid"
+  | "interview_closed"
+  | "interview_not_found"
+  | "interview_not_started"
+  | "interview_outcome_invalid"
+  | "interview_too_close"
+  | "interviewer_busy"
+  | "member_cannot_review"
+  | "mention_not_allowed"
+  | "message_too_long"
+  | "mode_invalid"
+  | "note_too_long"
+  | "offer_expired"
+  | "offer_locked"
+  | "offer_not_accepted"
+  | "offer_not_found"
+  | "offer_not_pending"
+  | "onboarding_started"
+  | "outcome_invalid"
+  | "policy_invalid"
+  | "powers_invalid"
+  | "president_vacant"
+  | "purpose_required"
+  | "question_invalid"
+  | "recommendation_invalid"
+  | "recommendation_required"
+  | "records_are_append_only"
+  | "resolution_invalid"
+  | "retention_invalid"
+  | "review_locked"
+  | "review_not_found"
+  | "review_not_submitted"
+  | "review_submitted"
+  | "reviews_incomplete"
+  | "role_invalid"
+  | "rubric_changed"
+  | "rubric_empty"
+  | "rubric_invalid"
+  | "rubric_locked"
+  | "rubric_not_found"
+  | "scope_invalid"
+  | "score_invalid"
+  | "score_missing"
+  | "selection_invalid"
+  | "slot_invalid"
+  | "slot_not_found"
+  | "slot_taken"
+  | "slot_unavailable"
+  | "stage_invalid"
+  | "tag_exists"
+  | "tag_invalid"
+  | "tag_limit"
+  | "tag_not_found"
+  | "template_invalid"
+  | "template_too_long"
+  | "template_variable_unknown"
+  | "too_many_interviewers"
   | "unavailable"
   | "unexpected";
 
@@ -381,6 +460,93 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   document_unreadable:
     "Ce fichier ne correspond pas à son format (ou c'est un document Word avec macros ou objets intégrés). Exporte-le en PDF et réessaie.",
   privacy_not_acknowledged: "Coche la case pour dire que tu as lu comment tes données sont utilisées.",
+  already_on_committee: "Cette personne est déjà au comité de ce recrutement : modifie sa nomination.",
+  already_waitlisted: "Cette candidature est déjà sur la liste d'attente.",
+  application_decided: "La décision finale a été annoncée : cette candidature ne s'évalue plus.",
+  application_withdrawn: "La personne a retiré sa candidature : plus rien ne peut s'y faire.",
+  candidate_in_campaign:
+    "Cette personne a candidaté à ce même recrutement : elle ne peut ni évaluer ni lire les autres candidatures.",
+  cannot_change_own_appointment: "Tu ne peux pas modifier ta propre nomination : demande à une autre personne du comité.",
+  cannot_resolve_own_conflict: "Un conflit d'intérêts se lève par une autre personne que celle qui l'a déclaré.",
+  capacity_reached:
+    "Toutes les places de ce poste sont déjà proposées. Pour en proposer une de plus, écris la raison de cette exception.",
+  clarification_closed: "Cette question n'attend plus de réponse (répondue, retirée, ou délai passé).",
+  clarification_limit: "Trop de questions pour cette candidature (3 en attente, 10 au total).",
+  clarification_locked: "Une question posée, ou une réponse donnée, ne se modifie plus.",
+  clarification_not_found: "Cette question n'existe pas, ou ne t'est pas adressée.",
+  comment_invalid: "Le message est vide ou trop long (2 000 caractères au plus).",
+  comment_locked: "Un message ne se modifie pas : retire-le et écris-en un autre.",
+  comment_not_found: "Ce message n'existe pas, ou n'est pas le tien.",
+  committee_member_not_found: "Cette nomination n'existe pas, ou elle est déjà terminée.",
+  conflict_not_found: "Ce conflit d'intérêts n'existe pas, ou il est déjà réglé.",
+  decision_closed: "Cette décision n'est plus en attente : elle a déjà été validée, renvoyée ou annulée.",
+  decision_locked: "Une décision ne se réécrit pas : elle avance, ou elle est annulée avec une raison.",
+  decision_not_found: "Cette décision n'existe pas, ou tu ne peux pas agir dessus.",
+  decision_pending:
+    "Une décision est déjà en cours pour cette candidature : valide-la, renvoie-la ou annule-la avant d'en proposer une autre.",
+  documents_not_requested: "Cette question ne demande pas de fichier.",
+  filter_invalid: "Un filtre n'a pas le bon format.",
+  interview_closed: "Cet entretien est déjà terminé ou annulé.",
+  interview_not_found: "Cet entretien n'existe pas, ou ne te concerne pas.",
+  interview_not_started: "L'entretien n'a pas encore commencé : tu pourras le noter comme passé ensuite.",
+  interview_outcome_invalid: "Indique si l'entretien a eu lieu ou si la personne n'est pas venue.",
+  interview_too_close: "L'entretien est dans moins de 24 h : pour le déplacer, écris à l'association.",
+  interviewer_busy: "Cette personne fait déjà passer un entretien sur ce créneau.",
+  member_cannot_review:
+    "Une des personnes choisies ne peut pas évaluer (nomination sans le droit d'évaluer, terminée ou retirée).",
+  mention_not_allowed: "Tu ne peux mentionner que des personnes qui lisent déjà cette discussion.",
+  message_too_long: "Le message est trop long.",
+  mode_invalid: "Choisis une façon de répartir les candidatures.",
+  note_too_long: "La note est trop longue (4 000 caractères au plus).",
+  offer_expired: "Le délai pour répondre à cette proposition est passé. Écris à l'association si besoin.",
+  offer_locked: "Une réponse à une proposition ne se change pas.",
+  offer_not_accepted: "La personne n'a pas (encore) accepté la proposition.",
+  offer_not_found: "Cette proposition n'existe pas, ou ne t'est pas adressée.",
+  offer_not_pending: "Cette proposition a déjà reçu une réponse, ou elle a été retirée.",
+  onboarding_started: "L'invitation dans l'équipe est déjà envoyée.",
+  outcome_invalid: "Choisis une décision : retenir, refuser ou liste d'attente.",
+  policy_invalid: "Les règles de décision ne sont pas valides (0 à 5 évaluations, une règle de validation connue).",
+  powers_invalid: "Choisis au moins le droit de lire les candidatures, parmi les droits proposés.",
+  president_vacant: "La présidence de l'asso est vacante : cette règle de validation ne peut pas s'appliquer. Change la règle.",
+  purpose_required:
+    "Ce recrutement est archivé (ou terminé depuis plus d'un an) : explique pourquoi cette personne doit y accéder.",
+  question_invalid: "La question doit faire entre 3 et 2 000 caractères.",
+  recommendation_invalid: "Choisis un avis dans la liste.",
+  recommendation_required: "Donne ton avis (présélection, entretien, retenir…) avant de soumettre.",
+  records_are_append_only: "Cet historique ne se modifie pas.",
+  resolution_invalid: "Choisis comment régler ce conflit.",
+  retention_invalid: "Une durée de conservation va de 1 à 60 mois (vide : pas encore décidée).",
+  review_locked: "Une évaluation soumise ne se modifie que par une correction, avec sa raison.",
+  review_not_found: "Cette évaluation n'existe pas, ou n'est pas la tienne.",
+  review_not_submitted: "Cette évaluation est encore un brouillon : modifie-la directement.",
+  review_submitted: "Tu as déjà soumis ton évaluation : corrige-la en donnant une raison.",
+  reviews_incomplete:
+    "Cette candidature n'a pas encore toutes les évaluations demandées. Pour décider quand même, écris pourquoi.",
+  role_invalid: "Choisis un rôle dans la liste.",
+  rubric_changed: "La grille d'évaluation a changé depuis ton brouillon : vérifie tes notes, puis soumets.",
+  rubric_empty: "Ajoute au moins un critère avant de publier la grille.",
+  rubric_invalid: "Un critère n'est pas valide (nom de 2 à 80 caractères, note sur 2 à 10, poids de 1 à 10).",
+  rubric_locked: "Une grille publiée ne se modifie plus : les changements vont dans une nouvelle version.",
+  rubric_not_found: "Il n'y a pas de brouillon de grille à publier.",
+  scope_invalid: "Choisis ce que la personne peut voir : tout le recrutement, certains postes, ou ce qui lui est confié.",
+  score_invalid: "Une note doit être un nombre entier entre 1 et le maximum du critère.",
+  score_missing: "Il manque la note d'un critère obligatoire.",
+  selection_invalid: "La sélection est vide ou trop grande.",
+  slot_invalid:
+    "Le créneau n'est pas valide (date à venir, durée de 10 min à 8 h, lieu pour un entretien sur place, lien https).",
+  slot_not_found: "Ce créneau n'existe pas, ou il est annulé.",
+  slot_taken: "Ce créneau vient d'être pris. Choisis-en un autre.",
+  slot_unavailable: "Ce créneau n'est plus disponible pour toi. Choisis-en un autre.",
+  stage_invalid: "Cette étape ne se choisit pas ici (l'entretien vient d'une invitation).",
+  tag_exists: "Cette étiquette existe déjà.",
+  tag_invalid: "Une étiquette fait entre 2 et 40 caractères.",
+  tag_limit: "30 étiquettes au plus par recrutement.",
+  tag_not_found: "Cette étiquette n'existe pas dans ce recrutement.",
+  template_invalid: "Ce type de message n'existe pas.",
+  template_too_long: "Le message type est trop long (2 000 caractères au plus).",
+  template_variable_unknown:
+    "Un champ entre accolades n'est pas reconnu. Ceux qui marchent : {prenom}, {association}, {recrutement}, {poste}, {reference}.",
+  too_many_interviewers: "5 personnes au plus par entretien.",
   unavailable: "Le service est momentanément indisponible. Réessaie dans un instant.",
   unexpected: "Une erreur inattendue est survenue. Réessaie, et préviens le BDE si ça continue.",
 };
