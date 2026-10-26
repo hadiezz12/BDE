@@ -23,7 +23,14 @@ import { safeFileName, sniffDocument } from "@/lib/recruitment/documents";
  *   4. public.confirm_application_document checks the file is there and
  *      makes it count (with `replaces`, the previous one goes only now).
  * A reservation never confirmed expires (the nightly purge removes it).
- * No organizer, BDE member or guardian can read these files.
+ *
+ * With clarification_id instead of question_id (Phase 9), the file answers
+ * a question the association asked after submission: the same checks, then
+ * public.reserve_clarification_document checks the question is the
+ * caller's, still open and accepts files; the sent application never changes.
+ * The recruitment team reads these files only through
+ * /api/recruitment/documents/<id> (checked and recorded); the BDE and the
+ * guardian never can.
  */
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -62,8 +69,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const file = form.get("file");
   const questionId = String(form.get("question_id") ?? "");
   const replaces = String(form.get("replaces") ?? "");
+  const clarificationId = String(form.get("clarification_id") ?? "").toLowerCase();
   if (!(file instanceof File) || file.size === 0) return json(400, { error: "Choisis un fichier à envoyer." });
-  if (!/^[a-z0-9_]{1,40}$/.test(questionId) || (replaces && !UUID.test(replaces))) {
+  if (clarificationId) {
+    if (!UUID.test(clarificationId)) return json(404, { error: governanceErrorMessage("clarification_not_found") });
+  } else if (!/^[a-z0-9_]{1,40}$/.test(questionId) || (replaces && !UUID.test(replaces))) {
     return json(400, { error: governanceErrorMessage("question_not_found") });
   }
   if (file.size > MAX_BYTES) return json(413, { error: governanceErrorMessage("document_too_large") });
@@ -79,6 +89,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (code === "unexpected" || code === "unavailable") logDataError(where, { code: error.code ?? "", message: "" });
     return json(code === "insufficient_permission" || code === "application_not_found" ? 403 : 422, { error: governanceErrorMessage(code), code });
   };
+
+  if (clarificationId) {
+    const held = await supabase.rpc("reserve_clarification_document", {
+      p_clarification_id: clarificationId,
+      p_file_name: name,
+      p_mime_type: mime,
+      p_size_bytes: bytes.length,
+    });
+    if (held.error) return fail(held.error, "reserve_clarification_document");
+    const slot = held.data as unknown as { document_id: string; object_path: string };
+    const put = await supabase.storage
+      .from("recruitment-documents")
+      .upload(slot.object_path, bytes, { contentType: mime, upsert: false, cacheControl: "0" });
+    if (put.error) {
+      logDataError("recruitment_documents.upload", { code: "storage", message: "" });
+      return json(422, { error: governanceErrorMessage("document_not_uploaded") });
+    }
+    const done = await supabase.rpc("confirm_clarification_document", { p_document_id: slot.document_id });
+    if (done.error) return fail(done.error, "confirm_clarification_document");
+    revalidatePath(`/account/applications/${id}`);
+    return json(201, { document: { id: slot.document_id, file_name: name, mime_type: mime, size_bytes: bytes.length } });
+  }
 
   const reserved = await supabase.rpc("reserve_application_document", {
     p_application_id: id,

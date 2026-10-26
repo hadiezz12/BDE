@@ -9,6 +9,9 @@ campaign's fiche (`/recruitment/<slug>`) or one position's (`/recruitment/<slug>
 an **application** to a position, fill it in with autosave, attach their CV or documents, review it
 and send it, then follow it in **Mes candidatures**.
 
+> **Phase 9 is built:** reading, evaluating, interviews, decisions and offers are described in
+> [recruitment-review.md](recruitment-review.md). This page keeps the Phase 8 engine they rest on.
+
 What Phase 8 is **not**: the review of applications. Nobody reads an application's answers or files
 except its candidate — not the association's president, not the BDE, not the continuity guardian.
 The team sees **counts**. Scoring, reviewer assignments, comments, shortlisting, interviews,
@@ -61,7 +64,7 @@ with its reason; applications are kept and every candidate (submitted or with a 
 | `recruitment.campaigns.manage` | start, write and duplicate campaigns, positions, dates, eligibility; archive; delete a draft; send images | ✓ / ✓ / |
 | `recruitment.questions.manage` | write the draft form (questions, documents asked) | ✓ / ✓ / |
 | `recruitment.campaigns.publish` | publish, take off, pause, close, reopen, cancel; publish a new form version; change dates, years or the limit of a published campaign; change its address | ✓ / ✓ / |
-| `recruitment.applications.view` / `.review` / `.export` | not active: Phase 9 | — |
+| `recruitment.applications.view` / `.review` / `.export` and the other review keys | Phase 9: see [permissions.md](permissions.md) and [recruitment-review.md](recruitment-review.md) | — |
 
 Offices hold all three; the "Vice-présidence" and "Recrutement" templates hold `publish` too
 (added to existing office positions by the migration). Publishing, cancelling and publishing a form
@@ -230,6 +233,9 @@ campaign (`posts.recruitment_campaign_id`, `set_post_campaign`, the editor's "Re
 a live campaign card under the article, D57).
 
 ## What Phase 9 builds on
+
+(Kept as written before Phase 9. Reviewer access ended up as functions, not new table policies:
+[recruitment-review.md](recruitment-review.md).)
 
 - Applications are scoped association → campaign → position; reviewer access will be a new key
   checked per campaign/position, through new policies on `applications` and the documents bucket

@@ -44,7 +44,7 @@ export function toWorkspaceRef(org: AccessOrganization): WorkspaceRef {
     accent: org.accent,
     kind: org.kind,
     detail,
-    sections: visibleSections(org.permissions),
+    sections: visibleSections(org.permissions, Boolean(org.recruitment_committee)),
     readOnly: org.membership_status !== "active" || org.status === "suspended" || org.status === "archived",
   };
 }
@@ -78,6 +78,11 @@ const PLATFORM_CENTER_KEYS = ["platform.organizations.manage", "platform.content
 export const canUsePlatform = (access: MyAccess | null) =>
   Boolean(access?.platform.some((key) => PLATFORM_CENTER_KEYS.includes(key)));
 export const canUseContinuity = (access: MyAccess | null) => Boolean(access?.platform.includes("platform.recovery"));
+/** Phase 9: someone who reviews applications somewhere (a committee seat or a reading key). */
+export const canReviewApplications = (access: MyAccess | null) =>
+  Boolean(access?.organizations.some((o) => o.recruitment_committee || o.permissions.includes("recruitment.applications.view")));
+/** Phase 9: the privacy officer (data-rights requests about applications). */
+export const canHandlePrivacy = (access: MyAccess | null) => Boolean(access?.platform.includes("platform.privacy.requests"));
 
 /** Under "Centre de contrôle BDE": what this person can do there. */
 function platformDetail(access: MyAccess): string {
@@ -118,8 +123,30 @@ export function manageEntries(access: MyAccess | null): ManageEntry[] {
       icon: "shield",
     });
   }
+  if (canReviewApplications(access)) {
+    entries.push({
+      key: "review",
+      href: routes.manageReviewWork,
+      label: "Mes évaluations",
+      detail: "Candidatures à évaluer, entretiens, décisions",
+      name: "Évaluations",
+      accent: "rose",
+      icon: "list",
+    });
+  }
+  if (canHandlePrivacy(access)) {
+    entries.push({
+      key: "privacy",
+      href: routes.managePrivacy,
+      label: "Données des candidat·es",
+      detail: "Demandes d'accès et d'effacement",
+      name: "Données",
+      accent: "bleu",
+      icon: "lock",
+    });
+  }
   for (const org of access.organizations) {
-    if (org.permissions.length === 0) continue;
+    if (org.permissions.length === 0 && !org.recruitment_committee) continue;
     const ref = toWorkspaceRef(org);
     entries.push({
       key: org.id,

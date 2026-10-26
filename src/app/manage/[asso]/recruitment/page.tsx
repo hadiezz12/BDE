@@ -12,7 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ManagePageHeader, ManageSection } from "@/components/manage/ManagePageHeader";
 import { ManageEmpty } from "@/components/manage/ManageEmpty";
-import { canOpenSection } from "@/components/manage/sections";
+import { canOpenRecruitment } from "@/components/manage/sections";
 import { ActionForm } from "@/components/manage/governance/ActionForm";
 import { SectionDenied } from "@/components/manage/governance/SectionDenied";
 import { DoneNotice, MfaNotice, Notice, ReadOnlyNotice } from "@/components/manage/governance/Notices";
@@ -31,15 +31,17 @@ const when = (iso: string | null) => (iso ? `${formatDayShort(iso)} ${formatTime
  * campaigns, where each stands, its dates, positions and the number of
  * applications sent. public.recruitment_dashboard checks the right
  * (recruitment.campaigns.manage, .questions.manage or .publish in this
- * association) and returns counts only: never a candidate, an answer, a
- * draft or a file. Reading applications comes with the review phase.
+ * association), or a live committee appointment for the campaigns it
+ * covers, and returns counts only: never a candidate, an answer, a draft or
+ * a file. Reading and evaluating applications happens in each campaign's
+ * review pages (Suivi, Candidatures…), within the person's own access.
  */
 export default async function RecruitmentDeskPage({ params, searchParams }: { params: Params; searchParams: Search }) {
   const { asso } = await params;
   const sp = await searchParams;
   const ctx = await getManageContext(asso);
   if (!ctx) return null;
-  if (!canOpenSection("recruitment", ctx.membership.permissions)) return <SectionDenied section="recruitment" ctx={ctx} />;
+  if (!canOpenRecruitment(ctx.membership)) return <SectionDenied section="recruitment" ctx={ctx} />;
   const dashboard = await getRecruitmentDashboard(ctx.organization.id);
   if (!dashboard.ok) return <SectionDenied section="recruitment" ctx={ctx} code={dashboard.code} />;
 
@@ -94,10 +96,10 @@ export default async function RecruitmentDeskPage({ params, searchParams }: { pa
             </p>
           </Notice>
         )}
-        <Notice tone="info" icon="lock" title="Les candidatures restent privées pour l'instant">
+        <Notice tone="info" icon="lock" title="Qui lit les candidatures">
           <p>
-            Les candidatures envoyées sont enregistrées, avec leurs documents. Ici, tu vois combien il y en a, jamais qui ni quoi :
-            la lecture des candidatures par les personnes que l&apos;asso désignera arrive avec le module de sélection.
+            Les postes de l&apos;asso qui en ont le droit, et les personnes nommées dans le comité de chaque recrutement, dans les
+            limites de leur nomination. Ni le BDE ni les autres assos n&apos;y ont accès. Chaque ouverture est notée.
           </p>
         </Notice>
       </div>
@@ -182,6 +184,8 @@ function CampaignList({
     <ul className="flex flex-col border-y border-line">
       {campaigns.map((c) => {
         const stage = campaignStage(c);
+        const editor = can.manage || can.questions || can.publish;
+        const open = editor ? routes.manageCampaign(asso, c.id) : routes.manageCampaignReview(asso, c.id);
         return (
           <li key={c.id} className="grid gap-x-6 gap-y-3 border-b border-line py-4 last:border-b-0 md:grid-cols-[minmax(0,1fr)_auto]">
             <div className="flex min-w-0 flex-col gap-2">
@@ -190,7 +194,7 @@ function CampaignList({
                 {c.academic_year && <span className="type-meta text-muted">{c.academic_year.replace("-", "–")}</span>}
               </div>
               <h3 className="type-card break-words">
-                <Link href={routes.manageCampaign(asso, c.id)} className="hover:text-assoc-text">
+                <Link href={open} className="hover:text-assoc-text">
                   {c.title.trim() || "Sans titre"}
                 </Link>
               </h3>
@@ -233,12 +237,19 @@ function CampaignList({
               )}
             </div>
             <div className="flex flex-wrap items-start gap-2 md:justify-end">
-              <ButtonLink href={routes.manageCampaign(asso, c.id)} size="sm" variant="secondary" icon="arrow-right">
-                Ouvrir
+              <ButtonLink href={open} size="sm" variant="secondary" icon="arrow-right">
+                {editor ? "Ouvrir" : "Suivi"}
               </ButtonLink>
-              <ButtonLink href={routes.campaignPreview(c.id)} size="sm" variant="ghost" icon="eye" iconPosition="start">
-                Aperçu
-              </ButtonLink>
+              {c.review && (
+                <ButtonLink href={routes.manageApplications(asso, c.id)} size="sm" variant={c.review.to_review > 0 ? "primary" : "ghost"} icon="list" iconPosition="start">
+                  {c.review.to_review > 0 ? `${c.review.to_review} à évaluer` : "Candidatures"}
+                </ButtonLink>
+              )}
+              {editor && (
+                <ButtonLink href={routes.campaignPreview(c.id)} size="sm" variant="ghost" icon="eye" iconPosition="start">
+                  Aperçu
+                </ButtonLink>
+              )}
               {c.is_public && c.slug && (
                 <ButtonLink href={routes.campaign(c.slug)} size="sm" variant="ghost" icon="arrow-up-right">
                   En ligne

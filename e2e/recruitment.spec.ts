@@ -94,7 +94,7 @@ test("§110 Paul builds a campaign with the wizard and publishes it", async ({ b
 
   await paul.goto(`/manage/${ASSO}/recruitment`);
   await expect(paul.getByRole("heading", { name: "Recrutement", exact: true })).toBeVisible();
-  await expect(paul.getByText("Les candidatures restent privées pour l'instant")).toBeVisible();
+  await expect(paul.getByText("Qui lit les candidatures")).toBeVisible();
   await paul.goto(`/manage/${ASSO}/recruitment/new`);
   await paul.getByLabel("Titre").fill(TITLE);
   await paul.getByRole("button", { name: "Ouvrir le brouillon" }).click();

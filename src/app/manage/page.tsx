@@ -6,7 +6,7 @@ import { getAuthContext } from "@/lib/auth/context";
 import { getMyAccess } from "@/lib/governance/access";
 import { getGovernanceInbox } from "@/lib/governance/queries";
 import { ORGANIZATION_STATUS_LABEL } from "@/lib/governance/labels";
-import { canUseContinuity, canUsePlatform, manageEntries, toWorkspaceRef } from "@/lib/governance/workspace";
+import { canHandlePrivacy, canUseContinuity, canUsePlatform, manageEntries, toWorkspaceRef } from "@/lib/governance/workspace";
 import { ButtonLink } from "@/components/ui/Button";
 import { ManageMain } from "@/components/manage/ManageFrame";
 import { ManageGateState } from "@/components/manage/ManageState";
@@ -39,7 +39,8 @@ export default async function ManageChooserPage() {
   const platform = canUsePlatform(access);
   const continuity = canUseContinuity(access);
   const organizations = access?.organizations ?? [];
-  const total = organizations.length + Number(platform) + Number(continuity);
+  const privacy = canHandlePrivacy(access);
+  const total = organizations.length + Number(platform) + Number(continuity) + Number(privacy);
 
   if (total === 0) {
     return (
@@ -49,7 +50,15 @@ export default async function ManageChooserPage() {
     );
   }
   if (total === 1) {
-    redirect(platform ? routes.managePlatform : continuity ? routes.manageContinuity : routes.manageHome(organizations[0].slug));
+    redirect(
+      platform
+        ? routes.managePlatform
+        : continuity
+          ? routes.manageContinuity
+          : privacy
+            ? routes.managePrivacy
+            : routes.manageHome(organizations[0].slug),
+    );
   }
 
   const inbox = await getGovernanceInbox();
@@ -59,7 +68,7 @@ export default async function ManageChooserPage() {
   const entries: ChooserEntry[] = [
     ...platformEntries.map((entry) => ({
       entry,
-      kicker: "Plateforme",
+      kicker: entry.key === "review" ? "Recrutement" : "Plateforme",
       title: entry.label,
       facts: [],
     })),

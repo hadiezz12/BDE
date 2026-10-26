@@ -150,6 +150,7 @@ export const getRecruitmentPrivacy = cache(async (): Promise<RecruitmentPrivacy>
       draft_months: null,
       withdrawn_months: null,
       submitted_months: null,
+      selected_months: null,
       updated_at: new Date(0).toISOString(),
     }
   );

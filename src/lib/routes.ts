@@ -96,6 +96,21 @@ export const routes = {
   /** One campaign in the wizard (by id: drafts have no address yet); `step` opens a step. */
   manageCampaign: (asso: string, campaignId: string, step?: string) =>
     `/manage/${asso}/recruitment/${campaignId}${step ? `?etape=${step}` : ""}`,
+  /**
+   * The review workspace of one campaign (Phase 9). Each page asks the
+   * database what the person may see there (their appointment or the
+   * association's keys); the tabs only follow those answers.
+   */
+  manageCampaignReview: (asso: string, campaignId: string) => `/manage/${asso}/recruitment/${campaignId}/suivi`,
+  manageApplications: (asso: string, campaignId: string) => `/manage/${asso}/recruitment/${campaignId}/candidatures`,
+  manageApplication: (asso: string, campaignId: string, applicationId: string) =>
+    `/manage/${asso}/recruitment/${campaignId}/candidatures/${applicationId}`,
+  manageInterviews: (asso: string, campaignId: string) => `/manage/${asso}/recruitment/${campaignId}/entretiens`,
+  manageDecisions: (asso: string, campaignId: string) => `/manage/${asso}/recruitment/${campaignId}/decisions`,
+  manageCommittee: (asso: string, campaignId: string) => `/manage/${asso}/recruitment/${campaignId}/comite`,
+  manageApplicationsExport: (asso: string, campaignId: string) => `/manage/${asso}/recruitment/${campaignId}/export`,
+  /** A team member's download of a candidate's file (checked and recorded by the database). */
+  recruitmentDocument: (documentId: string) => `/api/recruitment/documents/${documentId}`,
   manageMedia: (asso: string) => `/manage/${asso}/media`,
   manageAnalytics: (asso: string) => `/manage/${asso}/analytics`,
   /** The public page editor: content (index), then the tabs below. */
@@ -126,4 +141,8 @@ export const routes = {
   /** The site's recruitment: moderation, privacy notice and retention (public information and counts only). */
   managePlatformRecruitment: "/manage/plateforme/recrutements",
   manageContinuity: "/manage/continuite",
+  /** Everything a person has to evaluate, interview or validate, across associations (Phase 9). */
+  manageReviewWork: "/manage/evaluations",
+  /** Data-rights requests about applications (the privacy officer only). */
+  managePrivacy: "/manage/donnees",
 } as const;

@@ -42,6 +42,8 @@ export interface CampaignSummary {
   form: { live: number | null; draft: boolean };
   created_by_name: string | null;
   updated_at: string;
+  /** Phase 9: present when the person may read this campaign's applications (null otherwise). */
+  review?: { to_review: number } | null;
 }
 
 export interface RecruitmentRights {

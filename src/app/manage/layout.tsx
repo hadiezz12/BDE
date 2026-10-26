@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { getManageEntries } from "@/lib/governance/entries";
 import { ManageTopBar } from "@/components/manage/ManageTopBar";
 import { ManageFooter } from "@/components/manage/ManageFrame";
+import { DoneAnnouncer } from "@/components/manage/governance/DoneAnnouncer";
 
 export const metadata: Metadata = {
   title: { template: "%s · Espace assos", default: "Espace assos" },
@@ -27,6 +28,7 @@ export default async function ManageLayout({ children }: { children: ReactNode }
       <ManageTopBar session={session} managed={managed} />
       <div className="flex flex-1 flex-col">{children}</div>
       <ManageFooter />
+      <DoneAnnouncer />
     </div>
   );
 }

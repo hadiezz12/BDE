@@ -9,6 +9,8 @@ import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { applicationHint } from "./account-facts";
+import { CANDIDATE_STAGE, type CandidateStageKey } from "@/lib/recruitment/candidate";
+import { formatDayMonth } from "@/lib/format";
 
 /**
  * One of the student's applications: who and which role, where it stands in
@@ -32,6 +34,9 @@ export function ApplicationRow({
   const { campaign, position, status, progress } = application;
   const association = campaign.association;
   const over = status === "retiree";
+  const key = application.stage?.key as CandidateStageKey | undefined;
+  // A sent application says where it stands (Phase 9); a draft keeps its own words.
+  const stage = status === "envoyee" && key && key in CANDIDATE_STAGE ? CANDIDATE_STAGE[key] : null;
 
   return (
     <article
@@ -64,8 +69,18 @@ export function ApplicationRow({
         </div>
 
         <div className="col-start-2 flex min-w-0 flex-col gap-1.5 @2xl:col-start-3">
-          <StatusBadge tone={APPLICATION_TONE[status]}>{APPLICATION_STATUS_LABEL[status]}</StatusBadge>
+          {stage ? (
+            <StatusBadge tone={stage.tone}>{stage.label}</StatusBadge>
+          ) : (
+            <StatusBadge tone={APPLICATION_TONE[status]}>{APPLICATION_STATUS_LABEL[status]}</StatusBadge>
+          )}
           <p className="type-small text-muted">{applicationHint(application, now)}</p>
+          {stage?.action && (
+            <p className="type-small font-semibold">
+              {stage.action}
+              {application.stage?.deadline ? ` avant le ${formatDayMonth(application.stage.deadline)}` : ""}
+            </p>
+          )}
           {status === "brouillon" && progress && progress.required > 0 && (
             <p className="type-small font-semibold">
               {progress.complete

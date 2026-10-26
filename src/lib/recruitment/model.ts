@@ -120,6 +120,8 @@ export interface RecruitmentPrivacy {
   draft_months: number | null;
   withdrawn_months: number | null;
   submitted_months: number | null;
+  /** Applications that ended with an accepted offer (Phase 9). */
+  selected_months: number | null;
   updated_at: string;
 }
 
@@ -353,6 +355,7 @@ export function toApplicationItem(p: MyApplicationsItemPayload, now = new Date()
     withdrawnAt: a.withdrawn_at ?? undefined,
     refusal: a.refusal ?? undefined,
     progress: a.progress ?? undefined,
+    stage: a.stage ?? undefined,
     campaign: toApplicationCampaign(p.campaign, now),
     position: {
       id: p.position.id,
@@ -429,11 +432,11 @@ export const HISTORY_LABEL: Record<ApplicationHistoryAction, string> = {
  * Retention as the BDE decided it (private.purge_recruitment_data applies
  * it every night), or that it is still to be decided: never a guess.
  */
-export function retentionLines(p: Pick<RecruitmentPrivacy, "draft_months" | "withdrawn_months" | "submitted_months">): string[] {
+export function retentionLines(p: Pick<RecruitmentPrivacy, "draft_months" | "withdrawn_months" | "submitted_months" | "selected_months">): string[] {
   const months = (n: number) => (n > 1 ? `${n} mois` : "1 mois");
   return [
     p.submitted_months
-      ? `Candidatures envoyées : effacées ${months(p.submitted_months)} après la clôture du recrutement.`
+      ? `Candidatures envoyées (sauf proposition acceptée) : effacées ${months(p.submitted_months)} après la clôture du recrutement.`
       : "Candidatures envoyées : durée de conservation pas encore fixée par le BDE.",
     p.withdrawn_months
       ? `Candidatures retirées : effacées ${months(p.withdrawn_months)} après le retrait.`
@@ -441,12 +444,15 @@ export function retentionLines(p: Pick<RecruitmentPrivacy, "draft_months" | "wit
     p.draft_months
       ? `Brouillons jamais envoyés : effacés ${months(p.draft_months)} après la clôture du recrutement.`
       : "Brouillons jamais envoyés : durée de conservation pas encore fixée par le BDE.",
+    p.selected_months
+      ? `Candidatures retenues (proposition acceptée) : effacées ${months(p.selected_months)} après la clôture du recrutement.`
+      : "Candidatures retenues (proposition acceptée) : durée de conservation pas encore fixée par le BDE.",
   ];
 }
 
 /** Nothing is erased automatically until the BDE has decided every duration. */
-export function retentionUndecided(p: Pick<RecruitmentPrivacy, "draft_months" | "withdrawn_months" | "submitted_months">): boolean {
-  return !p.draft_months || !p.withdrawn_months || !p.submitted_months;
+export function retentionUndecided(p: Pick<RecruitmentPrivacy, "draft_months" | "withdrawn_months" | "submitted_months" | "selected_months">): boolean {
+  return !p.draft_months || !p.withdrawn_months || !p.submitted_months || !p.selected_months;
 }
 
 /** What a group of applications is called in the student's list. */

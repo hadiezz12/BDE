@@ -6,6 +6,7 @@ import { cx } from "@/lib/cx";
 import { plural } from "@/lib/format";
 import { getManageContext } from "@/lib/data/manage";
 import { getRecruitmentEditor } from "@/lib/recruitment/editor";
+import { getCampaignAccess } from "@/lib/recruitment/review-data";
 import { EMPTY_FORM } from "@/lib/recruitment/form";
 import {
   STAGE_LABEL,
@@ -23,7 +24,7 @@ import { Icon } from "@/components/ui/Icon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ManagePageHeader } from "@/components/manage/ManagePageHeader";
 import { ManageEmpty } from "@/components/manage/ManageEmpty";
-import { canOpenSection } from "@/components/manage/sections";
+import { canOpenRecruitment } from "@/components/manage/sections";
 import { SectionDenied } from "@/components/manage/governance/SectionDenied";
 import { DoneNotice, MfaNotice, Notice, ReadOnlyNotice } from "@/components/manage/governance/Notices";
 import { readOnlyReason } from "@/components/manage/content/desk";
@@ -31,6 +32,7 @@ import { DerouleStep, InfosStep, ReglesStep, type StepBase } from "@/components/
 import { PositionsEditor } from "@/components/manage/recruitment/PositionsEditor";
 import { FormBuilder } from "@/components/manage/recruitment/FormBuilder";
 import { CampaignPublication } from "@/components/manage/recruitment/CampaignPublication";
+import { ReviewTabs } from "@/components/manage/review/ReviewFrame";
 
 type Params = Promise<{ asso: string; campaign: string }>;
 type Search = Promise<{ [key: string]: string | string[] | undefined }>;
@@ -60,11 +62,17 @@ export default async function CampaignWizardPage({ params, searchParams }: { par
   const sp = await searchParams;
   const ctx = await getManageContext(asso);
   if (!ctx) return null;
-  if (!canOpenSection("recruitment", ctx.membership.permissions)) return <SectionDenied section="recruitment" ctx={ctx} />;
+  if (!canOpenRecruitment(ctx.membership)) return <SectionDenied section="recruitment" ctx={ctx} />;
   if (!UUID.test(campaignId)) return <Unavailable asso={asso} message={governanceErrorMessage("campaign_not_found")} />;
 
-  const editor = await getRecruitmentEditor(campaignId.toLowerCase());
-  if (!editor.ok) return <Unavailable asso={asso} message={governanceErrorMessage(editor.code)} />;
+  const [editor, access] = await Promise.all([getRecruitmentEditor(campaignId.toLowerCase()), getCampaignAccess(campaignId.toLowerCase())]);
+  if (!editor.ok) {
+    // A committee member (no recruitment key) opens the campaign on its review side.
+    if (access.ok && access.data.powers.includes("view")) {
+      redirect(routes.manageCampaignReview(access.data.organization.slug, access.data.id));
+    }
+    return <Unavailable asso={asso} message={governanceErrorMessage(editor.code)} />;
+  }
   const data = editor.data;
   if (data.organization.slug !== asso) redirect(routes.manageCampaign(data.organization.slug, data.campaign.id));
 
@@ -114,6 +122,8 @@ export default async function CampaignWizardPage({ params, searchParams }: { par
           </>
         }
       />
+
+      {access.ok && <ReviewTabs asso={asso} access={access.data} />}
 
       <DoneNotice message={done} />
 

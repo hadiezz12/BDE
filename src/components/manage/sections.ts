@@ -71,9 +71,15 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     label: "Recrutement",
     icon: "megaphone",
     href: routes.manageRecruitment,
-    // Phase 8: campaigns, positions, the form, publication. Reading
-    // applications (recruitment.applications.*) comes with the review phase.
-    requires: ["recruitment.campaigns.manage", "recruitment.questions.manage", "recruitment.campaigns.publish"],
+    // Phase 8: campaigns, positions, the form, publication. Phase 9: the
+    // review keys, and a live committee appointment (see canOpenRecruitment).
+    requires: [
+      "recruitment.campaigns.manage",
+      "recruitment.questions.manage",
+      "recruitment.campaigns.publish",
+      "recruitment.applications.view",
+      "recruitment.committee.manage",
+    ],
   },
   { key: "media", label: "Médias", icon: "image", href: routes.manageMedia, requires: ["media.manage"] },
   { key: "analytics", label: "Statistiques", icon: "chart", href: routes.manageAnalytics, requires: ["analytics.view"], soon: true },
@@ -96,9 +102,20 @@ export function canOpenSection(key: ManageSectionKey, permissions: readonly stri
   return section.requires.length === 0 || section.requires.some((k) => permissions.includes(k));
 }
 
-/** The sections to list for someone holding `permissions`. */
-export function visibleSections(permissions: readonly string[]): ManageSectionKey[] {
-  return MANAGE_SECTIONS.filter((s) => canOpenSection(s.key, permissions)).map((s) => s.key);
+/**
+ * The recruitment section also opens to someone appointed to one of the
+ * association's recruitment committees (my_access → recruitment_committee),
+ * who may hold no key at all: what they see is limited by the appointment.
+ */
+export function canOpenRecruitment(membership: { permissions: readonly string[]; recruitment_committee?: boolean }): boolean {
+  return canOpenSection("recruitment", membership.permissions) || Boolean(membership.recruitment_committee);
+}
+
+/** The sections to list for someone holding `permissions` (and maybe a committee seat). */
+export function visibleSections(permissions: readonly string[], recruitmentCommittee = false): ManageSectionKey[] {
+  return MANAGE_SECTIONS.filter((s) => canOpenSection(s.key, permissions) || (s.key === "recruitment" && recruitmentCommittee)).map(
+    (s) => s.key,
+  );
 }
 
 /** Which section a pathname belongs to ("home" only on the exact workspace URL). */

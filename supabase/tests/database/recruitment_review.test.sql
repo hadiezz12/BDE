@@ -16,7 +16,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(244);
+select plan(249);
 
 create temporary table fx (k text primary key, id uuid, v text) on commit drop;
 grant select, insert, update on fx to anon, authenticated, service_role;
@@ -162,6 +162,9 @@ select throws_ok($$ select public.recruitment_application(pg_temp.fid('app_tom')
   'a draft is nobody''s business but its candidate''s');
 select is((public.recruitment_application_list(pg_temp.fid('fin')) ->> 'total')::integer, 4, 'her list has the four sent applications');
 select ok(public.recruitment_campaign_access(pg_temp.fid('fin')) -> 'powers' ? 'approve', 'her office carries every recruitment power');
+select is(public.recruitment_campaign_access(pg_temp.fid('fin')) -> 'organization' ->> 'slug', (select o.slug from public.organizations o join public.recruitment_campaigns c on c.organization_id = o.id where c.id = pg_temp.fid('fin')),
+  'the access says which association the campaign belongs to (its own workspace)');
+select ok(public.public_recruitment_privacy() ? 'selected_months', 'candidates are told the retention of a selected application too');
 select throws_ok($$ select public.recruitment_application(pg_temp.fid('app_nina')) $$, 'P0001', 'application_not_found',
   'a member of Sports reads nothing of Sports'' applications');
 
@@ -264,6 +267,11 @@ select is(pg_temp.n($$ select count(*)::integer from public.application_access_l
                        where action = 'application_opened' and actor_id = (select id from fx where k = 'lucas')
                          and application_id = (select id from fx where k = 'app_c1') $$), 1,
   'opening the application is recorded once per half hour');
+-- Storage: right after the checked, recorded opening, his own session may read that one file.
+select ok(private.can_read_application_document('applications/' || pg_temp.fid('app_c1') || '/' || pg_temp.fid('app_c1_cv')),
+  'the Storage policy lets him read the CV he just opened (own session, no privileged key)');
+select ok(not private.can_read_application_document('applications/' || pg_temp.fid('app_c3') || '/' || pg_temp.fid('app_c3_cv')),
+  'but not a file he never opened through the checked function');
 
 select pg_temp.as_user('hugo');
 select is(public.recruitment_application(pg_temp.fid('app_c3')) -> 'answers' ->> 'motivation', 'Motivation fictive de c3.',
@@ -271,6 +279,8 @@ select is(public.recruitment_application(pg_temp.fid('app_c3')) -> 'answers' ->>
 select ok(public.recruitment_application(pg_temp.fid('app_c3')) -> 'documents' = 'null'::jsonb, 'but no file list without the document power');
 select throws_ok($$ select public.recruitment_document(pg_temp.fid('app_c3_cv')) $$, 'P0001', 'document_not_found',
   'and cannot open the CV');
+select ok(not private.can_read_application_document('applications/' || pg_temp.fid('app_c3') || '/' || pg_temp.fid('app_c3_cv')),
+  'nor read it from Storage');
 
 -- =============================================================================
 -- 3. Rubric, a review, its lock and its amendment (§117)

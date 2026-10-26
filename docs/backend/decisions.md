@@ -593,3 +593,133 @@ foundational choice.
   uploaded by a recruitment manager is audited under `recruitment.campaigns.manage`.
 - **Reason:** found by the CI lint and while building the wizard's cover upload.
 - **Consequence:** same signatures and grants.
+
+## D59. An association's leadership reads its own applications, never another's (Phase 9)
+
+- **Decision:** the recruitment review keys are organization keys: offices carry them all, the
+  vice-presidency every one but the export, the recruitment manager all, the reviewer template
+  reading, files and reviews. They open the campaigns of the holder's own organization only; the
+  BDE offices' keys open the BDE's own campaigns. The continuity guardian has none.
+- **Reason:** the project owner's rule (each association's president, vice-president and team can
+  view their association's applications and cannot view another association's); the brief forbids
+  routine BDE access to associations' applicants.
+- **Alternatives:** committee-only access (the leadership would have to appoint itself to every
+  campaign); a BDE-wide reader (refused by the brief).
+- **Consequence:** a president can open every application of their association's campaigns from
+  day one; anyone else needs a position carrying the keys or a committee seat.
+
+## D60. The key route stops at the campaign's seal (Phase 9)
+
+- **Decision:** twelve months after a campaign closes (or when it is archived), the organization
+  keys open it only for people who already held them at that moment; anyone else needs a
+  committee appointment with a written purpose.
+- **Reason:** next year's officers must not inherit last year's candidates (cross-year
+  restriction of the brief), while a contested result can still be looked at, on purpose.
+- **Consequence:** `private.campaign_sealed_at` and `private.recruitment_key_route`; the committee
+  page says when a campaign is sealed.
+
+## D61. Committees: one campaign, chosen powers, a scope and an end date (Phase 9)
+
+- **Decision:** `recruitment_committee_members` rows (an active member, `view` plus chosen powers,
+  scope campaign / positions / assigned, at most 18 months), never above the appointer's own
+  powers, checked live at every request (membership, dates, revocation).
+- **Reason:** the brief's scoped reviewer access without creating positions for one season, and
+  least privilege (a reviewer who only sees what is confided to them).
+- **Consequence:** `private.application_can` combines both routes; `my_access` exposes a committee
+  seat so the navigation opens without a key.
+
+## D62. Scores support decisions; nothing decides by score (Phase 9)
+
+- **Decision:** versioned grids, a plain weighted total with its basis, blind reviews (others'
+  reviews need `view_team`), a required number of reviews that can only be bypassed with a written
+  reason; no ranking, sort or threshold by score anywhere, no AI.
+- **Reason:** the brief's "no AI screening and no automatic decisions"; transparency for the
+  people deciding and, through access requests, for the candidate.
+- **Consequence:** the list sorts by date or name only; the average is shown, never acted upon.
+
+## D63. The candidate sees a projection, released deliberately (Phase 9)
+
+- **Decision:** `private.candidate_status` derives what the candidate is told; the internal
+  pipeline, proposals and validated decisions stay internal until someone with `release`
+  announces them; message templates take five allowlisted placeholders replaced as text.
+- **Reason:** a candidate must never learn an outcome by accident (a proposal, a shortlist, a
+  premature e-mail), and templates must not become a way to leak internal data or inject markup.
+- **Consequence:** release is its own step (now or scheduled); messages are queued in the release
+  transaction.
+
+## D64. Approval policies and places are checked under the position's lock (Phase 9)
+
+- **Decision:** single / two different approvers / one plus the presidency; finalizing an offer
+  counts the position's pending and accepted offers under `pg_advisory_xact_lock` and needs a
+  written reason beyond the places; one pending decision and one released outcome per application
+  (unique partial indexes).
+- **Reason:** two approvers acting at once must not fill one place twice (tested in parallel
+  sessions).
+- **Consequence:** overrides are recorded on the decision and in the history.
+
+## D65. Interview slots are exclusive; booking is atomic (Phase 9)
+
+- **Decision:** one booking per slot (unique index), an interviewer never in two overlapping slots,
+  the candidate books and may change until 24 hours before; the link is given only once booked.
+- **Reason:** the brief's slot booking without double booking, and no meeting link floating
+  around before it is someone's.
+- **Consequence:** a repeated booking of the same slot changes nothing; a slot taken first by
+  someone else is refused with "slot_unavailable".
+
+## D66. Reviewers download with their own session (Phase 9)
+
+- **Decision:** `public.recruitment_document` checks the `documents` power and records the
+  opening; the Storage read policy honours that record for two minutes, for that person and that
+  file, checking the power again. The route reads with the caller's session.
+- **Reason:** every opening must be recorded and the privileged key stays out of the user's path
+  (security-foundations: a permission problem is fixed with a policy, not that client). A first
+  version used the privileged client; it was replaced before release (D70).
+- **Alternatives:** signed URLs (shareable, refused in Phase 8); a reviewer Storage policy without
+  the record (openings would escape the log).
+- **Consequence:** a reviewer can read nothing in Storage they did not open through the function
+  in the last two minutes.
+
+## D67. Onboarding is an invitation, never a right (Phase 9)
+
+- **Decision:** after an accepted offer, `start_recruitment_onboarding` calls the Phase 4
+  `invite_member` (optionally an ordinary position and a mandate end); the person accepts it like
+  any invitation. Offices are never given this way.
+- **Reason:** accepting an offer must not grant permissions by itself; the team's leadership
+  stays in control of who gets which keys.
+- **Consequence:** the offer shows the invitation's status; the decision is not linked to a
+  position assignment.
+
+## D68. Data rights go to a privacy officer, not to the BDE (Phase 9)
+
+- **Decision:** a platform role `privacy_officer` with `platform.privacy.requests`, provisioned by
+  the project owner only; reports and erasures need a written reason and the second factor and are
+  audited about the person concerned.
+- **Reason:** answering access and erasure requests requires seeing everything held about a
+  candidate, which no association officer, BDE office or guardian should have routinely.
+- **Consequence:** until the operator designates someone, requests cannot be handled in the app
+  (manual step).
+
+## D69. No malware scanner yet; attachments only (Phase 9)
+
+- **Decision:** files are never displayed inline (attachment, `nosniff`, sandboxed CSP), content
+  is checked at upload (Phase 8), and no antivirus runs.
+- **Reason:** the owner did not choose a scanning service; sending CVs to an outside scanner is a
+  data-protection decision of its own.
+- **Consequence:** disclosed in the report and the docs; to decide before real campaigns.
+
+## D70. Phase 9 fixed forward (Phase 9)
+
+- **Decision:** `20261026161915_recruitment_review_followups`: `public_recruitment_privacy` also
+  returns the retention of selected applications, and `recruitment_campaign_access` the
+  campaign's organization (a campaign opened under another association's address is redirected).
+  `20261026163800_recruitment_reviewer_file_reads`: D66's Storage rule.
+- **Reason:** found while building the screens and verifying them on the development project.
+- **Consequence:** same signatures and grants.
+
+## D71. A success whose form disappears is announced (Phase 9)
+
+- **Decision:** when an action succeeds and the refreshed page no longer contains its form (a
+  question answered, a slot booked, a review submitted), its message is shown by a status line
+  pinned to the bottom of the screen (`DoneAnnouncer`, read out by screen readers).
+- **Reason:** without it the confirmation vanished with the form.
+- **Consequence:** forms that stay keep their inline message; nothing is announced twice.

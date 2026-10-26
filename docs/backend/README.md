@@ -30,6 +30,7 @@ Read in this order:
 | [association-pages.md](association-pages.md) | Pages, drafts and publishing, preview, public team and consent, images, moderation, directory and SEO |
 | [events.md](events.md) | Events and their three concerns, the wizard, the registration engine and waiting list, privacy of participants, messages and the e-mail worker, the public read model |
 | [recruitment.md](recruitment.md) | Recruitment campaigns, positions, the versioned application form, the application engine (drafts, submission, withdrawal), private documents, privacy notice and retention, what Phase 9 builds on |
+| [recruitment-review.md](recruitment-review.md) | Phase 9: who reads an application (keys, committees, scopes, the seal), grids and reviews, conflicts, interviews, questions, decisions, offers and onboarding, what candidates see, exports, data rights, retention |
 | [publishing.md](publishing.md) | Posts and revisions, the three state concerns, editorial policy and approval, body format and XSS layers, images, scheduling (the pg_cron worker), addresses, the public read model, reports and moderation |
 | [environments.md](environments.md) | Local, development/staging and production; which variables exist, which are secret; backups |
 | [supabase-workflow.md](supabase-workflow.md) | Commands, the daily workflow, how a migration is made and shipped, the change checklist |

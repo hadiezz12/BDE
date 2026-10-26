@@ -111,8 +111,9 @@ export default async function PlatformRecruitmentPage({ searchParams }: { search
             </Field>
             <fieldset className="flex flex-col gap-3">
               <legend className="mb-1 text-[0.95rem] font-bold">Durées de conservation (en mois, vide = pas encore décidée)</legend>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <MonthsField name="submitted_months" label="Envoyées, après la clôture" value={privacy.submitted_months} />
+                <MonthsField name="selected_months" label="Retenues (proposition acceptée), après la clôture" value={privacy.selected_months} />
                 <MonthsField name="withdrawn_months" label="Retirées, après le retrait" value={privacy.withdrawn_months} />
                 <MonthsField name="draft_months" label="Brouillons, après la clôture" value={privacy.draft_months} />
               </div>

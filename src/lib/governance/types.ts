@@ -38,6 +38,8 @@ export interface AccessOrganization {
   permissions: string[];
   /** Current mandates only. */
   positions: AccessPosition[];
+  /** A live appointment to one of its recruitment committees (Phase 9): opens the recruitment section without a key. */
+  recruitment_committee?: boolean;
 }
 
 export interface MyAccess {

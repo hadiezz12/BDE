@@ -358,7 +358,8 @@ export async function setRecruitmentSettings(_prev: GovernanceActionState, form:
   const draft = months("draft_months");
   const withdrawn = months("withdrawn_months");
   const submitted = months("submitted_months");
-  if (draft === "bad" || withdrawn === "bad" || submitted === "bad")
+  const selected = months("selected_months");
+  if (draft === "bad" || withdrawn === "bad" || submitted === "bad" || selected === "bad")
     return failure("campaign_invalid", "Une durée de conservation est un nombre de mois entre 1 et 60 (ou vide : pas encore décidée).");
   const notice = text(form, "privacy_notice").replace(/\r\n?/g, "\n");
   const contact = text(form, "privacy_contact");
@@ -374,6 +375,7 @@ export async function setRecruitmentSettings(_prev: GovernanceActionState, form:
         p_draft_months: draft,
         p_withdrawn_months: withdrawn,
         p_submitted_months: submitted,
+        p_selected_months: selected,
       } as never),
     "Enregistré. Les candidat·es lisent la nouvelle notice avant d'envoyer ; les durées s'appliquent dès la nuit prochaine.",
   );

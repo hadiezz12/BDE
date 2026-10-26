@@ -7,6 +7,7 @@ import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { Button, type ButtonSize, type ButtonVariant } from "@/components/ui/Button";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { announceIfGone } from "./DoneAnnouncer";
 
 type Action = (prev: GovernanceActionState, form: FormData) => Promise<GovernanceActionState>;
 
@@ -45,8 +46,13 @@ export function ActionForm({
   className?: string;
   children?: ReactNode;
 }) {
-  const [state, dispatch, pending] = useActionState(action, { status: "idle" });
   const formRef = useRef<HTMLFormElement>(null);
+  const [state, dispatch, pending] = useActionState(async (prev: GovernanceActionState, data: FormData) => {
+    const next = await action(prev, data);
+    // A success may remove this very form from the page: its message then goes to the announcer.
+    if (next.status === "done") announceIfGone(formRef.current, next.message);
+    return next;
+  }, { status: "idle" } as GovernanceActionState);
 
   useEffect(() => {
     if (state.status === "done" && resetOnDone) formRef.current?.reset();

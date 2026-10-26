@@ -64,7 +64,15 @@ Database guards: an ordinary position may only carry grantable organization keys
 | `recruitment.campaigns.manage` (campaigns, positions, dates, eligibility, duplicate, archive, images) | recruitment | ✓ | ✓ | | ✓ (Phase 8) |
 | `recruitment.questions.manage` (the draft application form) | recruitment | ✓ | ✓ | | ✓ (Phase 8) |
 | `recruitment.campaigns.publish` (publish, take off, pause, close, reopen, cancel; publish a form version; change a published campaign's dates, years or limit; change an address) | recruitment | ✓ | ✓ | | ✓ (Phase 8) |
-| `recruitment.applications.view`, `.review`, `.export` | recruitment | ✓ | | ✓ | later (Phase 9) |
+| `recruitment.applications.view` (read the applications of the association's campaigns: answers on their form version, history) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `recruitment.documents.view` (download the CVs and files; each opening is recorded) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `recruitment.applications.review` (score and comment against the grid, declare a conflict) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `recruitment.reviews.view_team` (read the others' submitted reviews, the internal discussion, the averages) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `recruitment.committee.manage` (appoint and revoke committee members, assign applications, the grid, the rules, templates, labels, conflicts, the access log) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `recruitment.applications.shortlist` (move an application on, ask the candidate a question) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `recruitment.interviews.manage` (slots, invitations, rescheduling, cancelling, attendance) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `recruitment.decisions.propose`, `.approve`, `.release` (propose an outcome; validate or return it under the campaign's policy; announce it, now or later, and withdraw an offer) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `recruitment.applications.export` (CSV of essential fields, second factor, audited) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
 | `analytics.view` | insights | ✓ | ✓ | | later |
 
 Keys that hand out power (`members.manage`, `positions.*`, `delegations.manage`) are not delegable:
@@ -82,6 +90,7 @@ lending them would let a borrower hand out rights the lender's position does not
 | `platform.content.moderate` (withhold and release an association page, Phase 5; handle reports, hide and restore posts, Phase 6; hide and restore events, Phase 7) | BDE president, BDE vice-president |
 | `platform.content.feature` (featured stories and important BDE announcements on the campus feed, Phase 6; events "à l'affiche" of the agenda and home page, Phase 7) | BDE president, BDE vice-president |
 | `platform.recovery` (restore a vacant BDE office, end a compromised one) | guardian only |
+| `platform.privacy.requests` (compile everything held about one candidate's applications, erase an application, on a written request, second factor, audited) | the privacy officer only (Phase 9), provisioned by the project owner |
 
 The two BDE offices also carry every organization key **of the BDE organization itself**, so they
 run the BDE's own team like any president. They get no key inside another association.
@@ -92,16 +101,24 @@ run the BDE's own team like any president. They get no key inside another associ
 | --- | --- |
 | Présidence (office) | every organization key, including `governance.succession` |
 | Présidence / Vice-présidence du BDE (offices) | every organization key except `governance.succession`, plus the BDE platform keys above |
-| Vice-présidence | members.view, members.invite, positions.assign, governance.view, audit.view, organization.settings.update, posts.create, posts.edit, posts.approve, posts.publish, events.*, media.manage, recruitment.campaigns.manage, recruitment.questions.manage, analytics.view |
+| Vice-présidence | members.view, members.invite, positions.assign, governance.view, audit.view, organization.settings.update, posts.create, posts.edit, posts.approve, posts.publish, events.*, media.manage, recruitment.campaigns.manage, recruitment.questions.manage, every recruitment review key except `recruitment.applications.export` (Phase 9), analytics.view |
 | Communication | members.view, posts.create, posts.edit, posts.publish, media.manage |
 | Événements | members.view, events.create, events.edit, events.publish, events.attendees.view, events.attendees.manage, media.manage |
-| Responsable recrutement | members.view, recruitment.* (including the three sensitive application keys) |
-| Évaluation des candidatures | recruitment.applications.view, recruitment.applications.review |
+| Responsable recrutement | members.view, recruitment.* (every recruitment key, export included) |
+| Évaluation des candidatures | recruitment.applications.view, recruitment.documents.view, recruitment.applications.review |
 | Trésorerie | members.view, analytics.view |
 | Membre | none |
 | Sur mesure | none, chosen one by one |
 
 The editor offers every template except the offices.
+
+Phase 9 gave the new recruitment keys to the office templates and every office position, and to
+the Vice-présidence, Responsable recrutement and Évaluation des candidatures templates and the
+positions already made from them, exactly as listed above (decision D59). These keys open the
+applications of **the association's own campaigns**, never another association's; the BDE
+offices' keys open the BDE's own campaigns only. A campaign's committee can also give the same
+powers to one person, for one campaign, within a scope and until a date
+([recruitment-review.md](recruitment-review.md)).
 
 Phase 5 added `organization.page.publish` to the office templates and to every existing office
 position, and to nothing else: a team can prepare its page (Vice-présidence holds

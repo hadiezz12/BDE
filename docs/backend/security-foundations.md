@@ -75,8 +75,12 @@ A permission problem in a page is fixed with a policy, never by switching to thi
 ## Storage privacy
 
 - **CVs, application documents and interview notes never go into a public bucket.** They live in
-  private buckets, readable only through short-lived signed URLs issued after a permission
-  check, and every access to them will be auditable.
+  private buckets. As built (Phases 8 and 9), no signed URL is handed out at all: a candidate
+  downloads their own files through an authorized route, and a reviewer through
+  `/api/recruitment/documents/<id>`, whose database check records the opening and lets the
+  Storage policy serve that one file to that person for two minutes (decision D66). Every opening
+  by the team is in the application's access log. Interview notes are reviews in the database,
+  never files.
 - Public buckets hold only content meant for everyone (logos, covers, event and post images).
 - Paths carry ids, not names: `applications/{application_id}/{uuid}.pdf`, never
   `jane-doe-cv-finance.pdf`.

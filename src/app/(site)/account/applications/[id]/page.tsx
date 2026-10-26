@@ -27,6 +27,8 @@ import { ApplicationEditor } from "@/components/account/application/ApplicationE
 import { RefreshForm } from "@/components/account/application/RefreshForm";
 import { WithdrawApplication } from "@/components/account/WithdrawApplication";
 import { sinceWords } from "@/components/account/account-facts";
+import { ApplicationFollowUp } from "@/components/account/application/ApplicationFollowUp";
+import { CANDIDATE_STAGE } from "@/lib/recruitment/candidate";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ [key: string]: string | string[] | undefined }> };
 
@@ -78,7 +80,7 @@ export default async function AccountApplicationPage({ params, searchParams }: P
     notFound();
   }
   const data: MyApplicationPayload = result.data;
-  const { application: a, campaign, position, form, documents, candidate, history, privacy } = data;
+  const { application: a, campaign, position, form, documents, candidate, history, privacy, interview, clarifications, outcome } = data;
   const now = new Date();
   const status = APPLICATION_STATUS[a.status];
   const association = organizationRef(campaign.organization);
@@ -112,7 +114,11 @@ export default async function AccountApplicationPage({ params, searchParams }: P
         </div>
         <h1 className="type-title max-w-4xl">{position.title}</h1>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <StatusBadge tone={APPLICATION_TONE[status]}>{APPLICATION_STATUS_LABEL[status]}</StatusBadge>
+          {draft || !a.stage ? (
+            <StatusBadge tone={APPLICATION_TONE[status]}>{APPLICATION_STATUS_LABEL[status]}</StatusBadge>
+          ) : (
+            <StatusBadge tone={CANDIDATE_STAGE[a.stage.key].tone}>{CANDIDATE_STAGE[a.stage.key].label}</StatusBadge>
+          )}
           <span className="type-meta text-muted">
             {a.submitted_at
               ? `Envoyée le ${formatDayMonth(a.submitted_at)} à ${formatTime(a.submitted_at)}`
@@ -167,6 +173,16 @@ export default async function AccountApplicationPage({ params, searchParams }: P
         ) : (
           <div className="grid gap-x-8 gap-y-14 lg:grid-cols-12">
             <div className="flex min-w-0 flex-col gap-14 lg:col-span-8">
+              {a.stage && (
+                <ApplicationFollowUp
+                  applicationId={a.id}
+                  associationName={association.name}
+                  stage={a.stage}
+                  interview={interview}
+                  clarifications={clarifications}
+                  outcome={outcome}
+                />
+              )}
               <section aria-labelledby="reponses-titre">
                 <h2 id="reponses-titre" className="border-t-2 border-fg pt-3 type-section">
                   Ce que tu as envoyé

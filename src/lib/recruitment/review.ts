@@ -340,6 +340,7 @@ export interface CampaignAccess {
   powers: Power[];
   editor: boolean;
   candidate: boolean;
+  organization: { slug: string; name: string; short_name: string | null };
 }
 
 /** public.recruitment_campaign_board(id) */

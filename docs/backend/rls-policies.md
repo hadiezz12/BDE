@@ -259,6 +259,33 @@ document helpers. Granted to `anon` and `authenticated`: `public_recruitment_cam
 Granted to `service_role` only: `claim_storage_cleanup`, `complete_storage_cleanup`. The
 reminders and purge functions are executable by no API role; pg_cron runs them.
 
+## Phase 9: review, interviews, decisions
+
+Every Phase 9 table has RLS enabled, **no policy and no grant** for `anon` and `authenticated`:
+`recruitment_committee_members`, `recruitment_committee_positions`,
+`recruitment_review_assignments`, `application_pipeline`, `recruitment_rubric_versions`,
+`recruitment_reviews`, `recruitment_review_revisions`, `recruitment_conflicts`,
+`recruitment_tags`, `application_tags`, `application_comments`, `recruitment_clarifications`,
+`recruitment_interview_slots`, `recruitment_slot_interviewers`, `recruitment_interviews`,
+`recruitment_decisions`, `recruitment_decision_approvals`, `recruitment_offers`,
+`recruitment_message_templates`, `application_activity`, `application_access_log`. They are read
+and written only through the `security definer` functions of
+[recruitment-review.md](recruitment-review.md), each of which asks
+`private.application_can(user, application, power)` (or `private.campaign_can`) row by row:
+nothing is fetched and then filtered in the app. The Phase 8 candidate-only policies on
+`applications`, `application_events` and `application_documents` are unchanged; reviewers never
+read those tables directly.
+
+Storage, bucket `recruitment-documents`: the read policy
+(`private.can_read_application_document`) also lets a team member read **one** file for two
+minutes after `public.recruitment_document` checked their `documents` power and recorded the
+opening in `application_access_log`, and checks that power again at read time. Reviewers have no
+other Storage access (no listing, no upload, no delete), and no privileged key is involved.
+
+`application_activity` and `application_access_log` are append-only (`private.forbid_record_rewrite`;
+only the cascade of an erased application removes them). The governance audit gets one line per
+material step, with no candidate identity and no outcome.
+
 ## Performance (brief §61)
 
 - Policies call the helpers through `(select …)` subqueries (initPlan, once per statement).

@@ -357,6 +357,8 @@ export interface ApplicationItem {
   refusal?: string;
   /** A draft's completion (required questions still missing). */
   progress?: { required: number; missing: number; complete: boolean };
+  /** Phase 9: where a sent application stands, as its candidate is told (never the team's pipeline). */
+  stage?: { key: string; since?: string | null; deadline?: string | null; at?: string | null };
   campaign: ApplicationCampaign;
   position: { id: string; slug: string; title: string; team?: string; closesAt: string };
 }

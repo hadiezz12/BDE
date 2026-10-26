@@ -9,6 +9,7 @@ import { getMyProfile } from "@/lib/data/profile";
 import { PATHNAME_HEADER } from "@/lib/supabase/proxy";
 import { AccountNav } from "@/components/account/AccountNav";
 import { AccountUnavailable } from "@/components/account/AccountUnavailable";
+import { DoneAnnouncer } from "@/components/manage/governance/DoneAnnouncer";
 
 export const metadata: Metadata = {
   title: "Mon espace",
@@ -43,6 +44,7 @@ export default async function AccountLayout({ children }: { children: ReactNode 
     <div data-surface="paper" className="grain pb-[var(--section)]">
       {!onboarding && <AccountNav />}
       {children}
+      <DoneAnnouncer />
     </div>
   );
 }
