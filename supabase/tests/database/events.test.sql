@@ -90,7 +90,7 @@ create function pg_temp.reg_status(p_event text, p_user text) returns text langu
 grant execute on function pg_temp.reg_status(text, text) to anon, authenticated, service_role;
 
 create function pg_temp.outbox_count(p_event text, p_kind text) returns integer language sql stable security definer
-  as $f$ select count(*)::integer from public.notification_outbox
+  as $f$ select count(*)::integer from public.notifications
           where event_id = (select id from fx where k = p_event) and kind = p_kind $f$;
 grant execute on function pg_temp.outbox_count(text, text) to anon, authenticated, service_role;
 
@@ -379,21 +379,21 @@ select throws_ok($$ select public.register_for_event((select id from fx where k 
 
 select pg_temp.as_user('hugo', 'aal1');
 select ok(public.mark_notifications_read() > 0, 'a student marks their messages as read');
-select is((select count(*)::integer from public.notification_outbox where recipient_id <> (select id from fx where k = 'hugo')), 0,
+select is((select count(*)::integer from public.notifications where recipient_id <> (select id from fx where k = 'hugo')), 0,
   'and reads no one else''s');
 reset role;
-set local role service_role;
-select lives_ok($$ insert into fx (k, v) values ('claimed', (public.claim_notification_emails(5) -> 0 ->> 'id')) $$,
-  'the e-mail worker claims a batch');
-select lives_ok($$ select public.complete_notification_email((select v from fx where k = 'claimed')::bigint, false, 'smtp_down') $$,
-  'a delivery fails');
-reset role;
-select is((select email_status || '/' || email_attempts from public.notification_outbox where id = (select v from fx where k = 'claimed')::bigint),
-  'pending/1', 'the message waits for a retry');
+update public.notification_config set delivery_mode = 'capture' where id;
+select lives_ok($$ insert into fx (k, v) values ('claimed', (private.claim_notification_deliveries(5) -> 0 ->> 'id')) $$,
+  'the e-mail worker claims a batch (Phase 10: private.claim_notification_deliveries)');
+select is(private.complete_notification_delivery((select v from fx where k = 'claimed')::bigint, 'failed_retryable', 'capture', null, 'smtp_down'),
+  'failed_retryable', 'a delivery fails');
+select is((select status || '/' || attempts from public.notification_deliveries where id = (select v from fx where k = 'claimed')::bigint),
+  'failed_retryable/1', 'the message waits for a retry');
+update public.notification_config set delivery_mode = 'off' where id;
 select is(pg_temp.reg_status('tournoi', 'hugo'), 'confirmed', 'registrations are untouched by delivery problems');
 set local role authenticated;
 select pg_temp.as_user('hugo', 'aal1');
-select throws_ok($$ select public.claim_notification_emails(5) $$, '42501', null, 'students cannot run the e-mail worker');
+select throws_ok($$ select private.claim_notification_deliveries(5) $$, '42501', null, 'students cannot run the e-mail worker');
 
 -- =============================================================================
 -- 7b. Reads fixed forward (20261025090000_event_read_fixes)

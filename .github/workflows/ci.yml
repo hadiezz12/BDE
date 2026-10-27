@@ -79,6 +79,12 @@ jobs:
           DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
           test -n "$DB_URL"
           bash supabase/tests/concurrency/review.sh "$DB_URL"
+      - name: Notification concurrency (parallel sessions)
+        # Four workers on one queue, one source notified five times at once, one message submitted twice (Phase 10).
+        run: |
+          DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
+          test -n "$DB_URL"
+          bash supabase/tests/concurrency/notifications.sh "$DB_URL"
       - name: Database lint (plpgsql_check)
         # Findings are also published as a notice (the job log needs a GitHub session).
         run: |

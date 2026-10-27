@@ -1488,69 +1488,779 @@ export type Database = {
           },
         ]
       }
-      notification_outbox: {
+      notification_broadcast_recipients: {
+        Row: {
+          broadcast_id: string
+          dispatched_at: string | null
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          broadcast_id: string
+          dispatched_at?: string | null
+          user_id: string
+        }
+        Update: {
+          broadcast_id?: string
+          dispatched_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_broadcast_recipients_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "notification_broadcasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_broadcasts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          audience: string
+          body: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          dispatch_started_at: string | null
+          dispatched_at: string | null
+          email: boolean
+          fingerprint: string
+          id: string
+          importance: string
+          kind: string
+          link_path: string | null
+          needs_approval: boolean
+          organization_id: string
+          origin: string
+          payload: Json
+          recipient_count: number | null
+          scheduled_at: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string
+          submitted_at: string | null
+          title: string
+          updated_at: string
+          version: number
+        }
+        ComputedFields: never
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          audience: string
+          body?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          dispatch_started_at?: string | null
+          dispatched_at?: string | null
+          email?: boolean
+          fingerprint: string
+          id?: string
+          importance?: string
+          kind: string
+          link_path?: string | null
+          needs_approval?: boolean
+          organization_id: string
+          origin: string
+          payload?: Json
+          recipient_count?: number | null
+          scheduled_at?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          submitted_at?: string | null
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          audience?: string
+          body?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          dispatch_started_at?: string | null
+          dispatched_at?: string | null
+          email?: boolean
+          fingerprint?: string
+          id?: string
+          importance?: string
+          kind?: string
+          link_path?: string | null
+          needs_approval?: boolean
+          organization_id?: string
+          origin?: string
+          payload?: Json
+          recipient_count?: number | null
+          scheduled_at?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string
+          submitted_at?: string | null
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_broadcasts_kind_fkey"
+            columns: ["kind"]
+            isOneToOne: false
+            referencedRelation: "notification_types"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "notification_broadcasts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_config: {
+        Row: {
+          delivery_mode: string
+          email_from: string | null
+          id: boolean
+          reply_to: string | null
+          site_url: string | null
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          delivery_mode?: string
+          email_from?: string | null
+          id?: boolean
+          reply_to?: string | null
+          site_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          delivery_mode?: string
+          email_from?: string | null
+          id?: boolean
+          reply_to?: string | null
+          site_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_deliveries: {
+        Row: {
+          accepted_at: string | null
+          attempts: number
+          channel: string
+          created_at: string
+          delivered_at: string | null
+          essential: boolean
+          finished_at: string | null
+          id: number
+          idempotency_key: string
+          last_error: string | null
+          lease_until: string | null
+          next_attempt_at: string
+          notification_id: number
+          provider: string | null
+          provider_message_id: string | null
+          recipient_id: string
+          status: string
+          topic: string
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          accepted_at?: string | null
+          attempts?: number
+          channel?: string
+          created_at?: string
+          delivered_at?: string | null
+          essential: boolean
+          finished_at?: string | null
+          id?: never
+          idempotency_key?: string
+          last_error?: string | null
+          lease_until?: string | null
+          next_attempt_at?: string
+          notification_id: number
+          provider?: string | null
+          provider_message_id?: string | null
+          recipient_id: string
+          status?: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          attempts?: number
+          channel?: string
+          created_at?: string
+          delivered_at?: string | null
+          essential?: boolean
+          finished_at?: string | null
+          id?: never
+          idempotency_key?: string
+          last_error?: string | null
+          lease_until?: string | null
+          next_attempt_at?: string
+          notification_id?: number
+          provider?: string | null
+          provider_message_id?: string | null
+          recipient_id?: string
+          status?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_deliveries_topic_fkey"
+            columns: ["topic"]
+            isOneToOne: false
+            referencedRelation: "notification_topics"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      notification_delivery_attempts: {
+        Row: {
+          attempt: number
+          delivery_id: number
+          error: string | null
+          finished_at: string | null
+          id: number
+          outcome: string | null
+          provider: string | null
+          started_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          attempt: number
+          delivery_id: number
+          error?: string | null
+          finished_at?: string | null
+          id?: never
+          outcome?: string | null
+          provider?: string | null
+          started_at?: string
+        }
+        Update: {
+          attempt?: number
+          delivery_id?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: never
+          outcome?: string | null
+          provider?: string | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_delivery_attempts_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "notification_deliveries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_email_captures: {
+        Row: {
+          captured_at: string
+          delivery_id: number
+          headers: Json
+          html_body: string
+          subject: string
+          text_body: string
+        }
+        ComputedFields: never
+        Insert: {
+          captured_at?: string
+          delivery_id: number
+          headers?: Json
+          html_body: string
+          subject: string
+          text_body: string
+        }
+        Update: {
+          captured_at?: string
+          delivery_id?: number
+          headers?: Json
+          html_body?: string
+          subject?: string
+          text_body?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_email_captures_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: true
+            referencedRelation: "notification_deliveries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_follows: {
+        Row: {
+          created_at: string
+          organization_id: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_follows_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preference_changes: {
+        Row: {
+          change: string
+          created_at: string
+          id: number
+          organization_id: string | null
+          source: string
+          topic: string | null
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          change: string
+          created_at?: string
+          id?: never
+          organization_id?: string | null
+          source: string
+          topic?: string | null
+          user_id: string
+        }
+        Update: {
+          change?: string
+          created_at?: string
+          id?: never
+          organization_id?: string | null
+          source?: string
+          topic?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preference_changes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preference_changes_topic_fkey"
+            columns: ["topic"]
+            isOneToOne: false
+            referencedRelation: "notification_topics"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          email: boolean
+          in_app: boolean
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          email: boolean
+          in_app: boolean
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email?: boolean
+          in_app?: boolean
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_topic_fkey"
+            columns: ["topic"]
+            isOneToOne: false
+            referencedRelation: "notification_topics"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      notification_provider_events: {
+        Row: {
+          dedupe_key: string
+          delivery_id: number | null
+          delivery_key: string | null
+          event: string
+          id: number
+          occurred_at: string | null
+          provider: string
+          provider_message_id: string | null
+          received_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          dedupe_key: string
+          delivery_id?: number | null
+          delivery_key?: string | null
+          event: string
+          id?: never
+          occurred_at?: string | null
+          provider: string
+          provider_message_id?: string | null
+          received_at?: string
+        }
+        Update: {
+          dedupe_key?: string
+          delivery_id?: number | null
+          delivery_key?: string | null
+          event?: string
+          id?: never
+          occurred_at?: string | null
+          provider?: string
+          provider_message_id?: string | null
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_provider_events_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "notification_deliveries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_settings: {
+        Row: {
+          quiet_end: string
+          quiet_hours: boolean
+          quiet_start: string
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          quiet_end?: string
+          quiet_hours?: boolean
+          quiet_start?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          quiet_end?: string
+          quiet_hours?: boolean
+          quiet_start?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_suppressions: {
+        Row: {
+          cleared_at: string | null
+          cleared_by: string | null
+          created_at: string
+          email_hash: string
+          id: number
+          reason: string
+          source: string
+          user_id: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          cleared_at?: string | null
+          cleared_by?: string | null
+          created_at?: string
+          email_hash: string
+          id?: never
+          reason: string
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          cleared_at?: string | null
+          cleared_by?: string | null
+          created_at?: string
+          email_hash?: string
+          id?: never
+          reason?: string
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notification_topics: {
+        Row: {
+          category: string
+          class: string
+          default_email: boolean
+          default_in_app: boolean
+          description: string
+          key: string
+          label: string
+          sort_order: number
+        }
+        ComputedFields: never
+        Insert: {
+          category: string
+          class: string
+          default_email: boolean
+          default_in_app: boolean
+          description: string
+          key: string
+          label: string
+          sort_order: number
+        }
+        Update: {
+          category?: string
+          class?: string
+          default_email?: boolean
+          default_in_app?: boolean
+          description?: string
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      notification_types: {
+        Row: {
+          confidential: boolean
+          description: string
+          email: boolean
+          importance: string
+          key: string
+          topic: string
+        }
+        ComputedFields: never
+        Insert: {
+          confidential?: boolean
+          description: string
+          email: boolean
+          importance: string
+          key: string
+          topic: string
+        }
+        Update: {
+          confidential?: boolean
+          description?: string
+          email?: boolean
+          importance?: string
+          key?: string
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_types_topic_fkey"
+            columns: ["topic"]
+            isOneToOne: false
+            referencedRelation: "notification_topics"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      notification_unsubscribe_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          token_hash: string
+          topic: string
+          used_at: string | null
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          expires_at: string
+          token_hash: string
+          topic: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          token_hash?: string
+          topic?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_unsubscribe_tokens_topic_fkey"
+            columns: ["topic"]
+            isOneToOne: false
+            referencedRelation: "notification_topics"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      notification_worker_runs: {
+        Row: {
+          accepted: number
+          claimed: number
+          error: string | null
+          failed: number
+          finished_at: string | null
+          id: number
+          mode: string
+          skipped: number
+          started_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          accepted?: number
+          claimed?: number
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: never
+          mode: string
+          skipped?: number
+          started_at?: string
+        }
+        Update: {
+          accepted?: number
+          claimed?: number
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: never
+          mode?: string
+          skipped?: number
+          started_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
         Row: {
           application_id: string | null
+          archived_at: string | null
+          broadcast_id: string | null
           created_at: string
           dedupe_key: string
-          email_attempts: number
-          email_last_error: string | null
-          email_next_attempt_at: string
-          email_sent_at: string | null
-          email_status: string
           event_id: string | null
           id: number
+          importance: string | null
           kind: string
+          organization_id: string | null
           payload: Json
           read_at: string | null
           recipient_id: string
+          resource_id: string | null
+          resource_type: string | null
         }
         ComputedFields: never
         Insert: {
           application_id?: string | null
+          archived_at?: string | null
+          broadcast_id?: string | null
           created_at?: string
           dedupe_key: string
-          email_attempts?: number
-          email_last_error?: string | null
-          email_next_attempt_at?: string
-          email_sent_at?: string | null
-          email_status?: string
           event_id?: string | null
           id?: never
+          importance?: string | null
           kind: string
+          organization_id?: string | null
           payload?: Json
           read_at?: string | null
           recipient_id: string
+          resource_id?: string | null
+          resource_type?: string | null
         }
         Update: {
           application_id?: string | null
+          archived_at?: string | null
+          broadcast_id?: string | null
           created_at?: string
           dedupe_key?: string
-          email_attempts?: number
-          email_last_error?: string | null
-          email_next_attempt_at?: string
-          email_sent_at?: string | null
-          email_status?: string
           event_id?: string | null
           id?: never
+          importance?: string | null
           kind?: string
+          organization_id?: string | null
           payload?: Json
           read_at?: string | null
           recipient_id?: string
+          resource_id?: string | null
+          resource_type?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "notification_outbox_application_id_fkey"
+            foreignKeyName: "notifications_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "applications"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "notification_outbox_event_id_fkey"
+            foreignKeyName: "notifications_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "notification_broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_kind_fkey"
+            columns: ["kind"]
+            isOneToOne: false
+            referencedRelation: "notification_types"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -3832,6 +4542,7 @@ export type Database = {
         Args: { p_campaign_id: string; p_title: string }
         Returns: string
       }
+      am_i_following: { Args: { p_organization_id: string }; Returns: boolean }
       amend_recruitment_review: {
         Args: {
           p_note: string
@@ -3863,6 +4574,7 @@ export type Database = {
         Args: { p_transition_id: string }
         Returns: string
       }
+      approve_notification_broadcast: { Args: { p_id: string }; Returns: Json }
       approve_recruitment_decision: {
         Args: {
           p_capacity_override_reason?: string
@@ -3870,6 +4582,10 @@ export type Database = {
           p_reviews_override_reason?: string
         }
         Returns: Json
+      }
+      archive_notifications: {
+        Args: { p_archive?: boolean; p_ids: number[] }
+        Returns: number
       }
       archive_position: {
         Args: { p_position_id: string; p_reason: string }
@@ -3931,6 +4647,10 @@ export type Database = {
         Returns: undefined
       }
       cancel_my_registration: { Args: { p_event_id: string }; Returns: Json }
+      cancel_notification_broadcast: {
+        Args: { p_id: string; p_reason?: string }
+        Returns: undefined
+      }
       cancel_post_schedule: { Args: { p_post_id: string }; Returns: undefined }
       cancel_recruitment_campaign: {
         Args: { p_campaign_id: string; p_reason: string }
@@ -3960,14 +4680,10 @@ export type Database = {
         Args: { p_campaign_id: string; p_slug: string }
         Returns: string
       }
-      claim_notification_emails: { Args: { p_limit?: number }; Returns: Json }
       claim_storage_cleanup: { Args: { p_limit?: number }; Returns: Json }
+      clear_my_email_suppression: { Args: never; Returns: number }
       complete_interview: {
         Args: { p_interview_id: string; p_outcome: string }
-        Returns: undefined
-      }
-      complete_notification_email: {
-        Args: { p_error?: string; p_id: number; p_ok: boolean }
         Returns: undefined
       }
       complete_storage_cleanup: {
@@ -4017,6 +4733,18 @@ export type Database = {
           p_mode: string
           p_position_id: string
           p_starts: string[]
+        }
+        Returns: Json
+      }
+      create_notification_broadcast: {
+        Args: {
+          p_audience: string
+          p_body: string
+          p_email?: boolean
+          p_importance?: string
+          p_link_path?: string
+          p_organization_id: string
+          p_title: string
         }
         Returns: Json
       }
@@ -4122,6 +4850,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      follow_organization: {
+        Args: {
+          p_follow: boolean
+          p_organization_id: string
+          p_source?: string
+        }
+        Returns: boolean
+      }
       governance_history: {
         Args: { p_limit?: number; p_organization_id?: string }
         Returns: Json
@@ -4178,16 +4914,43 @@ export type Database = {
       my_event_status: { Args: { p_event_id: string }; Returns: Json }
       my_events: { Args: never; Returns: Json }
       my_governance_inbox: { Args: never; Returns: Json }
+      my_notification_preferences: { Args: never; Returns: Json }
+      my_notification_summary: { Args: never; Returns: Json }
+      my_notifications: {
+        Args: {
+          p_before?: string
+          p_before_id?: number
+          p_category?: string
+          p_limit?: number
+          p_view?: string
+        }
+        Returns: Json
+      }
       my_recruitment_work: { Args: never; Returns: Json }
+      notification_broadcast_options: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      notification_failed_deliveries: {
+        Args: { p_before_id?: number; p_limit?: number }
+        Returns: Json
+      }
+      notification_health: { Args: never; Returns: Json }
+      open_notification: { Args: { p_id: number }; Returns: Json }
       order_recruitment_waitlist: {
         Args: { p_campaign_id: string; p_decision_ids: string[] }
         Returns: undefined
+      }
+      organization_broadcasts: {
+        Args: { p_organization_id: string }
+        Returns: Json
       }
       organization_governance: {
         Args: { p_organization_id: string }
         Returns: Json
       }
       organization_team: { Args: { p_organization_id: string }; Returns: Json }
+      peek_unsubscribe_token: { Args: { p_token: string }; Returns: Json }
       platform_events: {
         Args: { p_q?: string; p_view?: string }
         Returns: Json
@@ -4534,6 +5297,10 @@ export type Database = {
         Args: { p_comment_id: string }
         Returns: undefined
       }
+      retry_notification_delivery: {
+        Args: { p_delivery_id: number }
+        Returns: undefined
+      }
       return_recruitment_decision: {
         Args: { p_decision_id: string; p_reason: string }
         Returns: undefined
@@ -4665,6 +5432,19 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_notification_preference: {
+        Args: { p_email: boolean; p_in_app: boolean; p_topic: string }
+        Returns: Json
+      }
+      set_notification_settings: {
+        Args: {
+          p_quiet_end: string
+          p_quiet_hours: boolean
+          p_quiet_start: string
+          p_timezone: string
+        }
+        Returns: undefined
+      }
       set_organization_status: {
         Args: { p_organization_id: string; p_reason?: string; p_status: string }
         Returns: undefined
@@ -4729,6 +5509,10 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_notification_broadcast: {
+        Args: { p_id: string; p_scheduled_at?: string }
+        Returns: Json
+      }
       submit_post_revision: {
         Args: { p_post_id: string; p_revision_id: string }
         Returns: undefined
@@ -4757,6 +5541,7 @@ export type Database = {
         Args: { p_campaign_id: string; p_reason?: string }
         Returns: undefined
       }
+      unsubscribe_with_token: { Args: { p_token: string }; Returns: Json }
       update_association_category: {
         Args: {
           p_archived: boolean

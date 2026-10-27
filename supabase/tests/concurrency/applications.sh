@@ -28,7 +28,7 @@ fail() { echo "FAIL: $*"; cleanup; exit 1; }
 
 cleanup() {
   "${PSQL[@]}" <<'SQL' >/dev/null 2>&1 || true
-delete from public.notification_outbox where recipient_id in (select id from auth.users where email like 'candidature-%@student.example.test');
+delete from public.notifications where recipient_id in (select id from auth.users where email like 'candidature-%@student.example.test');
 delete from auth.users where email like 'candidature-%@student.example.test';
 SQL
 }
@@ -102,7 +102,7 @@ status=$(sql "select status || '/' || version from public.applications where id 
 [ "$status" = "submitted/$((VERSION + 1))" ] || fail "after five submissions the application is $status (expected submitted/$((VERSION + 1)))"
 steps=$(sql "select count(*) from public.application_events where application_id = '$APP' and action = 'submitted'")
 [ "$steps" = 1 ] || fail "$steps 'submitted' steps in the history (expected 1)"
-messages=$(sql "select count(*) from public.notification_outbox where application_id = '$APP' and kind = 'application_submitted'")
+messages=$(sql "select count(*) from public.notifications where application_id = '$APP' and kind = 'application_submitted'")
 [ "$messages" = 1 ] || fail "$messages confirmation messages (expected 1)"
 echo "ok - five tabs press Envoyer at once: one submission, one confirmation"
 

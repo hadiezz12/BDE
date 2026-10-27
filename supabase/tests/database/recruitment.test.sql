@@ -97,7 +97,7 @@ create function pg_temp.applications_of(p_key text, p_status text default null) 
 grant execute on function pg_temp.applications_of(text, text) to anon, authenticated, service_role;
 
 create function pg_temp.outbox(p_key text, p_kind text) returns integer language sql stable security definer
-  as $f$ select count(*)::integer from public.notification_outbox where application_id = (select id from fx where k = p_key) and kind = p_kind $f$;
+  as $f$ select count(*)::integer from public.notifications where application_id = (select id from fx where k = p_key) and kind = p_kind $f$;
 grant execute on function pg_temp.outbox(text, text) to anon, authenticated, service_role;
 
 -- Starts an application as the current user and remembers it.
@@ -331,9 +331,9 @@ select is((public.submit_application(pg_temp.fid('app_tom'), (pg_temp.app('app_t
 select is((select count(*)::integer from public.applications where candidate_id = pg_temp.fid('tom') and status = 'submitted'), 1,
   'never two');
 select is((pg_temp.app('app_tom')).candidate_snapshot ->> 'last_name', 'Exemple', 'who applied is recorded as submitted');
-select is((select count(*)::integer from public.notification_outbox where application_id = pg_temp.fid('app_tom') and kind = 'application_submitted'), 1,
+select is((select count(*)::integer from public.notifications where application_id = pg_temp.fid('app_tom') and kind = 'application_submitted'), 1,
   'a confirmation is queued, once');
-select ok((select payload::text from public.notification_outbox where application_id = pg_temp.fid('app_tom') and kind = 'application_submitted')
+select ok((select payload::text from public.notifications where application_id = pg_temp.fid('app_tom') and kind = 'application_submitted')
           !~ '(Motivation|script)', 'with no answer in it');
 select throws_ok($$ select public.save_application_answers(pg_temp.fid('app_tom'), (pg_temp.app('app_tom')).version, '{"hours": 5}'::jsonb) $$,
   'P0001', 'application_locked', 'submitted answers cannot be changed');

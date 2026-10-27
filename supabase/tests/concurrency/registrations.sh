@@ -146,7 +146,7 @@ promoted=$(sql "select string_agg(user_id::text, ',' order by user_id) from publ
 expected=$(printf '%s\n' "${FIRST_WAITING[@]}" | sort | paste -sd, -)
 [ "$promoted" = "$expected" ] || fail "promoted [$promoted], expected the two first waiting students [$expected]"
 echo "ok - exactly the two first waiting students were promoted, once each"
-messages=$(sql "select count(*) from public.notification_outbox where event_id = '$EV_LIST' and kind = 'event_promoted'")
+messages=$(sql "select count(*) from public.notifications where event_id = '$EV_LIST' and kind = 'event_promoted'")
 [ "$messages" = 2 ] || fail "$messages promotion messages (expected 2)"
 echo "ok - one promotion message each"
 

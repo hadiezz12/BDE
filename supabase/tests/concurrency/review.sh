@@ -201,7 +201,7 @@ once=$(cat "$TMP"/release-*.out | tr -d '\r' | grep -cx 'released:1' || true)
 none=$(cat "$TMP"/release-*.out | tr -d '\r' | grep -cx 'released:0' || true)
 [ "$once/$none" = "1/1" ] || fail "one decision released twice at once: $once/$none (expected 1/1): $(cat "$TMP"/release-*.out | tr '\n' ' ')"
 offer_rows=$(sql "select count(*) from public.recruitment_offers where decision_id = '$WINNER'")
-messages=$(sql "select count(*) from public.notification_outbox where application_id = '$WAPP' and kind = 'recruitment_offer'")
+messages=$(sql "select count(*) from public.notifications where application_id = '$WAPP' and kind = 'recruitment_offer'")
 [ "$offer_rows/$messages" = "1/1" ] || fail "after a double release: $offer_rows offers, $messages messages (expected 1/1)"
 echo "ok - two managers release the same decision at once: one offer, one message"
 

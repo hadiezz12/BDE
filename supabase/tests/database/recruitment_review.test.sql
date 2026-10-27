@@ -487,7 +487,7 @@ select throws_ok($$ select public.create_interview_slots(pg_temp.fid('fin'), nul
                      'javascript:alert(1)', null, null) $$, 'P0001', 'slot_invalid', 'a meeting link is an https address');
 select is((public.invite_to_interview(array[pg_temp.fid('app_c1'), pg_temp.fid('app_c2')], 'Invitation fictive.', now() + interval '2 days') ->> 'invited')::integer, 2,
   'c1 and c2 are invited');
-select is(pg_temp.n($$ select count(*)::integer from public.notification_outbox where kind = 'recruitment_interview_invited'
+select is(pg_temp.n($$ select count(*)::integer from public.notifications where kind = 'recruitment_interview_invited'
                         and application_id in (select id from fx where k in ('app_c1', 'app_c2')) $$), 2, 'each gets a message');
 
 select pg_temp.as_user('marc');
@@ -541,7 +541,7 @@ select lives_ok($$ select public.reschedule_interview((pg_temp.interview('app_c2
 select is(pg_temp.n($$ select count(*)::integer from public.application_events where application_id = (select id from fx where k = 'app_c2')
                         and action = 'interview_rescheduled' and details ? 'from' and details ? 'to' $$), 1,
   'the old and the new time are kept');
-select is(pg_temp.n($$ select count(*)::integer from public.notification_outbox where application_id = (select id from fx where k = 'app_c2')
+select is(pg_temp.n($$ select count(*)::integer from public.notifications where application_id = (select id from fx where k = 'app_c2')
                         and kind = 'recruitment_interview_rescheduled' $$), 1, 'and c2 is told');
 
 -- =============================================================================
@@ -551,7 +551,7 @@ select is(pg_temp.n($$ select count(*)::integer from public.notification_outbox 
 select pg_temp.as_user('julie');
 select lives_ok($$ insert into fx (k, id) values ('q1', public.request_clarification(pg_temp.fid('app_c3'), 'Question fictive : un exemple d''événement ?',
                      now() + interval '2 days', true)) $$, 'the president asks c3 a question');
-select is(pg_temp.n($$ select count(*)::integer from public.notification_outbox where application_id = (select id from fx where k = 'app_c3')
+select is(pg_temp.n($$ select count(*)::integer from public.notifications where application_id = (select id from fx where k = 'app_c3')
                         and kind = 'recruitment_clarification_requested' $$), 1, 'c3 is told');
 select pg_temp.as_user('c1', 'aal1');
 select throws_ok($$ select public.answer_clarification(pg_temp.fid('q1'), 'Réponse usurpée.') $$, 'P0001', 'clarification_not_found',
@@ -621,11 +621,11 @@ select throws_ok($$ select public.appoint_recruitment_member(pg_temp.fid('fin'),
   'without the committee power, no appointment');
 select is(public.approve_recruitment_decision(pg_temp.fid('d_c2')) ->> 'status', 'finalized', 'Lucas''s approval completes it: finalized');
 select is((pg_temp.decision('app_c2')).status, 'finalized', 'the decision is final for the team');
-select is(pg_temp.n($$ select count(*)::integer from public.notification_outbox where application_id = (select id from fx where k = 'app_c2')
+select is(pg_temp.n($$ select count(*)::integer from public.notifications where application_id = (select id from fx where k = 'app_c2')
                         and kind = 'recruitment_offer' $$), 0, 'and the candidate has not been told');
 select is((public.release_recruitment_decisions(array[pg_temp.fid('d_c2')], now() + interval '7 days') ->> 'released')::integer, 1,
   'Lucas releases it');
-select is(pg_temp.n($$ select count(*)::integer from public.notification_outbox where application_id = (select id from fx where k = 'app_c2')
+select is(pg_temp.n($$ select count(*)::integer from public.notifications where application_id = (select id from fx where k = 'app_c2')
                         and kind = 'recruitment_offer' $$), 1, 'the candidate gets the offer');
 select pg_temp.as_user('c2', 'aal1');
 select is(public.my_application(pg_temp.fid('app_c2')) -> 'application' -> 'stage' ->> 'key', 'offer', 'the page shows the offer');
@@ -708,7 +708,7 @@ select lives_ok($$ select public.save_recruitment_template(pg_temp.fid('fin'), '
 select throws_ok($$ select public.save_recruitment_template(pg_temp.fid('fin'), 'rejection', 'Bonjour {note_interne}') $$, 'P0001',
   'template_variable_unknown', 'an unknown placeholder is refused');
 select is((public.release_recruitment_decisions(array[pg_temp.fid('d_c3')]) ->> 'released')::integer, 1, 'the refusal is released');
-select is(pg_temp.n($$ select count(*)::integer from public.notification_outbox where application_id = (select id from fx where k = 'app_c3')
+select is(pg_temp.n($$ select count(*)::integer from public.notifications where application_id = (select id from fx where k = 'app_c3')
                         and kind = 'recruitment_rejected' and payload ->> 'message' = 'Bonjour Personne, merci pour ta candidature au poste Communication (exemple).'
                         and payload::text !~ 'Raison interne|Avis négatif' $$), 1,
   'the candidate gets the message, with nothing internal');
@@ -733,7 +733,7 @@ select is(pg_temp.n($$ select count(*)::integer from public.recruitment_intervie
 select is(pg_temp.n($$ select count(*)::integer from public.recruitment_clarifications where application_id = (select id from fx where k = 'app_c5')
                         and status = 'cancelled' $$), 1, 'the question too');
 select is((pg_temp.decision('app_c5')).status, 'cancelled', 'the pending decision is void');
-select is(pg_temp.n($$ select count(*)::integer from public.notification_outbox where application_id = (select id from fx where k = 'app_c5')
+select is(pg_temp.n($$ select count(*)::integer from public.notifications where application_id = (select id from fx where k = 'app_c5')
                         and kind = 'recruitment_candidate_withdrew' and recipient_id = (select id from fx where k = 'hugo') $$), 1,
   'the assigned reviewer is told');
 select pg_temp.as_user('julie');
