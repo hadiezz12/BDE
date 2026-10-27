@@ -442,3 +442,6 @@ verify_jwt = false
 
 [functions.notifications-webhook]
 verify_jwt = false
+
+[functions.storage-cleanup]
+verify_jwt = false

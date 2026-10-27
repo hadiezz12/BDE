@@ -85,6 +85,12 @@ jobs:
           DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
           test -n "$DB_URL"
           bash supabase/tests/concurrency/notifications.sh "$DB_URL"
+      - name: Continuity concurrency (parallel sessions)
+        # A job started twice, five checkers at once, two storage workers, a double retry (Phase 11).
+        run: |
+          DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
+          test -n "$DB_URL"
+          bash supabase/tests/concurrency/continuity.sh "$DB_URL"
       - name: Database lint (plpgsql_check)
         # Findings are also published as a notice (the job log needs a GitHub session).
         run: |

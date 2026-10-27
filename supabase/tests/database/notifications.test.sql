@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(139);
+select plan(140);
 
 create temporary table fx (k text primary key, id uuid, v text) on commit drop;
 grant select, insert, update on fx to anon, authenticated, service_role;
@@ -517,7 +517,10 @@ select ok(exists (select 1 from public.notifications where recipient_id = pg_tem
 insert into fx (k, v) values ('records', (select (select count(*) from public.event_registrations) || '/' || (select count(*) from public.applications)));
 update public.notifications set read_at = now() - interval '7 months', created_at = now() - interval '7 months'
  where recipient_id = pg_temp.fid('lucas');
-select ok((private.purge_notifications() ->> 'notifications')::integer > 0, 'old read notifications are purged');
+-- Phase 11: periods are the BDE's decision (retention_policies); unconfigured, nothing is deleted.
+select is((private.run_retention() ->> 'total')::integer, 0, 'without a configured policy, nothing is deleted');
+update public.retention_policies set keep_months = 6 where policy_key = 'notifications_read';
+select ok((private.run_retention() -> 'deleted' ->> 'notifications_read')::integer > 0, 'old read notifications are deleted once the policy is set');
 select is((select (select count(*) from public.event_registrations) || '/' || (select count(*) from public.applications)),
   (select v from fx where k = 'records'), 'the registrations and applications they were about are untouched');
 
