@@ -96,7 +96,7 @@ export function UserMenu({ session, managed, unread = 0 }: Props) {
 
 /**
  * Mobile: avatar button opening a bottom sheet with the same links. Below
- * 400px the header has no room for the bell: the avatar then carries the
+ * 640px the header has no room for the bell: the avatar then carries the
  * unread count, and the sheet shows it next to "Notifications".
  */
 export function MobileUserButton({ session, managed, unread = 0 }: Props) {
@@ -119,7 +119,7 @@ export function MobileUserButton({ session, managed, unread = 0 }: Props) {
         {user && unread > 0 && (
           <span
             aria-hidden
-            className="absolute -right-0.5 -top-0.5 min-w-5 rounded-xs bg-accent px-1 py-0.5 text-center font-mono text-[0.66rem] font-bold leading-none text-accent-fg ring-2 ring-bg xs:hidden"
+            className="absolute -right-0.5 -top-0.5 min-w-5 rounded-xs bg-accent px-1 py-0.5 text-center font-mono text-[0.66rem] font-bold leading-none text-accent-fg ring-2 ring-bg sm:hidden"
           >
             {unreadText(unread)}
           </span>

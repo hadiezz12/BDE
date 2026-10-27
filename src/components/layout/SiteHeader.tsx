@@ -59,7 +59,7 @@ export function SiteHeader({
           <NavLinks />
         </nav>
 
-        <div className="ml-auto flex items-center gap-0.5 lg:gap-2">
+        <div className="ml-auto flex items-center gap-0.5 lg:gap-1 xl:gap-2">
           <Link
             href={routes.safety}
             className="hidden min-h-10 items-center gap-2 whitespace-nowrap rounded-sm px-3 type-label text-warn hover:bg-warn/10 xl:inline-flex"

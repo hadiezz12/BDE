@@ -17,7 +17,7 @@ import { Icon } from "@/components/ui/Icon";
  * ("99+" from 100), and on a large screen a small panel with the five
  * latest, "Tout marquer comme lu" and the way to the notification centre.
  * On a phone it is a plain link to the centre (a full page reads better
- * than a popover there); below 400px the header has no room for it and the
+ * than a popover there); below 640px the header has no room for it and the
  * account button carries the count instead (UserMenu).
  *
  * The count comes from the server render, then stays current: a realtime
@@ -131,7 +131,7 @@ export function NotificationBell({ initial, userId }: { initial: NotificationSum
       <Link
         href={routes.accountNotifications}
         aria-label={label}
-        className="relative hidden size-11 items-center justify-center rounded-sm hover:bg-fg/8 xs:inline-flex lg:hidden"
+        className="relative hidden size-11 items-center justify-center rounded-sm hover:bg-fg/8 sm:inline-flex lg:hidden"
       >
         <Icon name="bell" size={21} />
         {badge}
@@ -153,7 +153,8 @@ export function NotificationBell({ initial, userId }: { initial: NotificationSum
         hidden={!open}
         className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[22rem] rounded-md border border-line-strong bg-raised shadow-[var(--pop-shadow)]"
       >
-        <BellPanel summary={summary} />
+        {/* Rendered only while open: the titles are not in the page twice. */}
+        {open && <BellPanel summary={summary} />}
       </div>
     </div>
   );

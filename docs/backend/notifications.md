@@ -10,8 +10,9 @@ Migrations: `20261027074236_create_notification_center` (tables, catalog, keys, 
 `20261027074414_create_notification_functions` (`private.notify`, the centre, choices,
 unsubscribe), `20261027074556_create_notification_delivery_functions` (the worker's functions,
 provider events, reminders, retention, health), `20261027074754_create_notification_producers`
-(broadcasts, the new producers, schedules, privileges), `20261027082914_notification_broadcast_options_fix`.
-Tests: `supabase/tests/database/notifications.test.sql` (137), `supabase/tests/concurrency/notifications.sh`,
+(broadcasts, the new producers, schedules, privileges), `20261027082914_notification_broadcast_options_fix`,
+`20261027125921_notification_health_fix`.
+Tests: `supabase/tests/database/notifications.test.sql` (139), `supabase/tests/concurrency/notifications.sh`,
 `src/lib/notifications/notifications.test.mjs`, `e2e/notifications.spec.ts`.
 
 ## Audit (what existed before Phase 10)
@@ -85,7 +86,7 @@ on the development project (checked).
 - **Bell** (`src/components/notifications/NotificationBell.tsx`) in the site header and the
   workspace top bar: the unread count (`my_notification_summary`, capped at 100 and shown "99+"),
   and on large screens a panel with the five latest, "Tout marquer comme lu" and "Tout voir". On a
-  phone it is a link to the centre; below 400 px the account button carries the count instead
+  phone it is a link to the centre; below 640 px the account button carries the count instead
   (there is no room for a fourth icon next to VSS / VDH, search and the account). The count comes
   from the server render, then follows a **realtime** subscription to the person's own rows
   (`notifications` is in the `supabase_realtime` publication; RLS filters it) and, whatever

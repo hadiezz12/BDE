@@ -36,9 +36,10 @@ test("the bell opens the latest notifications and leads to the centre", async ({
 
   await page.goto("/account/notifications");
   await expect(page.getByRole("heading", { level: 1, name: "Notifications" })).toBeVisible();
-  await page.getByRole("link", { name: "Archivées" }).click();
+  const filters = page.getByRole("navigation", { name: "Filtrer les notifications" });
+  await filters.getByRole("link", { name: "Archivées" }).click();
   await expect(page).toHaveURL(/vue=archivees/);
-  await page.getByRole("link", { name: "Recrutement", exact: true }).click();
+  await filters.getByRole("link", { name: "Recrutement", exact: true }).click();
   await expect(page).toHaveURL(/categorie=recrutement/);
   await expect(page).toHaveURL(/vue=archivees/);
 });
@@ -62,7 +63,7 @@ test("choices: essential topics stay on, the others are the person's, and quiet 
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByText("Heures calmes enregistrées", { exact: false })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("complementary").getByText("Heures calmes activées")).toBeVisible();
+  await expect(page.getByText("Heures calmes activées")).toBeVisible();
 });
 
 test("an association writes to its members: a draft, the count, then the message", async ({ page }) => {

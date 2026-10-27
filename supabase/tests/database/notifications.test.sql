@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(137);
+select plan(139);
 
 create temporary table fx (k text primary key, id uuid, v text) on commit drop;
 grant select, insert, update on fx to anon, authenticated, service_role;
@@ -221,6 +221,13 @@ select ok(private.notification_quiet_until((select id from fx where k = 'tom'), 
 
 update public.notification_config set delivery_mode = 'off' where id;
 select is(jsonb_array_length(pg_temp.claim()), 0, 'e-mails off: the worker claims nothing');
+set local role authenticated;
+select pg_temp.as_user('alice');
+select ok(public.notification_health() -> 'alerts' ? 'mode_off_with_queue', 'the BDE is told that e-mails wait while sending is off');
+select pg_temp.as_user('julie');
+select throws_ok($$ select public.notification_health() $$, 'P0001', 'insufficient_permission',
+  'an association president does not see the delivery health');
+reset role;
 update public.notification_config set delivery_mode = 'capture' where id;
 
 -- Only the new test messages are due: the rest wait.

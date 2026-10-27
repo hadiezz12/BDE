@@ -800,7 +800,10 @@ foundational choice.
 
 - **Decision:** `20261027082914_notification_broadcast_options_fix`: each audience option carries
   its own estimate (`array || object || object` had appended the counts as a separate element).
+  `20261027125921_notification_health_fix`: the delivery health appends its alerts with
+  `array_append` (`text[] || 'literal'` read the literal as an array and raised as soon as an alert
+  applied; found by plpgsql_check in CI).
   The functions migration was split in two (`create_notification_functions` and
   `create_notification_delivery_functions`) to be applied on the development project.
-- **Reason:** found while verifying the composer on the development project.
-- **Consequence:** same signature and grants; a pgTAP test covers the shape.
+- **Reason:** found while verifying the composer on the development project, and by CI's lint.
+- **Consequence:** same signatures and grants; pgTAP tests cover the shape and an alert.

@@ -92,7 +92,8 @@ jobs:
           if ! supabase db lint --fail-on error > "$RUNNER_TEMP/lint.txt" 2>&1; then
             cat "$RUNNER_TEMP/lint.txt"
             # Errors only (warnings would push them out of the notice).
-            sed -n '/^\[/,$p' "$RUNNER_TEMP/lint.txt" \
+            # The JSON array only (the CLI prints a line of its own after it).
+            sed -n '/^\[/,/^\]/p' "$RUNNER_TEMP/lint.txt" \
               | jq -c '.[] | {function, errors: [.issues[] | select(.level == "error") | {message, detail, line: .statement.lineNumber, context}]} | select(.errors | length > 0)' \
               > "$RUNNER_TEMP/lint-errors.txt" || head -c 6000 "$RUNNER_TEMP/lint.txt" > "$RUNNER_TEMP/lint-errors.txt"
             echo "::notice title=Database lint errors::$(head -c 20000 "$RUNNER_TEMP/lint-errors.txt" | encode)"

@@ -18,7 +18,7 @@ export function NavLinks() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cx(
-                "relative flex items-center px-3 type-nav transition-colors xl:px-4",
+                "relative flex items-center px-2 type-nav transition-colors xl:px-4",
                 active ? "text-fg" : "text-muted hover:text-fg",
               )}
             >
