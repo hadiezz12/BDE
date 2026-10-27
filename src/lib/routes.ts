@@ -121,6 +121,8 @@ export const routes = {
   /** Messages to the association's members and followers (Phase 10). */
   manageCommunications: (asso: string) => `/manage/${asso}/communication`,
   manageAnalytics: (asso: string) => `/manage/${asso}/analytics`,
+  /** The association's continuity and handover checklist (Phase 11). */
+  manageHandover: (asso: string) => `/manage/${asso}/continuite`,
   /** The public page editor: content (index), then the tabs below. */
   manageSettings: (asso: string) => `/manage/${asso}/settings`,
   managePageAppearance: (asso: string) => `/manage/${asso}/settings/apparence`,
@@ -150,6 +152,13 @@ export const routes = {
   managePlatformRecruitment: "/manage/plateforme/recrutements",
   /** BDE announcements, their approvals, and the health of e-mail delivery (Phase 10). */
   managePlatformCommunications: "/manage/plateforme/communication",
+  /** Continuity (Phase 11): governance health, the academic year, operations, the register, retention, the handover report. */
+  managePlatformContinuity: "/manage/plateforme/continuite",
+  managePlatformYear: "/manage/plateforme/continuite/annee",
+  managePlatformOperations: "/manage/plateforme/continuite/operations",
+  managePlatformRegister: "/manage/plateforme/continuite/registre",
+  managePlatformRetention: "/manage/plateforme/continuite/conservation",
+  managePlatformHandover: "/manage/plateforme/continuite/passation",
   manageContinuity: "/manage/continuite",
   /** Everything a person has to evaluate, interview or validate, across associations (Phase 9). */
   manageReviewWork: "/manage/evaluations",

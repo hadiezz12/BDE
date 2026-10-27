@@ -26,6 +26,7 @@ import {
   setReviewPolicy,
   updateMember,
 } from "@/app/actions/recruitment-review";
+import { transferReviews } from "@/app/actions/continuity";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ManageEmpty } from "@/components/manage/ManageEmpty";
@@ -383,6 +384,7 @@ export default async function CommitteePage({ params }: { params: Params }) {
 
 function MemberList({ members, b, manage }: { members: CommitteeBoard["members"]; b: CommitteeBoard; manage: boolean }) {
   const titles = new Map(b.positions.map((p) => [p.id, p.title]));
+  const reviewersBesides = (id: string) => members.filter((o) => o.id !== id && o.live && !o.candidate && o.powers.includes("review"));
   return (
     <ul className="flex flex-col border-y border-line">
       {members.map((m) => (
@@ -420,6 +422,37 @@ function MemberList({ members, b, manage }: { members: CommitteeBoard["members"]
                   </Field>
                 </ActionForm>
               </Disclosure>
+              {m.live && m.assigned > m.reviewed && reviewersBesides(m.id).length > 0 && (
+                // Phase 11: hand the pending reviews (and upcoming interviews) to another reviewer, with a reason.
+                <Disclosure summary="Confier ses évaluations" icon="users">
+                  <ActionForm
+                    action={transferReviews}
+                    hidden={{ campaign_id: b.campaign.id, from_member: m.id, slug: b.organization.slug }}
+                    submitLabel="Confier"
+                  >
+                    <p className="type-small text-muted">
+                      Les candidatures que {m.name} n&apos;a pas encore évaluées passent à la personne choisie, avec les mêmes contrôles
+                      (périmètre, conflits déclarés)
+                      {b.powers.includes("interviews") ? ", ainsi que ses entretiens à venir" : ""}. Ses évaluations déjà envoyées restent
+                      les siennes.
+                    </p>
+                    <Field label="À">
+                      {({ id, describedBy }) => (
+                        <Select id={id} aria-describedby={describedBy} name="to_member" required>
+                          {reviewersBesides(m.id).map((o) => (
+                            <option key={o.id} value={o.id}>
+                              {o.name}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </Field>
+                    <Field label="Raison" hint="Gardée dans l'historique.">
+                      {({ id, describedBy }) => <Textarea id={id} aria-describedby={describedBy} name="reason" rows={2} required minLength={3} maxLength={500} />}
+                    </Field>
+                  </ActionForm>
+                </Disclosure>
+              )}
               <Disclosure summary="Mettre fin à la nomination" icon="close" tone="danger">
                 <ActionForm action={revokeMember} hidden={{ member_id: m.id }} submitLabel="Mettre fin" variant="danger">
                   <Field label="Raison" optional>

@@ -24,6 +24,7 @@ export type ManageSectionKey =
   | "media"
   | "communications"
   | "analytics"
+  | "continuity"
   | "settings";
 
 export interface ManageSection {
@@ -85,6 +86,14 @@ export const MANAGE_SECTIONS: ManageSection[] = [
   { key: "media", label: "Médias", icon: "image", href: routes.manageMedia, requires: ["media.manage"] },
   { key: "communications", label: "Messages", icon: "mail", href: routes.manageCommunications, requires: ["communications.send"] },
   { key: "analytics", label: "Statistiques", icon: "chart", href: routes.manageAnalytics, requires: ["analytics.view"], soon: true },
+  {
+    key: "continuity",
+    label: "Passation",
+    icon: "history",
+    href: routes.manageHandover,
+    // The same keys organization_continuity checks: the presidency, the team, or one handover area.
+    requires: ["governance.view", "governance.succession", "members.manage", "posts.approve", "events.edit", "recruitment.committee.manage"],
+  },
   {
     key: "settings",
     label: "Page publique",

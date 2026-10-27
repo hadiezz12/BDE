@@ -12,7 +12,7 @@ unsubscribe), `20261027074556_create_notification_delivery_functions` (the worke
 provider events, reminders, retention, health), `20261027074754_create_notification_producers`
 (broadcasts, the new producers, schedules, privileges), `20261027082914_notification_broadcast_options_fix`,
 `20261027125921_notification_health_fix`.
-Tests: `supabase/tests/database/notifications.test.sql` (139), `supabase/tests/concurrency/notifications.sh`,
+Tests: `supabase/tests/database/notifications.test.sql` (140), `supabase/tests/concurrency/notifications.sh`,
 `src/lib/notifications/notifications.test.mjs`, `e2e/notifications.spec.ts`.
 
 ## Audit (what existed before Phase 10)
@@ -73,7 +73,7 @@ Producers:
 | Events | registration confirmed, waitlisted, promoted, cancelled, removed, event changed or cancelled, reminder | the event functions (Phase 7), `private.enqueue_notification` |
 | Recruitment, candidate | submitted, withdrawn, draft reminder, form updated, campaign cancelled, interview invited/scheduled/moved/cancelled/reminder, questions, offers, outcomes | `private.enqueue_application_message` (Phases 8–9) |
 | Recruitment, team | review assigned, mention, answer received, interview booked or reminder, decision to approve, offer accepted/declined, candidate withdrew | `private.enqueue_team_message`, `appoint_recruitment_member`, `assign_recruitment_reviews` |
-| Governance | invitation received / answered, presidency proposed, approval required, transition completed or closed, mandate ending (30 and 7 days), BDE presidency vacant (guardian) | triggers on `organization_invitations`, `leadership_transition_candidates`, `leadership_transitions`; the reminders job |
+| Governance | invitation received / answered, presidency proposed, approval required, transition completed or closed, mandate ending (the academic year's offsets), BDE presidency vacant (guardian), continuity issues, the weekly continuity report | triggers on `organization_invitations`, `leadership_transition_candidates`, `leadership_transitions`; the governance checker and the weekly report (Phase 11) |
 | Account security | second factor enabled / removed; a sensitive position or a platform role given or removed | triggers on `auth.mfa_factors`, `position_assignments` (offices and sensitive keys only), `platform_assignments` |
 | Publishing | article to review (on submission; again after 48 h), review done, scheduled publication failed, article hidden / restored by the BDE | triggers on `post_revisions`, `post_reviews`, `posts`; the reminders job |
 | Campus | BDE announcement, association message, followed association's message, first publication of a followed association's article, event or recruitment | broadcasts (below) |
@@ -181,9 +181,9 @@ track reading. A status never moves backwards. Nothing personal is logged.
 
 One job, `notification-reminders` (every 15 minutes, `private.enqueue_due_reminders`; it replaced
 `enqueue-event-reminders`), reads current state only: events starting within 24 h (confirmed seats
-registered earlier), interviews within 24 h (the candidate, and each interviewer), mandates ending
-within 30 and 7 days (not renewed), articles waiting for review for 48 h, a vacant BDE presidency
-(the guardian, once per vacancy). Each key carries the date it is about, so a moved event or
+registered earlier), interviews within 24 h (the candidate, and each interviewer), articles waiting
+for review for 48 h. (Phase 11 moved mandate reminders and the BDE vacancy message into the hourly
+governance checker: offsets from the academic year, see `continuity.md`.) Each key carries the date it is about, so a moved event or
 interview reminds again for the new date, and the old reminder is obsolete. The same job takes
 stale unread reminders out of the centre. Draft deadlines, unanswered questions and offers stay
 with the recruitment job (Phase 8–9), re-checked the same way before sending. All dates are shown
@@ -229,21 +229,19 @@ content** — with "Relancer" (second factor, audited); the template preview.
 
 ## Retention
 
-`notification-retention`, daily at 03:40 (`private.purge_notifications`):
+Since Phase 11 (`continuity.md#retention`, decision D84), the periods of personal records —
+notifications (read, archived, any), delivery details, the record of a person's choices, cleared
+suppressions — are the BDE's decision in `retention_policies`: **undecided means kept**. The
+fixed periods Phase 10 had set on them were removed. The nightly `data-retention` job
+(`private.run_retention`, 03:40) applies the decided ones and keeps the technical housekeeping:
 
 | What | Kept |
 | --- | --- |
-| A read notification | 6 months |
-| An archived notification | 30 days |
-| Any notification | 12 months |
-| Delivery details (finished) | 90 days |
 | Attempts, provider events | 30 days |
 | Test-mode e-mails | 7 days |
 | Worker runs | 14 days |
 | Used or expired unsubscribe tokens | 7 days after use or expiry |
 | A dispatched or cancelled broadcast's recipient list | 30 days |
-| The record of a person's choices | 3 years |
-| A cleared suppression | 1 year |
 
 The business records a notification was about (registrations, applications, decisions, audit
 lines) are untouched.

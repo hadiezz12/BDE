@@ -29,9 +29,10 @@ const TOKEN = "a".repeat(64);
 /* ---- The catalog ------------------------------------------------------------------------------ */
 
 test("the site has words for exactly the kinds the database catalog lists", () => {
-  const block = migrations.split("insert into public.notification_types (key, topic, importance, email, confidential, description) values")[1];
-  assert.ok(block, "the catalog insert was found");
-  const kinds = [...block.slice(0, block.indexOf(";\n")).matchAll(/^\s*\('([a-z_]+)',/gm)].map((m) => m[1]);
+  // Every insert into the catalog (Phase 10, then the kinds later phases add).
+  const blocks = migrations.split("insert into public.notification_types (key, topic, importance, email, confidential, description) values").slice(1);
+  assert.ok(blocks.length > 0, "the catalog insert was found");
+  const kinds = blocks.flatMap((block) => [...block.slice(0, block.indexOf(";\n")).matchAll(/^\s*\('([a-z_]+)',/gm)].map((m) => m[1]));
   assert.ok(kinds.length > 50, `the catalog was read (${kinds.length})`);
   assert.deepEqual([...kinds].sort(), [...ALL_KINDS].sort());
 });

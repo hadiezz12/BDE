@@ -8,6 +8,8 @@ import { ButtonLink } from "@/components/ui/Button";
 import { ManageMain } from "@/components/manage/ManageFrame";
 import { ManageGateState, ManageStatePanel } from "@/components/manage/ManageState";
 import { PageTabs } from "@/components/manage/governance/PageTabs";
+import { Notice } from "@/components/manage/governance/Notices";
+import { getHeartbeat } from "@/lib/continuity/data";
 
 export const metadata: Metadata = { title: { template: "%s · Centre de contrôle BDE", default: "Centre de contrôle BDE" } };
 
@@ -68,12 +70,33 @@ export default async function PlatformLayout({ children }: { children: ReactNode
       label: "Communication",
       show: can("platform.communications.broadcast") || can("platform.communications.monitor"),
     },
+    {
+      href: routes.managePlatformContinuity,
+      label: "Continuité",
+      show: can("platform.organizations.manage") || can("platform.operations.monitor"),
+    },
     { href: routes.managePlatformHistory, label: "Historique", show: can("platform.audit.view") },
   ];
+  // Measured on every visit, so a scheduler that stopped altogether is seen without any job running.
+  const heartbeat = can("platform.operations.monitor") ? await getHeartbeat() : null;
   return (
     <ManageMain>
       <div data-accent="rose" className="flex flex-col gap-8">
         <PageTabs label="Centre de contrôle BDE" tabs={tabs.filter((t) => t.show)} />
+        {heartbeat?.jobs_on_time === false && (
+          <Notice
+            tone="danger"
+            icon="alert"
+            title="Des tâches automatiques essentielles sont en retard."
+            action={
+              <ButtonLink href={routes.managePlatformOperations} size="sm" icon="arrow-right">
+                Voir les opérations
+              </ButtonLink>
+            }
+          >
+            <p>Publications programmées, e-mails ou rappels peuvent attendre. Les droits, eux, s&apos;arrêtent toujours à la fin des mandats.</p>
+          </Notice>
+        )}
         {children}
       </div>
     </ManageMain>

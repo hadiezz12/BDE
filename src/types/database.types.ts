@@ -14,6 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_year_checks: {
+        Row: {
+          academic_year_id: string
+          check_key: string
+          confirmed_at: string
+          confirmed_by: string | null
+          done: boolean
+          note: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          academic_year_id: string
+          check_key: string
+          confirmed_at?: string
+          confirmed_by?: string | null
+          done?: boolean
+          note?: string | null
+        }
+        Update: {
+          academic_year_id?: string
+          check_key?: string
+          confirmed_at?: string
+          confirmed_by?: string | null
+          done?: boolean
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_year_checks_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academic_years: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_on: string
+          handover_starts_on: string | null
+          id: string
+          label: string
+          mandate_ends_at: string
+          mandate_starts_at: string
+          notes: string | null
+          recruitment_closes_on: string | null
+          recruitment_opens_on: string | null
+          reminder_offsets: number[]
+          rolled_over_at: string | null
+          rolled_over_by: string | null
+          starts_on: string
+          status: string
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_on: string
+          handover_starts_on?: string | null
+          id?: string
+          label: string
+          mandate_ends_at: string
+          mandate_starts_at: string
+          notes?: string | null
+          recruitment_closes_on?: string | null
+          recruitment_opens_on?: string | null
+          reminder_offsets?: number[]
+          rolled_over_at?: string | null
+          rolled_over_by?: string | null
+          starts_on: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string
+          handover_starts_on?: string | null
+          id?: string
+          label?: string
+          mandate_ends_at?: string
+          mandate_starts_at?: string
+          notes?: string | null
+          recruitment_closes_on?: string | null
+          recruitment_opens_on?: string | null
+          reminder_offsets?: number[]
+          rolled_over_at?: string | null
+          rolled_over_by?: string | null
+          starts_on?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       application_access_log: {
         Row: {
           action: string
@@ -710,6 +807,43 @@ export type Database = {
           },
         ]
       }
+      backup_verifications: {
+        Row: {
+          checked_on: string
+          environment: string
+          id: string
+          kind: string
+          method: string | null
+          notes: string | null
+          outcome: string
+          recorded_at: string
+          recorded_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          checked_on: string
+          environment: string
+          id?: string
+          kind: string
+          method?: string | null
+          notes?: string | null
+          outcome: string
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Update: {
+          checked_on?: string
+          environment?: string
+          id?: string
+          kind?: string
+          method?: string | null
+          notes?: string | null
+          outcome?: string
+          recorded_at?: string
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
       content_reports: {
         Row: {
           created_at: string
@@ -1283,6 +1417,208 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      governance_issues: {
+        Row: {
+          audience: string
+          details: Json
+          escalated_at: string | null
+          first_detected_at: string
+          id: string
+          issue_key: string
+          kind: string
+          last_detected_at: string
+          notified_at: string | null
+          organization_id: string | null
+          reminders: number
+          resolved_at: string | null
+          severity: string
+          status: string
+          subject_id: string | null
+          subject_user_id: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          audience: string
+          details?: Json
+          escalated_at?: string | null
+          first_detected_at?: string
+          id?: string
+          issue_key: string
+          kind: string
+          last_detected_at?: string
+          notified_at?: string | null
+          organization_id?: string | null
+          reminders?: number
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          subject_id?: string | null
+          subject_user_id?: string | null
+        }
+        Update: {
+          audience?: string
+          details?: Json
+          escalated_at?: string | null
+          first_detected_at?: string
+          id?: string
+          issue_key?: string
+          kind?: string
+          last_detected_at?: string
+          notified_at?: string | null
+          organization_id?: string | null
+          reminders?: number
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          subject_id?: string | null
+          subject_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_issues_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      handover_checklist_items: {
+        Row: {
+          academic_year_id: string
+          assignee_user_id: string | null
+          done: boolean
+          id: string
+          item_key: string
+          note: string | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          academic_year_id: string
+          assignee_user_id?: string | null
+          done?: boolean
+          id?: string
+          item_key: string
+          note?: string | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          academic_year_id?: string
+          assignee_user_id?: string | null
+          done?: boolean
+          id?: string
+          item_key?: string
+          note?: string | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handover_checklist_items_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handover_checklist_items_item_key_fkey"
+            columns: ["item_key"]
+            isOneToOne: false
+            referencedRelation: "handover_template_items"
+            referencedColumns: ["item_key"]
+          },
+          {
+            foreignKeyName: "handover_checklist_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      handover_template_items: {
+        Row: {
+          area: string
+          help: string | null
+          item_key: string
+          label: string
+          metric: string | null
+          sort_order: number
+        }
+        ComputedFields: never
+        Insert: {
+          area: string
+          help?: string | null
+          item_key: string
+          label: string
+          metric?: string | null
+          sort_order: number
+        }
+        Update: {
+          area?: string
+          help?: string | null
+          item_key?: string
+          label?: string
+          metric?: string | null
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      institutional_records: {
+        Row: {
+          area: string
+          contact: string | null
+          notes: string | null
+          owner: string | null
+          provider: string | null
+          record_key: string
+          renewal_on: string | null
+          sort_order: number
+          status: string
+          updated_at: string | null
+          updated_by: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          area: string
+          contact?: string | null
+          notes?: string | null
+          owner?: string | null
+          provider?: string | null
+          record_key: string
+          renewal_on?: string | null
+          sort_order: number
+          status?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          area?: string
+          contact?: string | null
+          notes?: string | null
+          owner?: string | null
+          provider?: string | null
+          record_key?: string
+          renewal_on?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
       }
       leadership_transition_approvals: {
         Row: {
@@ -2264,6 +2600,88 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      operational_incident_updates: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          id: number
+          incident_id: string
+          note: string
+          status: string
+        }
+        ComputedFields: never
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          id?: never
+          incident_id: string
+          note: string
+          status: string
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          id?: never
+          incident_id?: string
+          note?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_incident_updates_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "operational_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operational_incidents: {
+        Row: {
+          created_at: string
+          detected_at: string
+          id: string
+          impact: string | null
+          kind: string
+          opened_by: string | null
+          owner_user_id: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          detected_at?: string
+          id?: string
+          impact?: string | null
+          kind: string
+          opened_by?: string | null
+          owner_user_id?: string | null
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          detected_at?: string
+          id?: string
+          impact?: string | null
+          kind?: string
+          opened_by?: string | null
+          owner_user_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       organization_editorial_settings: {
         Row: {
@@ -4533,11 +4951,151 @@ export type Database = {
           },
         ]
       }
+      retention_policies: {
+        Row: {
+          keep_months: number | null
+          note: string | null
+          policy_key: string
+          sort_order: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          keep_months?: number | null
+          note?: string | null
+          policy_key: string
+          sort_order: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          keep_months?: number | null
+          note?: string | null
+          policy_key?: string
+          sort_order?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      scheduled_job_runs: {
+        Row: {
+          duration_ms: number
+          error: string | null
+          finished_at: string
+          id: number
+          job_key: string
+          requested_by: string | null
+          result: Json | null
+          started_at: string
+          status: string
+          trigger: string
+        }
+        ComputedFields: never
+        Insert: {
+          duration_ms?: number
+          error?: string | null
+          finished_at: string
+          id?: never
+          job_key: string
+          requested_by?: string | null
+          result?: Json | null
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Update: {
+          duration_ms?: number
+          error?: string | null
+          finished_at?: string
+          id?: never
+          job_key?: string
+          requested_by?: string | null
+          result?: Json | null
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_job_runs_job_key_fkey"
+            columns: ["job_key"]
+            isOneToOne: false
+            referencedRelation: "scheduled_jobs"
+            referencedColumns: ["job_key"]
+          },
+        ]
+      }
+      scheduled_jobs: {
+        Row: {
+          area: string
+          consecutive_failures: number
+          created_at: string
+          critical: boolean
+          expected_every: string
+          job_key: string
+          last_duration_ms: number | null
+          last_error: string | null
+          last_failed_at: string | null
+          last_finished_at: string | null
+          last_result: Json | null
+          last_started_at: string | null
+          last_status: string | null
+          last_succeeded_at: string | null
+          retryable: boolean
+          schedule: string
+          sort_order: number
+        }
+        ComputedFields: never
+        Insert: {
+          area: string
+          consecutive_failures?: number
+          created_at?: string
+          critical?: boolean
+          expected_every: string
+          job_key: string
+          last_duration_ms?: number | null
+          last_error?: string | null
+          last_failed_at?: string | null
+          last_finished_at?: string | null
+          last_result?: Json | null
+          last_started_at?: string | null
+          last_status?: string | null
+          last_succeeded_at?: string | null
+          retryable?: boolean
+          schedule: string
+          sort_order?: number
+        }
+        Update: {
+          area?: string
+          consecutive_failures?: number
+          created_at?: string
+          critical?: boolean
+          expected_every?: string
+          job_key?: string
+          last_duration_ms?: number | null
+          last_error?: string | null
+          last_failed_at?: string | null
+          last_finished_at?: string | null
+          last_result?: Json | null
+          last_started_at?: string | null
+          last_status?: string | null
+          last_succeeded_at?: string | null
+          retryable?: boolean
+          schedule?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      academic_year_preparation: { Args: { p_year_id?: string }; Returns: Json }
+      academic_years: { Args: never; Returns: Json }
+      account_responsibilities: { Args: { p_email: string }; Returns: Json }
       add_recruitment_position: {
         Args: { p_campaign_id: string; p_title: string }
         Returns: string
@@ -4690,6 +5248,19 @@ export type Database = {
         Args: { p_error?: string; p_id: number; p_ok: boolean }
         Returns: undefined
       }
+      confirm_academic_year_check: {
+        Args: {
+          p_check: string
+          p_done: boolean
+          p_note?: string
+          p_year_id: string
+        }
+        Returns: undefined
+      }
+      confirm_academic_year_rollover: {
+        Args: { p_acknowledge_warnings?: boolean; p_year_id: string }
+        Returns: Json
+      }
       confirm_application_document: {
         Args: { p_document_id: string; p_replaces?: string }
         Returns: Json
@@ -4699,6 +5270,7 @@ export type Database = {
         Returns: Json
       }
       content_dashboard: { Args: { p_organization_id: string }; Returns: Json }
+      continuity_handover_report: { Args: never; Returns: Json }
       create_association_category: {
         Args: { p_label: string; p_slug: string; p_sort_order?: number }
         Returns: string
@@ -4785,6 +5357,7 @@ export type Database = {
         Args: { p_campaign_id: string; p_label: string }
         Returns: string
       }
+      current_academic_year: { Args: never; Returns: Json }
       declare_recruitment_conflict: {
         Args: { p_application_id: string; p_note?: string }
         Returns: string
@@ -4858,11 +5431,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      governance_health: { Args: never; Returns: Json }
       governance_history: {
         Args: { p_limit?: number; p_organization_id?: string }
         Returns: Json
       }
       governance_overview: { Args: never; Returns: Json }
+      guardian_continuity: { Args: never; Returns: Json }
       hide_event: {
         Args: { p_event_id: string; p_reason: string }
         Returns: undefined
@@ -4937,11 +5512,25 @@ export type Database = {
       }
       notification_health: { Args: never; Returns: Json }
       open_notification: { Args: { p_id: number }; Returns: Json }
+      open_operational_incident: {
+        Args: {
+          p_detected_at?: string
+          p_impact?: string
+          p_kind: string
+          p_severity: string
+          p_title: string
+        }
+        Returns: string
+      }
       order_recruitment_waitlist: {
         Args: { p_campaign_id: string; p_decision_ids: string[] }
         Returns: undefined
       }
       organization_broadcasts: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      organization_continuity: {
         Args: { p_organization_id: string }
         Returns: Json
       }
@@ -4955,6 +5544,8 @@ export type Database = {
         Args: { p_q?: string; p_view?: string }
         Returns: Json
       }
+      platform_heartbeat: { Args: never; Returns: Json }
+      platform_operations: { Args: never; Returns: Json }
       platform_organizations: { Args: never; Returns: Json }
       platform_recruitment: {
         Args: { p_q?: string; p_view?: string }
@@ -4973,6 +5564,10 @@ export type Database = {
       post_event_options: { Args: { p_post_id: string }; Returns: Json }
       post_preview: {
         Args: { p_post_id: string; p_revision_id?: string }
+        Returns: Json
+      }
+      preview_retention_policy: {
+        Args: { p_key: string; p_months: number }
         Returns: Json
       }
       privacy_candidate_report: {
@@ -5123,6 +5718,17 @@ export type Database = {
       publish_recruitment_rubric: {
         Args: { p_campaign_id: string; p_kind: string }
         Returns: Json
+      }
+      record_backup_verification: {
+        Args: {
+          p_checked_on: string
+          p_environment: string
+          p_kind: string
+          p_method?: string
+          p_notes?: string
+          p_outcome: string
+        }
+        Returns: string
       }
       recruitment_application: {
         Args: { p_application_id: string }
@@ -5293,6 +5899,7 @@ export type Database = {
         Args: { p_campaign_id: string; p_reason: string }
         Returns: undefined
       }
+      retention_overview: { Args: never; Returns: Json }
       retract_application_comment: {
         Args: { p_comment_id: string }
         Returns: undefined
@@ -5301,6 +5908,7 @@ export type Database = {
         Args: { p_delivery_id: number }
         Returns: undefined
       }
+      retry_scheduled_job: { Args: { p_key: string }; Returns: Json }
       return_recruitment_decision: {
         Args: { p_decision_id: string; p_reason: string }
         Returns: undefined
@@ -5326,6 +5934,22 @@ export type Database = {
         Args: { p_member_id: string; p_reason?: string }
         Returns: undefined
       }
+      save_academic_year: {
+        Args: {
+          p_ends_on: string
+          p_handover_starts_on?: string
+          p_id: string
+          p_label: string
+          p_mandate_ends_at: string
+          p_mandate_starts_at: string
+          p_notes?: string
+          p_recruitment_closes_on?: string
+          p_recruitment_opens_on?: string
+          p_reminder_offsets?: number[]
+          p_starts_on: string
+        }
+        Returns: string
+      }
       save_application_answers: {
         Args: { p_answers: Json; p_application_id: string; p_version: number }
         Returns: Json
@@ -5337,6 +5961,18 @@ export type Database = {
       save_event: {
         Args: { p_event_id: string; p_patch: Json; p_version: number }
         Returns: Json
+      }
+      save_institutional_record: {
+        Args: {
+          p_contact: string
+          p_key: string
+          p_notes?: string
+          p_owner: string
+          p_provider: string
+          p_renewal_on: string
+          p_status: string
+        }
+        Returns: undefined
       }
       save_post_revision: {
         Args: {
@@ -5387,6 +6023,7 @@ export type Database = {
         Args: { p_at: string; p_post_id: string; p_revision_id: string }
         Returns: undefined
       }
+      security_health: { Args: never; Returns: Json }
       set_application_tag: {
         Args: { p_application_id: string; p_on: boolean; p_tag_id: string }
         Returns: undefined
@@ -5417,6 +6054,16 @@ export type Database = {
       }
       set_event_prominence: {
         Args: { p_event_id: string; p_prominence: string; p_until?: string }
+        Returns: undefined
+      }
+      set_handover_item: {
+        Args: {
+          p_assignee_user_id?: string
+          p_done: boolean
+          p_item_key: string
+          p_note?: string
+          p_organization_id: string
+        }
         Returns: undefined
       }
       set_membership_status: {
@@ -5492,6 +6139,15 @@ export type Database = {
         Args: { p_campaign_id: string; p_status: string }
         Returns: string
       }
+      set_retention_policy: {
+        Args: {
+          p_confirm_count?: number
+          p_key: string
+          p_months: number
+          p_note?: string
+        }
+        Returns: Json
+      }
       start_application: { Args: { p_position_id: string }; Returns: Json }
       start_recruitment_onboarding: {
         Args: {
@@ -5519,6 +6175,15 @@ export type Database = {
       }
       submit_recruitment_review: {
         Args: { p_review_id: string; p_version: number }
+        Returns: Json
+      }
+      transfer_review_assignments: {
+        Args: {
+          p_campaign_id: string
+          p_from_member_id: string
+          p_reason: string
+          p_to_member_id: string
+        }
         Returns: Json
       }
       unassign_recruitment_review: {
@@ -5571,6 +6236,16 @@ export type Database = {
           p_meeting_link: string
           p_member_ids: string[]
           p_slot_id: string
+        }
+        Returns: undefined
+      }
+      update_operational_incident: {
+        Args: {
+          p_id: string
+          p_keep_owner?: boolean
+          p_note: string
+          p_severity?: string
+          p_status: string
         }
         Returns: undefined
       }

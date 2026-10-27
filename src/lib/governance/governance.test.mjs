@@ -63,12 +63,14 @@ test("constraint errors become sentences, never Postgres text", () => {
   }
 });
 
-const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events", "recruitment", "communications"]);
+const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events", "recruitment", "communications", "continuity"]);
 
 const RESOURCE_TYPES = new Set([
   "recruitment_campaign", "recruitment_position", "recruitment_form", "recruitment_settings",
   "application", "recruitment_committee_member", "recruitment_rubric", "recruitment_offer",
   "notification_broadcast", "notification_delivery", "notification_config",
+  "academic_year", "scheduled_job", "governance_issue", "handover_checklist", "operational_incident",
+  "institutional_record", "backup_verification", "retention_policy",
 ]);
 
 test("every audited action has a sentence", () => {

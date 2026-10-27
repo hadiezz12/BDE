@@ -6,8 +6,11 @@ import { canHandlePrivacy } from "@/lib/governance/workspace";
 import { ButtonLink } from "@/components/ui/Button";
 import { ManageMain } from "@/components/manage/ManageFrame";
 import { ManageGateState, ManageStatePanel } from "@/components/manage/ManageState";
-import { ManagePageHeader } from "@/components/manage/ManagePageHeader";
+import { ManagePageHeader, ManageSection } from "@/components/manage/ManagePageHeader";
 import { MfaNotice, Notice } from "@/components/manage/governance/Notices";
+import { ActionForm } from "@/components/manage/governance/ActionForm";
+import { Field, Input } from "@/components/ui/Field";
+import { lookupResponsibilities } from "@/app/actions/continuity";
 import { PrivacyDesk } from "@/components/manage/review/PrivacyDesk";
 
 export const metadata: Metadata = { title: "Données des candidat·es" };
@@ -67,6 +70,18 @@ export default async function PrivacyPage() {
           </p>
         </Notice>
         <PrivacyDesk />
+        <ManageSection
+          title="Avant de supprimer un compte"
+          description="Ce que la personne tient encore (postes, passations, comités, points de passation), pour faire passer ces responsabilités par les passations prévues avant de traiter la demande. Organisations et dates seulement ; la consultation est notée."
+        >
+          <div className="max-w-xl">
+            <ActionForm action={lookupResponsibilities} submitLabel="Voir ses responsabilités en cours">
+              <Field label="Adresse e-mail du compte">
+                {({ id, describedBy }) => <Input id={id} aria-describedby={describedBy} type="email" name="email" required autoComplete="off" spellCheck={false} />}
+              </Field>
+            </ActionForm>
+          </div>
+        </ManageSection>
       </div>
     </ManageMain>
   );

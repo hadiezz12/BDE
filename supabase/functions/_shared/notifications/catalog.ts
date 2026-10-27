@@ -112,6 +112,22 @@ export function notificationPath(n: NotificationRef): string {
     case "governance_transition_closed":
     case "governance_mandate_expiring":
       return org ? `/manage/${org}/governance` : "/manage";
+    // Phase 11: the page depends on who reads the alert, set by the database.
+    case "governance_issue_alert":
+      switch (p.target) {
+        case "association":
+          return org ? `/manage/${org}/continuite` : "/manage";
+        case "guardian":
+          return "/manage/continuite";
+        case "self":
+          return "/account/security";
+        case "operations":
+          return "/manage/plateforme/continuite/operations";
+        default:
+          return "/manage/plateforme/continuite";
+      }
+    case "platform_health_report":
+      return "/manage/plateforme/continuite";
     case "content_approval_requested":
     case "content_approval_pending":
     case "content_review_done":
@@ -152,6 +168,7 @@ export function notificationReason(kind: string): string {
     return isTeamMessage(kind) ? "tu participes à un recrutement" : "tu as une candidature";
   }
   if (kind.startsWith("account_")) return "il s'agit de la sécurité de ton compte";
+  if (kind === "platform_health_report") return "tu fais partie du bureau du BDE";
   if (kind.startsWith("governance_")) return "il s'agit de ton rôle dans une équipe";
   if (kind.startsWith("content_")) return "tu fais partie de l'équipe éditoriale d'une asso";
   if (kind === "campus_announcement") return "tu as choisi de recevoir les annonces du BDE";

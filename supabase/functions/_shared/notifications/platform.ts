@@ -21,6 +21,8 @@ export type PlatformMessageKind =
   | "governance_transition_completed"
   | "governance_transition_closed"
   | "governance_mandate_expiring"
+  | "governance_issue_alert"
+  | "platform_health_report"
   | "content_approval_requested"
   | "content_approval_pending"
   | "content_review_done"
@@ -46,6 +48,8 @@ export const PLATFORM_KINDS: readonly PlatformMessageKind[] = [
   "governance_transition_completed",
   "governance_transition_closed",
   "governance_mandate_expiring",
+  "governance_issue_alert",
+  "platform_health_report",
   "content_approval_requested",
   "content_approval_pending",
   "content_review_done",
@@ -87,6 +91,207 @@ export interface PlatformMessagePayload {
   days?: number;
   member?: boolean;
   post_id?: string | null;
+  // Phase 11: continuity issues (governance_issue_alert) and the weekly report.
+  issue?: string | null;
+  severity?: string | null;
+  /** Who reads it: association · platform · guardian · operations · self (decides the page it opens). */
+  target?: string | null;
+  escalated?: boolean;
+  transition_kind?: string | null;
+  candidates_pending?: number;
+  missing_approvals?: string[] | null;
+  count?: number;
+  campaign?: string | null;
+  job?: string | null;
+  health?: string | null;
+  last_succeeded_at?: string | null;
+  record?: string | null;
+  renewal_on?: string | null;
+  week?: string | null;
+  associations_without_president?: number;
+  successions_missing?: number;
+  mandates_expiring_30?: number;
+  transitions_pending?: number;
+  jobs_unhealthy?: number;
+  failed_deliveries_7d?: number;
+  reviewer_access_expiring?: number;
+  backups_verified?: number;
+  open_incidents?: number;
+}
+
+/** The recurring jobs, in words (also used by the continuity pages). */
+export const JOB_WORDS: Record<string, string> = {
+  "publish-scheduled-posts": "Publications programmées",
+  "notifications-dispatch": "Envoi des e-mails",
+  "notification-reminders": "Rappels (événements, entretiens, relectures)",
+  "recruitment-review-jobs": "Annonces programmées des décisions de recrutement",
+  "enqueue-recruitment-reminders": "Rappels de candidature",
+  "governance-health": "Vérification de la continuité",
+  "storage-cleanup": "Nettoyage des fichiers supprimés",
+  "purge-recruitment-data": "Conservation des candidatures",
+  "data-retention": "Conservation des données",
+  "platform-health-report": "Point hebdomadaire de continuité",
+};
+
+/** The institutional register's lines, in words (also used by the continuity pages). */
+export const RECORD_WORDS: Record<string, string> = {
+  supabase_project: "Projet Supabase (base de données, comptes, fichiers)",
+  hosting: "Hébergement du site",
+  uptime_monitor: "Surveillance extérieure du site",
+  source_repository: "Dépôt du code",
+  domain: "Nom de domaine",
+  dns: "Gestion DNS",
+  https_certificates: "Certificats HTTPS",
+  email_provider: "Service d'envoi des e-mails",
+  email_domain: "Domaine d'envoi des e-mails",
+  supabase_billing: "Facturation Supabase",
+  hosting_billing: "Facturation de l'hébergement",
+  technical_owner: "Responsable technique de l'institution",
+  privacy_contact: "Contact données personnelles et sécurité",
+  recovery_procedure: "Procédure de récupération des accès",
+  storage_copies: "Copies des fichiers (Storage)",
+};
+
+const APPROVAL_WORDS: Record<string, string> = {
+  bde_president: "l'approbation de la présidence du BDE",
+  bde_vice_president: "l'approbation de la vice-présidence du BDE",
+  guardian: "l'approbation du ou de la garant·e de continuité",
+};
+
+const HEALTH_WORDS: Record<string, string> = {
+  late: "en retard",
+  failing: "en échec",
+  never_run: "jamais exécutée",
+  not_scheduled: "non programmée",
+};
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n > 1 ? many : one}`;
+}
+
+function issueMessage(p: PlatformMessagePayload, org: string): { title: string; body: string } {
+  const office = OFFICE_WORDS[p.office ?? ""] ?? "la présidence";
+  const when = (iso: string | null | undefined) => (iso ? `le ${messageWhen(iso)}` : "bientôt");
+  switch (p.issue) {
+    case "bde_office_vacant":
+      return {
+        title: `${cap(office)} est vacante`,
+        body:
+          p.target === "guardian"
+            ? "Personne n'occupe ce poste. En tant que garant·e de continuité, tu peux suivre la passation ou rétablir le poste depuis la page Continuité."
+            : "Personne n'occupe ce poste. Une passation du BDE peut le pourvoir : elle demande l'accord du membre du bureau en poste et du ou de la garant·e de continuité.",
+      };
+    case "association_president_vacant":
+      return {
+        title: `${org} n'a plus de présidence`,
+        body:
+          "Les droits de gestion de l'asso ne s'appliquent plus à personne. Le BDE peut nommer une présidence depuis le centre de contrôle, " +
+          "avec une raison écrite ; la personne nommée accepte avec son propre compte.",
+      };
+    case "succession_missing":
+      if (p.target === "association") {
+        return {
+          title: `Pas encore de succession : ${org}`,
+          body:
+            `La présidence de ${org} finit ${when(p.ends_at)}. Propose la personne qui suivra depuis Gouvernance : ` +
+            "elle accepte avec son propre compte, et le mandat commence à la date prévue.",
+        };
+      }
+      if (p.office === "bde_president" || p.office === "bde_vice_president") {
+        return {
+          title: `Passation du BDE à lancer : ${office}`,
+          body:
+            p.target === "guardian"
+              ? `Le mandat finit ${when(p.ends_at)} et aucune passation n'est lancée. Si le poste devient vacant, tu pourras le rétablir depuis Continuité.`
+              : `Le mandat finit ${when(p.ends_at)} et aucune passation n'est lancée. Les deux membres du bureau l'approuvent, puis les personnes choisies acceptent.`,
+        };
+      }
+      return {
+        title: `${org} : pas de succession prévue`,
+        body: `La présidence de ${org} finit ${when(p.ends_at)} et aucune succession n'est proposée. Sans passation, l'asso n'aura plus de présidence à cette date.`,
+      };
+    case "transition_pending": {
+      const parts: string[] = [];
+      const pending = p.candidates_pending ?? 0;
+      if (pending > 0) parts.push(pending > 1 ? "l'acceptation des personnes proposées" : "l'acceptation de la personne proposée");
+      for (const capacity of p.missing_approvals ?? []) if (APPROVAL_WORDS[capacity]) parts.push(APPROVAL_WORDS[capacity]);
+      return {
+        title: `Passation en attente : ${org}`,
+        body:
+          (parts.length ? `Il manque ${parts.join(" et ")}.` : "Elle attend encore une étape.") +
+          (p.expires_at ? ` Sans réponse, elle expire ${when(p.expires_at)} et rien ne change.` : ""),
+      };
+    }
+    case "approver_missing":
+      return {
+        title: `Articles sans relecture possible : ${org}`,
+        body:
+          `${plural(p.count ?? 1, "article attend", "articles attendent")} depuis plus de deux jours, et personne d'autre que leur auteur·rice ` +
+          "ne peut les approuver. Donne le droit d'approuver à un autre poste de l'équipe.",
+      };
+    case "reviewer_access_expiring":
+      return {
+        title: `Accès au comité qui finissent : ${p.campaign || org}`,
+        body:
+          `${plural(p.count ?? 1, "accès au comité finit", "accès au comité finissent")} ${when(p.ends_at)}, alors que des candidatures attendent une décision. ` +
+          "Prolonge-les ou confie les candidatures à quelqu'un d'autre.",
+      };
+    case "guardian_missing":
+      return {
+        title: "Pas de garant·e de continuité",
+        body:
+          "Personne ne peut rétablir la présidence du BDE si elle devient vacante. Ce rôle se donne hors du site, " +
+          "par la procédure d'installation : voir le guide du responsable technique.",
+      };
+    case "guardian_mfa_missing":
+      return {
+        title: "Active la double authentification",
+        body: "Ton rôle de garant·e en a besoin pour rétablir une présidence. Active-la depuis Sécurité.",
+      };
+    case "officer_mfa_missing":
+      return {
+        title: "Active la double authentification",
+        body:
+          "Ton poste en a besoin pour certaines actions (passation, envoi par e-mail, exports). " +
+          "Active-la depuis Sécurité : elle protège ton compte, que tu es seul·e à utiliser.",
+      };
+    case "job_unhealthy":
+      return {
+        title: `Tâche automatique ${HEALTH_WORDS[p.health ?? ""] ?? "à vérifier"} : ${JOB_WORDS[p.job ?? ""] ?? "une tâche"}`,
+        body:
+          `Dernière exécution réussie : ${p.last_succeeded_at ? messageWhen(p.last_succeeded_at) : "aucune"}. ` +
+          "Le détail et la relance sont dans Continuité, rubrique Opérations.",
+      };
+    case "renewal_due":
+      return {
+        title: `Renouvellement à prévoir : ${RECORD_WORDS[p.record ?? ""] ?? "un service"}`,
+        body:
+          `Le registre indique un renouvellement ${when(p.renewal_on)}. Vérifie-le auprès de la personne qui détient le compte, ` +
+          "puis mets le registre à jour.",
+      };
+    default:
+      return { title: "Un point de continuité à regarder", body: "Le détail est sur la page Continuité." };
+  }
+}
+
+function healthReport(p: PlatformMessagePayload): { title: string; body: string } {
+  const lines: string[] = [];
+  const add = (n: number | undefined, one: string, many: string) => {
+    if (n && n > 0) lines.push(plural(n, one, many));
+  };
+  add(p.associations_without_president, "asso sans présidence", "assos sans présidence");
+  add(p.successions_missing, "succession à prévoir", "successions à prévoir");
+  add(p.mandates_expiring_30, "mandat finit dans les 30 jours", "mandats finissent dans les 30 jours");
+  add(p.transitions_pending, "passation en attente", "passations en attente");
+  add(p.reviewer_access_expiring, "recrutement a des accès qui expirent", "recrutements ont des accès qui expirent");
+  add(p.jobs_unhealthy, "tâche automatique à vérifier", "tâches automatiques à vérifier");
+  add(p.failed_deliveries_7d, "e-mail non remis cette semaine", "e-mails non remis cette semaine");
+  add(p.open_incidents, "incident ouvert", "incidents ouverts");
+  const backups = `Sauvegardes : ${p.backups_verified ?? 0} vérification${(p.backups_verified ?? 0) > 1 ? "s" : ""} sur 4 à jour.`;
+  return {
+    title: `Point de continuité${p.week ? ` · ${p.week}` : ""}`,
+    body: (lines.length ? `${cap(lines.join(", "))}.` : "Rien à signaler sur les présidences, les passations et les tâches automatiques.") + ` ${backups}`,
+  };
 }
 
 const OFFICE_WORDS: Record<string, string> = {
@@ -200,6 +405,10 @@ export function platformMessage(kind: PlatformMessageKind, p: PlatformMessagePay
           `Ton poste « ${p.position ?? "—"} » dans ${org} prend fin ${p.ends_at ? `le ${messageWhen(p.ends_at)}` : "bientôt"}. ` +
           (p.office ? "Pense à proposer ta succession depuis Gouvernance." : "Parles-en à la présidence si tu continues."),
       };
+    case "governance_issue_alert":
+      return issueMessage(p, org);
+    case "platform_health_report":
+      return healthReport(p);
     case "content_approval_requested":
       return { title: `Article à relire : ${quote(p.title)}`, body: `${by} a soumis un article de ${org} à relecture.` };
     case "content_approval_pending":

@@ -49,6 +49,10 @@ export function samplePayload(kind: string, now = Date.now()): Payload {
     body: "Texte d'exemple : ici, le message tel que l'asso ou le BDE l'a écrit.",
     link: "/associations/asso-test-exemple",
   };
+  if (kind === "governance_issue_alert") return { ...base, issue: "succession_missing", target: "association", ends_at: at(14) };
+  if (kind === "platform_health_report") {
+    return { ...base, week: "2026-W44", successions_missing: 1, mandates_expiring_30: 4, transitions_pending: 1, backups_verified: 0 };
+  }
   if (kind === "campus_announcement") return { ...base, title: "Annonce test (exemple)" };
   if (kind === "association_message" || kind === "followed_announcement") return { ...base, title: "Message test (exemple)" };
   if (kind.startsWith("content_") || kind === "followed_post_published") return { ...base, title: "Article test (exemple)" };

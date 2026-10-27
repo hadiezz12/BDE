@@ -33,8 +33,8 @@ App side: `src/lib/recruitment/*` (payloads and mapping, the form document and i
 checks, the wizard's parser, desk words, preview, message words), `src/lib/data/recruitment.ts`
 (public reads), `src/lib/recruitment/me.ts` (a student's own reads), `src/lib/recruitment/editor.ts`
 (team and BDE reads), `src/app/actions/recruitment.ts` (Server Actions), the upload and download
-routes under `src/app/api/applications/`, the Storage cleanup worker
-`src/app/api/maintenance/storage-cleanup/route.ts`.
+routes under `src/app/api/applications/`. The Storage cleanup worker is the `storage-cleanup`
+Edge Function since Phase 11 (`continuity.md#storage-cleanup`).
 
 ## Concerns of a campaign
 
@@ -189,9 +189,9 @@ Reads (`can_read_application_document`) and deletions are the candidate's only. 
 documents, the file is read with their session and streamed as an attachment
 (`Content-Disposition: attachment`, `nosniff`, a sandboxing CSP, `no-store`); anyone else gets 404.
 No signed URL is handed out. A removed, replaced or purged document's file is queued in
-`private.storage_cleanup_queue` by trigger; the maintenance worker
-(`POST /api/maintenance/storage-cleanup`, bearer `MAINTENANCE_WORKER_SECRET`, service role, only
-paths and buckets the queue names) deletes them. Reservations never confirmed expire after a day
+`private.storage_cleanup_queue` by trigger; the `storage-cleanup` Edge Function (Phase 11: woken by
+the `storage-cleanup` job, Vault token, leased claims, only paths and buckets the queue names)
+deletes them. Reservations never confirmed expire after a day
 (the nightly purge).
 
 **There is no malware scanner** on this platform: the content checks keep out executable and macro

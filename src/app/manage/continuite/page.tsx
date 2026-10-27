@@ -19,6 +19,9 @@ import { ActionForm } from "@/components/manage/governance/ActionForm";
 import { Disclosure } from "@/components/manage/governance/Disclosure";
 import { AuditList, OfficeCard, TransitionPanel } from "@/components/manage/governance/GovernanceBlocks";
 import { DoneNotice, Notice } from "@/components/manage/governance/Notices";
+import { IssueList } from "@/components/continuity/ContinuityBlocks";
+import { getGuardianContinuity } from "@/lib/continuity/data";
+import { RECORD_STATUS } from "@/lib/continuity/labels";
 
 export const metadata: Metadata = { title: "Continuité" };
 
@@ -58,7 +61,12 @@ export default async function ContinuityPage({ searchParams }: { searchParams: P
     );
   }
 
-  const [overview, mfa, history] = await Promise.all([getGovernanceOverview(), getMyMfaStatus(), getGovernanceHistory(null, 40)]);
+  const [overview, mfa, history, continuity] = await Promise.all([
+    getGovernanceOverview(),
+    getMyMfaStatus(),
+    getGovernanceHistory(null, 40),
+    getGuardianContinuity(),
+  ]);
   if (!overview.ok) {
     return (
       <ManageMain>
@@ -107,6 +115,37 @@ export default async function ContinuityPage({ searchParams }: { searchParams: P
         >
           <p>Le compte de reprise est le dernier recours du BDE&nbsp;: il doit rester le mieux protégé de la plateforme.</p>
         </Notice>
+
+        {continuity && (
+          <ManageSection title="Points de continuité" count={continuity.issues.length} description="Seulement ce qui touche la direction du BDE et ta capacité à la rétablir.">
+            <IssueList
+              issues={continuity.issues.map((i) => ({
+                id: i.id,
+                kind: i.kind,
+                severity: i.severity as "info" | "warning" | "critical",
+                audience: "guardian",
+                details: { office: i.office, ends_at: i.ends_at, organization: "le BDE" },
+                first_detected_at: i.first_detected_at,
+                notified_at: null,
+                escalated_at: null,
+              }))}
+              target="guardian"
+              empty="La direction du BDE est en place et aucune passation du BDE n'est bloquée."
+            />
+            <ul className="flex flex-wrap gap-x-6 gap-y-1 type-small">
+              {(
+                [
+                  ["Procédure de récupération des accès", continuity.readiness.recovery_procedure],
+                  ["Responsable technique de l'institution", continuity.readiness.technical_owner],
+                ] as const
+              ).map(([label, status]) => (
+                <li key={label} className="inline-flex items-center gap-2">
+                  {label}&nbsp;: <StatusBadge tone={(RECORD_STATUS[status ?? ""] ?? RECORD_STATUS.not_configured).tone}>{(RECORD_STATUS[status ?? ""] ?? RECORD_STATUS.not_configured).label}</StatusBadge>
+                </li>
+              ))}
+            </ul>
+          </ManageSection>
+        )}
 
         <ManageSection title="Direction du BDE">
           <div className="grid gap-4 md:grid-cols-2">

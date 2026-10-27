@@ -79,6 +79,7 @@ const PLATFORM_CENTER_KEYS = [
   "platform.content.feature",
   "platform.communications.broadcast",
   "platform.communications.monitor",
+  "platform.operations.monitor",
 ];
 
 export const canUsePlatform = (access: MyAccess | null) =>

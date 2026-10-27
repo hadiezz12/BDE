@@ -98,9 +98,12 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
   switch to `live` ([notifications.md](notifications.md#configuration)). Nothing in the site's
   environment is involved.
 - Recruitment (Phase 8): `pg_cron` also runs `enqueue-recruitment-reminders` (hourly) and
-  `purge-recruitment-data` (nightly, applies the BDE's retention). Set a long random
-  `MAINTENANCE_WORKER_SECRET` and schedule a POST to `/api/maintenance/storage-cleanup` (hourly is
-  plenty) so removed application files leave Storage ([recruitment.md](recruitment.md#documents-cvs-and-files)).
+  `purge-recruitment-data` (nightly, applies the BDE's retention).
+- Continuity (Phase 11): every job runs through `private.run_scheduled_job` (see
+  [continuity.md](continuity.md)). Deploy the `storage-cleanup` Edge Function and create its two
+  Vault secrets (`storage_cleanup_url`, `storage_cleanup_token`; SQL in
+  `docs/operations/scheduled-jobs.md`) so removed application files leave Storage. Point an
+  external uptime monitor at `/api/health`. The site itself needs no new variable.
 
 ## Variables
 
@@ -108,8 +111,7 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | public (inlined into the browser bundle) | all three clients | project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public (inlined into the browser bundle) | browser and server clients | Dashboard → Settings → API Keys → publishable (`sb_publishable_…`) |
-| `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — only the Storage cleanup worker (Phase 8) | API Keys → secret (`sb_secret_…`). Leave empty until a worker is set up. |
-| `MAINTENANCE_WORKER_SECRET` | **secret**, server only | the Storage cleanup worker's bearer token (32+ characters); empty = endpoint not found | a random string you generate |
+| `SUPABASE_SECRET_KEY` | **secret**, server only | nothing since Phase 11 (the site has no privileged client; the Storage cleanup is an Edge Function) | leave empty |
 | `BREVO_API_KEY` | **secret**, **Edge Function secret only** (`supabase secrets set`), never in the site | the `notifications-worker` in `live` mode | Brevo's dashboard |
 | `AUTH_SSO_PROVIDER` | server only, not secret | shows institutional sign-in on `/login` (`azure` or `google`) | leave empty until the school's provider is configured in Supabase |
 | `AUTH_TEST_ACCOUNTS` | server only, not secret | development only: `on` shows the "Comptes de test" form on `/login` | `on` in a development `.env.local`; **never set in production** |

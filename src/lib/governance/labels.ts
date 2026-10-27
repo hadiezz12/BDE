@@ -270,6 +270,23 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   notification_broadcast_dispatched: "a fini de distribuer un message",
   notification_delivery_retried: "a relancé un e-mail en échec",
   notification_config_changed: "a changé le réglage des envois d'e-mails",
+  // Phase 11 — continuity
+  academic_year_created: "a préparé une année universitaire",
+  academic_year_updated: "a modifié une année universitaire",
+  rollover_confirmed: "a fait passer le site à la nouvelle année universitaire",
+  scheduled_job_retried: "a relancé une tâche automatique",
+  governance_issue_detected: "a relevé un point de continuité",
+  governance_issue_resolved: "a constaté qu'un point de continuité est réglé",
+  handover_item_updated: "a mis à jour la liste de passation",
+  review_responsibilities_transferred: "a confié les évaluations d'un membre du comité à un autre",
+  retention_policy_changed: "a changé une règle de conservation des données",
+  retention_cleanup_executed: "a supprimé les données arrivées au terme de leur conservation",
+  institutional_record_updated: "a mis à jour le registre des comptes techniques",
+  backup_verification_recorded: "a déclaré une vérification de sauvegarde",
+  incident_opened: "a ouvert un incident",
+  incident_updated: "a mis à jour un incident",
+  incident_resolved: "a résolu un incident",
+  account_responsibilities_viewed: "a consulté les responsabilités d'un compte (demande RGPD)",
 };
 
 /** Confirmations shown by a page after an answer removed the card it came from (?fait=…). */

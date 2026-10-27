@@ -15,9 +15,8 @@
         │       └── createSupabaseServerClient()           publishable key
         │                                                  + the request's cookies
         │
-        └── createSupabaseAdminClient()                    SECRET key — bypasses RLS
-                (server-only, lint-gated, no caller yet;
-                 reserved for the trusted jobs listed in security-foundations.md)
+        └── (no privileged client: removed in Phase 11; trusted jobs run as
+             Edge Functions, see security-foundations.md)
                         │
                         ▼
    SUPABASE (hosted project, or the local stack)
@@ -71,10 +70,10 @@ See [environments.md](environments.md).
 | --- | --- | --- | --- | --- |
 | Client Component | browser | `createSupabaseBrowserClient()` | publishable | `anon`, or the signed-in user |
 | Server Component, Server Action, Route Handler | Node | `createSupabaseServerClient()` | publishable | the person whose cookies came with the request |
-| Trusted server job (none yet) | Node | `createSupabaseAdminClient()` | secret | nobody: bypasses RLS |
+| Trusted job | Edge Function | its database connection (`SUPABASE_DB_URL`), private functions only | platform-provided | the database owner, through narrow functions |
 
 Both everyday clients carry the same rights. The server is not a way around row level security.
-`server.ts` and `admin.ts` import `server-only`, so importing them from browser code fails the
+`server.ts` and `public.ts` import `server-only`, so importing them from browser code fails the
 build.
 
 ## Authentication (Phase 3, implemented)

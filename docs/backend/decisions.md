@@ -807,3 +807,100 @@ foundational choice.
   `create_notification_delivery_functions`) to be applied on the development project.
 - **Reason:** found while verifying the composer on the development project, and by CI's lint.
 - **Consequence:** same signatures and grants; pgTAP tests cover the shape and an alert.
+
+## D80. Rights expire in the authorization functions, never through a job (Phase 11)
+
+- **Decision:** Phase 11 adds no expiry job. Mandates, delegations, committee appointments and the
+  guardian role were already compared with `now()` inside the authorization functions; transitions
+  already write the incoming and outgoing mandates at completion. Jobs remind, observe and clean up.
+- **Reason:** brief §17–18: cron must not be the authorization boundary. A stopped scheduler must
+  delay work, never extend access.
+- **Consequence:** an "ended" mandate may still say `active` in its row; displays derive the state
+  from the dates. Tests read rights at a given instant through `p_at`/`p_now`, which no API role
+  can call (no client clock).
+
+## D81. One dispatcher for every recurring job (Phase 11)
+
+- **Decision:** `scheduled_jobs` + `private.run_scheduled_job`: per-job advisory lock (a second
+  run is `skipped`), the task in a subtransaction (a failure rolls back its own work), a short
+  data-free error, a run history (30 days) and a summary row. `private.execute_job` is a fixed
+  `case`. Health is measured from the last success (late after twice the period plus ten minutes,
+  failing after three failures, `not_scheduled` when pg_cron disagrees, `unverifiable` without
+  pg_cron) on every read, and published anonymously as three booleans (`platform_heartbeat`,
+  `/api/health`) for an external monitor.
+- **Reason:** brief §48–55: no redundant workers, idempotent and concurrent-safe runs, missed-run
+  detection that does not depend on the scheduler itself, a safe retry without "run anything".
+- **Consequence:** every pg_cron job is `select private.run_scheduled_job('<key>')`; the Phase 10
+  `notification-retention` job became `data-retention`. Retries: retryable jobs only, second
+  factor, once per two minutes per job (a lock serialises double clicks), audited.
+
+## D82. The governance checker observes and tells; it never acts (Phase 11)
+
+- **Decision:** `private.check_governance_health` keeps one open `governance_issues` row per
+  problem (stable `issue_key`), tells the people who can act through `private.notify`
+  (`governance_issue_alert`, page chosen by a `target`, never a stored link), reminds every 7 days
+  (critical: 3, three times at most), escalates once (association → BDE → guardian; critical at
+  once), and resolves what is no longer detected (unread alerts archived). Mandate reminders moved
+  into it, at the current year's offsets, closest offset only, Phase 10-compatible keys, skipped
+  when a successor or a transition exists.
+- **Reason:** brief §21, §59–62: actionable, deduplicated, escalating alerts without automatic
+  appointments.
+- **Consequence:** the BDE vacancy message to the guardian (Phase 10 `governance_bde_vacancy`) now
+  comes from the checker. Personal security issues (officer without MFA) go to the person only;
+  the BDE sees a count.
+
+## D83. Academic years are a frame, not a source of rights (Phase 11)
+
+- **Decision:** `academic_years` holds dates, suggested mandate dates, handover and recruitment
+  reference dates and reminder offsets. The current year was seeded from the existing convention
+  (1 September – 31 August, Paris). The rollover needs the BDE key, the second factor, nine human
+  confirmations, acknowledged warnings and at most 30 days' advance; it closes the old year and
+  makes the new one current, and changes nothing else.
+- **Reason:** brief §8–14: no permission from a year, no reset of the database.
+- **Consequence:** the current year's dates are frozen once current (notes, handover, recruitment
+  dates and offsets stay editable). A test fingerprints organizations, memberships, mandates,
+  posts, events, registrations, applications and transitions across a rollover.
+
+## D84. Retention periods are decided, never defaulted (Phase 11)
+
+- **Decision:** `retention_policies` (null = keep). Phase 10's fixed periods on notifications,
+  deliveries, preference changes and cleared suppressions are removed: those records are kept until
+  the BDE decides. A change is previewed with the real count and must be confirmed by repeating
+  it; the nightly job deletes at most 5 000 rows per policy and records counts. Short-lived
+  technical logs keep fixed, documented housekeeping.
+- **Reason:** brief §78–83: no invented retention periods, dry run first, no accidental mass
+  deletion.
+- **Consequence:** until decided, notifications accumulate; the pages and the year's preparation
+  report the undecided policies.
+
+## D85. Storage cleanup as a narrow Edge Function; no privileged client in the site (Phase 11)
+
+- **Decision:** the Phase 8 route `/api/maintenance/storage-cleanup` (never scheduled) and
+  `createSupabaseAdminClient` are removed. The `storage-cleanup` Edge Function (verify_jwt off,
+  Vault token checked through its database connection) is woken by the `storage-cleanup` job via
+  pg_net when files wait, claims leased batches, deletes only the queue's paths in
+  `recruitment-documents` with the platform's secret key sent as `apikey`, and reports each
+  outcome. `claim_storage_cleanup`/`complete_storage_cleanup` are no longer granted to any API role.
+- **Reason:** brief §50, §82: authenticated, narrow workers; no privileged credential in the site.
+- **Consequence:** two Vault secrets per project (`storage_cleanup_url`, `storage_cleanup_token`);
+  until they exist, files wait and the operations page says so.
+
+## D86. Ownership, backups and incidents are declarations (Phase 11)
+
+- **Decision:** `institutional_records` (who holds each provider account, renewal, status),
+  `backup_verifications` (dated, signed declarations of backups and restore tests, database and
+  Storage separately) and `operational_incidents`. Text that looks like a credential is refused.
+  Only what the code depends on was seeded (Supabase, GitHub, Brevo).
+- **Reason:** brief §65–77, §93: the site cannot see a provider's console; it must not claim a
+  backup or an owner nobody verified.
+- **Consequence:** statuses read "Non renseigné" / "Jamais vérifié" until people verify them; a
+  restore test older than three months before the current year began reads "À refaire".
+
+## D87. New permission platform.operations.monitor (Phase 11)
+
+- **Decision:** a platform key for operations (jobs, register, backups, incidents, security
+  self-check), held by the BDE offices. Governance health and the year stay under
+  `platform.organizations.manage`; the guardian gets `guardian_continuity` only.
+- **Reason:** brief §90: permission-aware sections; the guardian's view limited to governance
+  availability and recovery.
+- **Consequence:** the control centre opens with this key too; a "Continuité" tab groups the pages.

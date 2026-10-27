@@ -50,16 +50,14 @@ The secret key, or any equivalent privileged credential:
 
 ## Privileged access
 
-`createSupabaseAdminClient()` (`src/lib/supabase/admin.ts`) is the only privileged client. It
-imports `server-only`, and ESLint rejects every import of it unless the line carries an
-`eslint-disable-next-line no-restricted-imports -- <reason>` comment for a reviewer to see.
-
-It is reserved for narrowly defined trusted operations, each listed here before it is written:
+**Since Phase 11 the site has no privileged client.** `src/lib/supabase/admin.ts` was removed
+with its last caller; ESLint still rejects any import of a `supabase/admin` module, so bringing one
+back needs an explained exception a reviewer can see, and a line in this table first.
 
 | Operation | Why it cannot use the user's client | Added in |
 | --- | --- | --- |
 | ~~The e-mail worker, `POST /api/notifications/send`~~ | removed in Phase 10: e-mail is sent by the `notifications-worker` Edge Function (below) | Phase 7 → 10 |
-| The Storage cleanup worker, `POST /api/maintenance/storage-cleanup` | it deletes files of documents their candidate removed or the retention purged (`claim_storage_cleanup`, `complete_storage_cleanup` are granted to `service_role` only); only the paths and bucket the queue names; it runs without a user, behind `MAINTENANCE_WORKER_SECRET` | Phase 8 |
+| ~~The Storage cleanup worker, `POST /api/maintenance/storage-cleanup`~~ | removed in Phase 11: the `storage-cleanup` Edge Function (below) deletes the queued files | Phase 8 → 11 |
 
 A permission problem in a page is fixed with a policy, never by switching to this client.
 

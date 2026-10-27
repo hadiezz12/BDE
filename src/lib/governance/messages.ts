@@ -276,6 +276,29 @@ export type GovernanceErrorCode =
   | "schedule_invalid"
   | "topic_essential"
   | "topic_not_found"
+  // Phase 11 — continuity
+  | "academic_year_closed"
+  | "academic_year_current_dates"
+  | "academic_year_invalid"
+  | "academic_year_not_found"
+  | "academic_year_overlap"
+  | "backup_check_invalid"
+  | "check_unknown"
+  | "incident_invalid"
+  | "incident_not_found"
+  | "incident_resolved"
+  | "job_not_retryable"
+  | "job_retry_too_soon"
+  | "job_unknown"
+  | "member_not_found"
+  | "policy_unknown"
+  | "record_unknown"
+  | "register_text_invalid"
+  | "retention_confirmation_required"
+  | "rollover_checks_incomplete"
+  | "rollover_too_early"
+  | "rollover_warnings_unacknowledged"
+  | "secret_not_allowed"
   | "unavailable"
   | "unexpected";
 
@@ -601,7 +624,52 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
     "Ces messages ne se désactivent pas : ils concernent une démarche en cours ou la sécurité de ton compte.",
   topic_not_found:
     "Ce type de notification n'existe pas.",
-  unavailable: "Le service est momentanément indisponible. Réessaie dans un instant.",
+  // Phase 11 — continuity
+  academic_year_closed:
+    "Cette année universitaire est terminée : elle reste dans l'historique et ne se modifie plus.",
+  academic_year_current_dates:
+    "Les dates de l'année en cours ne changent plus : les mandats s'y réfèrent. Les notes, la passation, les dates de recrutement et les rappels restent modifiables.",
+  academic_year_invalid:
+    "Vérifie l'année : nom au format 2027–2028, fin après le début (13 mois au plus), mandats suggérés autour du début de l'année, de 1 à 6 rappels entre 1 et 120 jours.",
+  academic_year_not_found:
+    "Cette année universitaire n'existe pas (ou plus).",
+  academic_year_overlap:
+    "Cette année chevauche une année déjà enregistrée, ou porte le même nom. Une année commence après la fin de la précédente.",
+  backup_check_invalid:
+    "Vérifie la déclaration : type de vérification, résultat, environnement, et une date de l'année écoulée (pas dans le futur).",
+  check_unknown:
+    "Ce point de la liste n'existe pas.",
+  incident_invalid:
+    "Vérifie l'incident : un titre de 3 à 140 caractères, un type, une gravité, une note pour chaque changement.",
+  incident_not_found:
+    "Cet incident n'existe pas.",
+  incident_resolved:
+    "Cet incident est déjà résolu.",
+  job_not_retryable:
+    "Cette tâche ne se relance pas à la main : elle supprime des données selon les règles de conservation et repasse seule la nuit suivante.",
+  job_retry_too_soon:
+    "Cette tâche vient d'être relancée. Attends deux minutes avant de recommencer.",
+  job_unknown:
+    "Cette tâche automatique n'existe pas.",
+  member_not_found:
+    "Cette personne ne fait pas partie de l'équipe de l'asso.",
+  policy_unknown:
+    "Cette règle de conservation n'existe pas.",
+  record_unknown:
+    "Cette ligne du registre n'existe pas.",
+  register_text_invalid:
+    "Un champ est trop long ou contient un caractère non autorisé (les retours à la ligne ne vont que dans les notes).",
+  retention_confirmation_required:
+    "Cette règle supprimerait des données dès la prochaine nuit. Regarde l'aperçu, puis confirme le nombre affiché.",
+  rollover_checks_incomplete:
+    "Il reste des points à confirmer dans la liste de préparation avant de passer à la nouvelle année.",
+  rollover_too_early:
+    "Le passage à la nouvelle année se fait au plus tôt 30 jours avant son début.",
+  rollover_warnings_unacknowledged:
+    "Des vérifications demandent ton attention. Relis-les et coche « J'ai pris connaissance » pour continuer.",
+  secret_not_allowed:
+    "Ce texte ressemble à un mot de passe ou à une clé. Le registre n'en contient jamais : indique seulement qui détient l'accès et comment le joindre.",
+  unavailable:"Le service est momentanément indisponible. Réessaie dans un instant.",
   unexpected: "Une erreur inattendue est survenue. Réessaie, et préviens le BDE si ça continue.",
 };
 

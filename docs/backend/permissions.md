@@ -94,6 +94,7 @@ lending them would let a borrower hand out rights the lender's position does not
 | `platform.privacy.requests` (compile everything held about one candidate's applications, erase an application, on a written request, second factor, audited) | the privacy officer only (Phase 9), provisioned by the project owner |
 | `platform.communications.broadcast` (announcements to all students, to the BDE's members and followers; approve another officer's campus-wide e-mail, second factor; Phase 10) | BDE president, BDE vice-president |
 | `platform.communications.monitor` (delivery health, failed e-mails without content or address, retry with the second factor, template preview; Phase 10) | BDE president, BDE vice-president |
+| `platform.operations.monitor` (scheduled jobs and their safe retry, queues, security self-check, institutional register, backup declarations, incidents; Phase 11) | BDE president, BDE vice-president |
 
 The two BDE offices also carry every organization key **of the BDE organization itself**, so they
 run the BDE's own team like any president. They get no key inside another association.
