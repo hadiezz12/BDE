@@ -5,6 +5,8 @@ import { routes } from "@/lib/routes";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Icon } from "@/components/ui/Icon";
 import { CommandSearch } from "@/components/search/CommandSearch";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import type { NotificationSummary } from "@/lib/notifications/view";
 import { ManageEntryMark } from "@/components/manage/ManageEntryMark";
 import { NavLinks } from "./NavLinks";
 import { ThemeToggle } from "./ThemeToggle";
@@ -23,10 +25,13 @@ export function SiteHeader({
   session,
   managed,
   searchIndex,
+  notifications,
 }: {
   session: Session;
   managed: ManageEntry[];
   searchIndex: SearchEntry[];
+  /** The bell's first state (signed-in people only; it then stays current on its own). */
+  notifications: NotificationSummary | null;
 }) {
   const primaryManaged = managed[0];
   return (
@@ -71,6 +76,8 @@ export function SiteHeader({
 
           <CommandSearch index={searchIndex} />
 
+          {session.user && notifications && <NotificationBell initial={notifications} userId={session.user.id} />}
+
           <div className="hidden lg:block">
             <ThemeToggle />
           </div>
@@ -87,10 +94,10 @@ export function SiteHeader({
           )}
 
           <div className="hidden lg:block">
-            <UserMenu session={session} managed={managed} />
+            <UserMenu session={session} managed={managed} unread={notifications?.unread ?? 0} />
           </div>
           <div className="lg:hidden">
-            <MobileUserButton session={session} managed={managed} />
+            <MobileUserButton session={session} managed={managed} unread={notifications?.unread ?? 0} />
           </div>
         </div>
       </div>

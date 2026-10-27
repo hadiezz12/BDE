@@ -15,7 +15,7 @@ sees who else is coming). The BDE's eight "événements de l'année" stay the ma
 
 Migrations: `20261023120000_create_events.sql` (tables, permissions, audit vocabulary, policies,
 Storage), `20261023120100_create_event_functions.sql` (writing, publication, registration engine,
-waiting list, moderation, the e-mail worker's functions, the reminders job),
+waiting list, moderation, the reminders job; e-mail moved to Phase 10),
 `20261023120200_create_event_reads.sql` (public read model, a student's own reads, the team's desk,
 editor, preview and participant list, the BDE list, images),
 `20261023120300_link_posts_to_events.sql` (articles about an event),
@@ -169,31 +169,23 @@ same decision.
 
 ## Messages
 
-Every change a participant must know about writes one row of `notification_outbox` (own rows only,
-read by the student in **Notifications**), with a `dedupe_key` so a retry never sends twice:
-`event_registration_confirmed`, `event_waitlisted`, `event_promoted`, `event_registration_cancelled`,
-`event_registration_removed`, `event_changed` (dates or place of a published event, with the old
-values), `event_cancelled` (with the reason), `event_reminder`. The payload is a snapshot of public
-facts at the time (title, dates, place, organizer): a later edit never rewrites a message, and the
-private details are never in it. Words: `src/lib/events/messages.ts`, the same for the in-app list
-and the e-mail.
+Every change a participant must know about is a notification (Phase 10:
+[notifications.md](notifications.md)), created by `private.notify` with a key so a retry never
+notifies twice: `event_registration_confirmed`, `event_waitlisted`, `event_promoted`,
+`event_registration_cancelled`, `event_registration_removed`, `event_changed` (dates or place of a
+published event, with the old values), `event_cancelled` (with the reason), `event_reminder`. The
+payload is a snapshot of public facts at the time (title, dates, place, organizer): a later edit
+never rewrites a message, and the private details are never in it. Registrations are essential
+messages (always sent by e-mail once e-mail is live); the reminder can be turned off by e-mail.
 
-**Reminders**: the pg_cron job `enqueue-event-reminders` (every 15 minutes) writes one reminder per
+**Reminders**: the job `notification-reminders` (every 15 minutes, Phase 10) writes one reminder per
 confirmed participant of an event starting within 24 hours, for those registered more than 24 hours
 before (the others just got their confirmation). Its key includes the start: a rescheduled event
-reminds again.
+reminds again, and the old reminder is dropped before sending.
 
-**E-mail**: `POST /api/notifications/send`, called by a scheduler with
-`Authorization: Bearer <NOTIFICATIONS_WORKER_SECRET>` (404 without it). It claims up to 20 messages
-(`claim_notification_emails`: `for update skip locked`, a 10-minute lease, service role only),
-renders them (`src/lib/events/email.ts`: escaped, no image, no tracking, links to the site's own
-pages only), hands them to the transport and records the outcome (`complete_notification_email`:
-retry after 2, 4, 8, 16 minutes, `failed` after 5 attempts, `skipped` without an address). A
-delivery problem never touches a registration. Transports (`EMAIL_TRANSPORT`): none (the default:
-the worker answers `email_transport_not_configured` and messages stay pending), `log`
-(development only), `brevo` (`BREVO_API_KEY`, `EMAIL_FROM`). **No transport is configured
-anywhere yet**: today students get their messages in the site only, and the desk shows the e-mails
-waiting.
+**E-mail**: the `notifications-worker` Edge Function ([notifications.md](notifications.md#e-mail-delivery)).
+A delivery problem never touches a registration. The event desk counts the e-mails still waiting
+or failed for each event.
 
 ## Reading events
 
@@ -243,7 +235,7 @@ must not become a back door to the participant list. The wizard's history shows 
   registrations) is a later decision.
 - No guests outside the school, no group registration, no transfer of a seat, no check-in at the
   door (Phase 7 has no tickets or QR codes).
-- No e-mail is sent until a transport is configured; no push notifications.
+- No push notifications. E-mail: [notifications.md](notifications.md).
 - The BDE list and the calendar read at most 100 and 600 events per view; the agenda pages through
   everything.
 - Times are Europe/Paris only (`events.timezone` is constrained to it).

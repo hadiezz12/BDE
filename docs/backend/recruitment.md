@@ -200,12 +200,14 @@ as downloads. Phase 9 must decide scanning before reviewers open files.
 
 ## Messages
 
-`notification_outbox` kinds (with `application_id`): `application_submitted` (with the reference),
+Notification kinds (with `application_id`; created by `private.notify` since Phase 10,
+[notifications.md](notifications.md)): `application_submitted` (with the reference),
 `application_withdrawn`, `application_deadline_reminder` (one per unfinished draft whose position
 closes within 24 hours, pg_cron `enqueue-recruitment-reminders` hourly at :07, only while it can
 still be sent), `application_form_updated`, `recruitment_cancelled` (reason, to submitted and draft
-holders). Words in `src/lib/recruitment/messages.ts`, shared by Notifications and the e-mail worker
-(the layout is shared with events). Payloads hold public facts only: never an answer or a file.
+holders). Words in `supabase/functions/_shared/notifications/recruitment.ts`, shared by the
+notification centre and the e-mail worker; application e-mails are confidential (neutral subject
+and body). Payloads hold public facts only: never an answer or a file.
 
 ## Privacy notice and retention
 

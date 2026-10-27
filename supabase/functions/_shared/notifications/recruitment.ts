@@ -1,7 +1,8 @@
 /**
- * The words of each application message, from the outbox row the database
- * wrote (notification_outbox: kind + payload frozen when it happened). One
- * source for the in-app list and the e-mail worker. Public facts only: the
+ * The words of each application message, from the notification the database
+ * wrote (notifications: kind + payload frozen when it happened). One source
+ * for the in-app list and the e-mail worker (Phase 10: shared by the site and
+ * the notifications-worker Edge Function). Public facts only: the
  * payload never holds an answer, a file, a score, a note or another
  * candidate, and nothing here adds any. "Envoyée" never means read or
  * accepted. Pure module (Intl only).
@@ -13,8 +14,7 @@
  * again.
  */
 
-import { renderMessageEmail, SLUG, type RenderedEmail } from "../events/email.ts";
-import { messageWhen } from "../events/messages.ts";
+import { messageWhen } from "./events.ts";
 
 export type CandidateMessageKind =
   | "application_submitted"
@@ -34,7 +34,8 @@ export type CandidateMessageKind =
   | "recruitment_offer_expired"
   | "recruitment_offer_withdrawn"
   | "recruitment_rejected"
-  | "recruitment_waitlisted";
+  | "recruitment_waitlisted"
+  | "recruitment_interview_reminder";
 
 export type TeamMessageKind =
   | "recruitment_review_assigned"
@@ -44,7 +45,8 @@ export type TeamMessageKind =
   | "recruitment_decision_to_approve"
   | "recruitment_offer_accepted"
   | "recruitment_offer_declined"
-  | "recruitment_candidate_withdrew";
+  | "recruitment_candidate_withdrew"
+  | "recruitment_team_interview_reminder";
 
 export type ApplicationMessageKind = CandidateMessageKind | TeamMessageKind;
 
@@ -67,6 +69,7 @@ const CANDIDATE_KINDS: readonly string[] = [
   "recruitment_offer_withdrawn",
   "recruitment_rejected",
   "recruitment_waitlisted",
+  "recruitment_interview_reminder",
 ];
 
 const TEAM_KINDS: readonly string[] = [
@@ -78,6 +81,7 @@ const TEAM_KINDS: readonly string[] = [
   "recruitment_offer_accepted",
   "recruitment_offer_declined",
   "recruitment_candidate_withdrew",
+  "recruitment_team_interview_reminder",
 ];
 
 export const APPLICATION_MESSAGE_KINDS: readonly string[] = [...CANDIDATE_KINDS, ...TEAM_KINDS];
@@ -265,6 +269,13 @@ export function applicationMessage(kind: ApplicationMessageKind, p: ApplicationM
           "elle reviendra vers toi si une place se libère." +
           theirWords(p.message),
       };
+    case "recruitment_interview_reminder":
+      return {
+        title: `Entretien demain : ${what}`,
+        body:
+          `Ton entretien est prévu ${p.starts_at ? `le ${messageWhen(p.starts_at)}` : "bientôt"}` +
+          `${p.mode ? `, ${MODE_WORDS[p.mode]}` : ""}${p.location ? ` (${p.location})` : ""}. Les détails sont dans ton espace.`,
+      };
     case "recruitment_review_assigned":
       return p.committee
         ? {
@@ -309,54 +320,10 @@ export function applicationMessage(kind: ApplicationMessageKind, p: ApplicationM
         title: `Candidature retirée : ${ref}`,
         body: `La personne a retiré sa candidature (${what}). Ses entretiens, questions et décisions en cours s'arrêtent.`,
       };
+    case "recruitment_team_interview_reminder":
+      return {
+        title: `Entretien à faire passer : ${ref}`,
+        body: `Tu fais passer un entretien ${p.starts_at ? `le ${messageWhen(p.starts_at)}` : "bientôt"} (${what}).`,
+      };
   }
-}
-
-/** The application page is the student's own; the campaign page only while it can be linked; team messages go to the workspace. */
-export function renderApplicationEmail({
-  kind,
-  payload,
-  applicationId,
-  name,
-  site,
-}: {
-  kind: ApplicationMessageKind;
-  payload: ApplicationMessagePayload;
-  applicationId: string | null;
-  name: string | null;
-  site: URL | null;
-}): RenderedEmail {
-  const message = applicationMessage(kind, payload);
-  const link = (path: string) => (site ? new URL(path, site).toString() : null);
-  if (isTeamMessage(kind)) {
-    const target = teamLink(payload);
-    const href = target ? link(target) : null;
-    return renderMessageEmail({
-      title: message.title,
-      body: message.body,
-      name,
-      links: href ? [{ href, label: target === "/manage/evaluations" ? "Mes évaluations" : "Ouvrir la candidature", text: "Dans l'espace de gestion" }] : [],
-      footer:
-        "Tu reçois ce message parce que tu participes à un recrutement sur le site du Very Pink Club, le BDE. " +
-        "Rien de la candidature n'est dans ce message : elle se lit sur le site, selon tes droits.",
-    });
-  }
-  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-  const mine = applicationId && UUID.test(applicationId) ? link(`/account/applications/${applicationId}`) : link("/account/applications");
-  const campaign =
-    payload.slug && SLUG.test(payload.slug) && kind !== "recruitment_cancelled" && kind.startsWith("application_")
-      ? link(`/recruitment/${payload.slug}`)
-      : null;
-  return renderMessageEmail({
-    title: message.title,
-    body: message.body,
-    name,
-    links: [
-      ...(mine ? [{ href: mine, label: kind === "application_deadline_reminder" ? "Reprendre mon brouillon" : "Ma candidature", text: "Ta candidature" }] : []),
-      ...(campaign ? [{ href: campaign, label: "Le recrutement", text: "Le recrutement" }] : []),
-    ],
-    footer:
-      "Tu reçois ce message parce que tu as une candidature sur le site du Very Pink Club, le BDE. " +
-      "Tes messages sont aussi dans ton espace, rubrique Notifications.",
-  });
 }

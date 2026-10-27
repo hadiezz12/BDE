@@ -263,6 +263,13 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   privacy_application_erased: "a effacé une candidature (demande RGPD)",
   post_campaign_linked: "a relié un article à un recrutement",
   post_campaign_unlinked: "a retiré le recrutement d'un article",
+  notification_broadcast_created: "a préparé un message",
+  notification_broadcast_submitted: "a envoyé un message (ou l'a soumis à approbation)",
+  notification_broadcast_approved: "a approuvé une annonce du BDE par e-mail",
+  notification_broadcast_cancelled: "a annulé un message",
+  notification_broadcast_dispatched: "a fini de distribuer un message",
+  notification_delivery_retried: "a relancé un e-mail en échec",
+  notification_config_changed: "a changé le réglage des envois d'e-mails",
 };
 
 /** Confirmations shown by a page after an answer removed the card it came from (?fait=…). */

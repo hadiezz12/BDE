@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getSession } from "@/lib/session";
 import { getManageEntries } from "@/lib/governance/entries";
+import { getMyNotificationSummary } from "@/lib/notifications/data";
 import { ManageTopBar } from "@/components/manage/ManageTopBar";
 import { ManageFooter } from "@/components/manage/ManageFrame";
 import { DoneAnnouncer } from "@/components/manage/governance/DoneAnnouncer";
@@ -22,10 +23,10 @@ export const metadata: Metadata = {
  * every action is checked again by the database.
  */
 export default async function ManageLayout({ children }: { children: ReactNode }) {
-  const [session, managed] = await Promise.all([getSession(), getManageEntries()]);
+  const [session, managed, notifications] = await Promise.all([getSession(), getManageEntries(), getMyNotificationSummary()]);
   return (
     <div data-surface="studio" className="flex min-h-dvh flex-col">
-      <ManageTopBar session={session} managed={managed} />
+      <ManageTopBar session={session} managed={managed} notifications={notifications} />
       <div className="flex flex-1 flex-col">{children}</div>
       <ManageFooter />
       <DoneAnnouncer />

@@ -1,6 +1,6 @@
 /**
- * The words of each event message, from the outbox row the database wrote
- * (notification_outbox: kind + payload frozen at the time of the event).
+ * The words of each event message, from the notification the database wrote
+ * (notifications: kind + payload frozen at the time of the event).
  * One source for the in-app list and the e-mail worker, so both always say
  * the same thing. Public facts only: the payload never holds the private
  * joining details, and nothing here adds any. Pure module (Intl only).

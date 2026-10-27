@@ -20,8 +20,11 @@ import { dayRole, dayStart, eventsOn, monthGrid, onDay, parseDayKey, rangeOf, we
 import { agendaHref, agendaParams, agendaWindow, emptyAgendaTitle, isFiltered, parseAgendaFilters } from "./filters.ts";
 import { buildIcs, foldLine, googleCalendarUrl, icsFileName, icsText } from "./ics.ts";
 import { attendeesCsv, attendeesFileName, csvCell, toCsv } from "./csv.ts";
-import { eventMessage, messageWhen } from "./messages.ts";
-import { escapeHtml, renderEventEmail } from "./email.ts";
+import { eventMessage, messageWhen } from "../../../supabase/functions/_shared/notifications/events.ts";
+import { escapeHtml, renderNotificationEmail } from "../../../supabase/functions/_shared/notifications/email.ts";
+
+// Event messages are essential (a registration in progress) and not confidential.
+const renderEventEmail = (input) => renderNotificationEmail({ ...input, essential: true, confidential: false });
 import { calendarInput, eventJsonLd, jsonLdScript, placeLine } from "./seo.ts";
 
 const ORG = { id: "o1", slug: "exemple-finance", name: "Finance (exemple)", short_name: null, accent: "or", kind: "association", logo: null };

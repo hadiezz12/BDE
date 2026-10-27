@@ -22,6 +22,7 @@ export type ManageSectionKey =
   | "events"
   | "recruitment"
   | "media"
+  | "communications"
   | "analytics"
   | "settings";
 
@@ -82,6 +83,7 @@ export const MANAGE_SECTIONS: ManageSection[] = [
     ],
   },
   { key: "media", label: "Médias", icon: "image", href: routes.manageMedia, requires: ["media.manage"] },
+  { key: "communications", label: "Messages", icon: "mail", href: routes.manageCommunications, requires: ["communications.send"] },
   { key: "analytics", label: "Statistiques", icon: "chart", href: routes.manageAnalytics, requires: ["analytics.view"], soon: true },
   {
     key: "settings",

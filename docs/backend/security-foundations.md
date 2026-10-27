@@ -58,10 +58,20 @@ It is reserved for narrowly defined trusted operations, each listed here before 
 
 | Operation | Why it cannot use the user's client | Added in |
 | --- | --- | --- |
-| The e-mail worker, `POST /api/notifications/send` | it claims and completes other people's messages (`claim_notification_emails`, `complete_notification_email` are granted to `service_role` only) and reads their address to send them; it runs without a user, behind `NOTIFICATIONS_WORKER_SECRET` | Phase 7 |
+| ~~The e-mail worker, `POST /api/notifications/send`~~ | removed in Phase 10: e-mail is sent by the `notifications-worker` Edge Function (below) | Phase 7 → 10 |
 | The Storage cleanup worker, `POST /api/maintenance/storage-cleanup` | it deletes files of documents their candidate removed or the retention purged (`claim_storage_cleanup`, `complete_storage_cleanup` are granted to `service_role` only); only the paths and bucket the queue names; it runs without a user, behind `MAINTENANCE_WORKER_SECRET` | Phase 8 |
 
 A permission problem in a page is fixed with a policy, never by switching to this client.
+
+### Edge Functions connected to the database (Phase 10)
+
+| Function | What it may do | How it proves it is called legitimately |
+| --- | --- | --- |
+| `notifications-worker` | connects with `SUPABASE_DB_URL` (the database owner) and calls only `private.notification_*` worker functions (claim, complete, capture, runs, config), which no API role may execute; reads recipients' addresses only to send; holds `BREVO_API_KEY` in its own secrets | `Authorization: Bearer` compared in the database with the Vault secret `notifications_worker_token` (≥ 32 characters, absent = always refused); `verify_jwt` off; 404 otherwise |
+| `notifications-webhook` | calls only `private.record_provider_event` | Bearer token compared with the Vault secret `notifications_webhook_token`; body ≤ 512 kB, 500 events |
+
+Neither logs an address, a subject or a body: counts and short error codes only. The site never
+holds the Brevo key, the worker token or the webhook token.
 
 ## Row level security rules
 

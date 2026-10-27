@@ -12,6 +12,7 @@ import { getMemberCardOffer } from "@/lib/data/member-card";
 import { getAssociationPosts } from "@/lib/data/posts";
 import { getAssociationRecruitment } from "@/lib/data/recruitment";
 import { getMyApplications } from "@/lib/recruitment/me";
+import { amIFollowing } from "@/lib/notifications/data";
 import type { ProfileViewer } from "./AssociationProfile";
 
 /**
@@ -61,11 +62,13 @@ const PAGE_KEYS = ["organization.settings.update", "organization.page.publish", 
 export async function getProfileViewer(association: Pick<Association, "id">): Promise<ProfileViewer> {
   const session = await getSession();
   if (!session.user) return { user: null };
-  const org = (await getMyAccess())?.organizations.find((o) => o.id === association.id);
-  if (!org) return { user: session.user };
+  const [access, following] = await Promise.all([getMyAccess(), amIFollowing(association.id)]);
+  const org = access?.organizations.find((o) => o.id === association.id);
+  if (!org) return { user: session.user, following };
   const titles = [...new Set(org.positions.map((p) => p.title))];
   return {
     user: session.user,
+    following,
     membership: titles.length > 0 ? titles.join(" · ") : "membre",
     manageHref: PAGE_KEYS.some((k) => org.permissions.includes(k))
       ? org.permissions.includes("organization.settings.update") || org.permissions.includes("organization.page.publish")

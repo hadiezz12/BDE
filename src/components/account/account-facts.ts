@@ -1,5 +1,4 @@
-import type { ApplicationItem, EventItem, NotificationKind } from "@/lib/types";
-import type { IconName } from "@/components/ui/Icon";
+import type { ApplicationItem, EventItem } from "@/lib/types";
 import { toEventItem, type MyEventsPayload, type MyRegistrationPayload } from "@/lib/events/model";
 import { eventPhase } from "@/components/events/event-facts";
 import { formatDayFull, formatDayShort, formatTime } from "@/lib/format";
@@ -12,38 +11,6 @@ import { CAMPUS_TZ, dayDiff, parisDateKey } from "@/lib/time";
  */
 
 /* ---- Notifications ------------------------------------------------------ */
-
-export const NOTIFICATION_KIND_LABEL: Record<NotificationKind, string> = {
-  evenement: "Événement",
-  candidature: "Candidature",
-  association: "Association",
-  bde: "BDE",
-};
-
-export const NOTIFICATION_KIND_ICON: Record<NotificationKind, IconName> = {
-  evenement: "ticket",
-  candidature: "file",
-  association: "users",
-  bde: "megaphone",
-};
-
-/** Heading of each kind in the preferences form. */
-export const NOTIFICATION_KIND_TITLE: Record<NotificationKind, string> = {
-  evenement: "Événements",
-  candidature: "Candidatures",
-  association: "Tes assos",
-  bde: "Le BDE",
-};
-
-/** What each kind covers, for the preferences form. */
-export const NOTIFICATION_KIND_DETAIL: Record<NotificationKind, string> = {
-  evenement: "Rappels avant tes soirées, places qui se libèrent sur ce que tu as enregistré.",
-  candidature: "Chaque changement de statut, les entretiens calés, les réponses des bureaux.",
-  association: "Les nouvelles des assos dont tu es membre : recrutements, permanences, réunions.",
-  bde: "Les annonces du Very Pink Club : dates des événements, campagne des listes, carte cotisante.",
-};
-
-export const NOTIFICATION_KINDS: NotificationKind[] = ["evenement", "candidature", "association", "bde"];
 
 /** "Aujourd'hui" · "Hier" · "Vendredi 9 octobre" — the day heading of a notification group. */
 export function dayHeading(iso: string, now = new Date()): string {

@@ -56,6 +56,12 @@ export const routes = {
   applicationUpload: (applicationId: string) => `/api/applications/${applicationId}/documents`,
   applicationDocument: (documentId: string) => `/api/applications/documents/${documentId}`,
   accountNotifications: "/account/notifications",
+  /** Opens one notification: marks it read, then goes where it leads (that page checks access again). */
+  accountNotification: (id: number | string) => `/account/notifications/${id}`,
+  /** What one receives, where, and the associations one follows (Phase 10). */
+  accountNotificationSettings: "/account/notifications/reglages",
+  /** The page an e-mail's unsubscribe link opens (no sign-in: the token is the proof). */
+  notificationUnsubscribe: "/notifications/desabonnement",
   accountProfile: "/account/profile",
   accountSecurity: "/account/security",
   /** Invitations to answer, presidencies to accept, BDE approvals to give. */
@@ -112,6 +118,8 @@ export const routes = {
   /** A team member's download of a candidate's file (checked and recorded by the database). */
   recruitmentDocument: (documentId: string) => `/api/recruitment/documents/${documentId}`,
   manageMedia: (asso: string) => `/manage/${asso}/media`,
+  /** Messages to the association's members and followers (Phase 10). */
+  manageCommunications: (asso: string) => `/manage/${asso}/communication`,
   manageAnalytics: (asso: string) => `/manage/${asso}/analytics`,
   /** The public page editor: content (index), then the tabs below. */
   manageSettings: (asso: string) => `/manage/${asso}/settings`,
@@ -140,6 +148,8 @@ export const routes = {
   managePlatformEvents: "/manage/plateforme/evenements",
   /** The site's recruitment: moderation, privacy notice and retention (public information and counts only). */
   managePlatformRecruitment: "/manage/plateforme/recrutements",
+  /** BDE announcements, their approvals, and the health of e-mail delivery (Phase 10). */
+  managePlatformCommunications: "/manage/plateforme/communication",
   manageContinuity: "/manage/continuite",
   /** Everything a person has to evaluate, interview or validate, across associations (Phase 9). */
   manageReviewWork: "/manage/evaluations",

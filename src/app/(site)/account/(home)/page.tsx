@@ -6,7 +6,8 @@ import { formatDateLong, formatDayFull, formatTime, plural, relativeDay } from "
 import { getSession } from "@/lib/session";
 import { getAssociationsByIds, getBde, toRef } from "@/lib/data/associations";
 import { getMyApplications } from "@/lib/recruitment/me";
-import { getMyEventNotifications, getMyEvents } from "@/lib/events/me";
+import { getMyEvents } from "@/lib/events/me";
+import { getMyNotificationPage, getMyNotificationSummary } from "@/lib/notifications/data";
 import { getMyMfaStatus } from "@/lib/auth/mfa";
 import { AssociationRow } from "@/components/associations/AssociationRow";
 import { MemberCard } from "@/components/brand/MemberCard";
@@ -54,10 +55,11 @@ export default async function AccountHomePage() {
   if (!user) return null;
 
   const now = new Date();
-  const [my, applications, notifications, associations, mfa] = await Promise.all([
+  const [my, applications, unreadPage, summary, associations, mfa] = await Promise.all([
     getMyEvents(),
     getMyApplications(),
-    getMyEventNotifications(20),
+    getMyNotificationPage({ view: "unread", category: null, limit: 3 }),
+    getMyNotificationSummary(),
     getAssociationsByIds([...new Set([...user.memberships.map((m) => m.associationId), ...user.managedAssociationIds])]),
     getMyMfaStatus(),
   ]);
@@ -66,7 +68,8 @@ export default async function AccountHomePage() {
   const next = tickets[0];
   const attention = applications.filter((a) => needsAttention(a));
   const ongoing = applications.filter(isOngoing);
-  const unread = notifications.filter((n) => !n.read);
+  const unread = unreadPage?.items ?? [];
+  const unreadCount = summary?.unread ?? unread.length;
   const byId = new Map(associations.map((a) => [a.id, a]));
   // Officers: the way to their bureau's workspace, next to the memberships.
   const managed = associations.filter((a) => user.managedAssociationIds.includes(a.id));
@@ -228,26 +231,26 @@ export default async function AccountHomePage() {
         <section aria-labelledby="non-lu-titre" className="lg:col-span-5">
           <SectionHeader
             id="non-lu-titre"
-            kicker={plural(unread.length, "notification", "notifications")}
+            kicker={unreadCount >= 100 ? "99+ notifications" : plural(unreadCount, "notification", "notifications")}
             title="Pas encore lu"
             action={{ href: routes.accountNotifications, label: "Tout voir" }}
           />
           {unread.length > 0 ? (
             <div className="mt-6 border-b border-line">
-              {unread.slice(0, 3).map((n) => (
+              {unread.map((n) => (
                 <NotificationItem key={n.id} notification={n} when="relative" now={now} />
               ))}
-              {unread.length > 3 && (
+              {unreadCount > unread.length && (
                 <p className="border-t border-line py-3 pl-4 type-small sm:pl-5">
                   <Link href={routes.accountNotifications} className="link font-bold">
-                    {plural(unread.length - 3, "autre non lue", "autres non lues")}
+                    {unreadCount >= 100 ? "Les autres non lues" : plural(unreadCount - unread.length, "autre non lue", "autres non lues")}
                   </Link>
                 </p>
               )}
             </div>
           ) : (
             <EmptyState tone="quiet" className="mt-6" title="Tu es à jour.">
-              Les nouvelles de tes inscriptions (confirmation, changement, rappel) arriveront ici.
+              Les nouvelles de tes inscriptions, de tes candidatures, de tes équipes et des assos que tu suis arriveront ici.
             </EmptyState>
           )}
         </section>

@@ -6,6 +6,7 @@ import { routes } from "@/lib/routes";
 import { requireUser } from "@/lib/auth/context";
 import { withNext } from "@/lib/auth/next-path";
 import { getMyProfile } from "@/lib/data/profile";
+import { getMyNotificationSummary } from "@/lib/notifications/data";
 import { PATHNAME_HEADER } from "@/lib/supabase/proxy";
 import { AccountNav } from "@/components/account/AccountNav";
 import { AccountUnavailable } from "@/components/account/AccountUnavailable";
@@ -38,11 +39,12 @@ export default async function AccountLayout({ children }: { children: ReactNode 
   }
 
   const onboarding = path === routes.accountOnboarding;
+  const notifications = onboarding ? null : await getMyNotificationSummary();
   if (!profile.onboardingCompleted && !onboarding) redirect(withNext(routes.accountOnboarding, path));
 
   return (
     <div data-surface="paper" className="grain pb-[var(--section)]">
-      {!onboarding && <AccountNav />}
+      {!onboarding && <AccountNav unread={notifications?.unread ?? 0} />}
       {children}
       <DoneAnnouncer />
     </div>

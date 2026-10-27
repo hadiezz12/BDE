@@ -13,8 +13,11 @@ publication by a pg_cron worker, the public campus feed and article pages, repor
 moderation. Phase 7 added events: the campus agenda and calendar, organization-owned events
 written with a wizard, registrations with capacity and a fair waiting list counted under lock,
 private joining details, the participant list and export, messages through an outbox (with an
-e-mail worker), reminders, and BDE moderation and featuring. Recruitment still reads the Phase 1
-mock layer in `src/lib/data` until its own phase.
+e-mail worker), reminders, and BDE moderation and featuring. Phases 8 and 9 added recruitment
+(campaigns, versioned forms, private documents, then review, committees, interviews and
+decisions). Phase 10 unified notifications: one catalog and entry point, the notification centre
+and header bell, each person's choices, e-mail sent by a Supabase Edge Function (test mode on the
+development project), reminders, BDE and association messages, and delivery monitoring.
 
 Read in this order:
 
@@ -30,6 +33,7 @@ Read in this order:
 | [association-pages.md](association-pages.md) | Pages, drafts and publishing, preview, public team and consent, images, moderation, directory and SEO |
 | [events.md](events.md) | Events and their three concerns, the wizard, the registration engine and waiting list, privacy of participants, messages and the e-mail worker, the public read model |
 | [recruitment.md](recruitment.md) | Recruitment campaigns, positions, the versioned application form, the application engine (drafts, submission, withdrawal), private documents, privacy notice and retention, what Phase 9 builds on |
+| [notifications.md](notifications.md) | Phase 10: the catalog and `private.notify`, the notification centre and bell, choices and unsubscribing, e-mail by Edge Function (modes, retries, webhook, suppression), reminders, broadcasts, monitoring, retention, configuration |
 | [recruitment-review.md](recruitment-review.md) | Phase 9: who reads an application (keys, committees, scopes, the seal), grids and reviews, conflicts, interviews, questions, decisions, offers and onboarding, what candidates see, exports, data rights, retention |
 | [publishing.md](publishing.md) | Posts and revisions, the three state concerns, editorial policy and approval, body format and XSS layers, images, scheduling (the pg_cron worker), addresses, the public read model, reports and moderation |
 | [environments.md](environments.md) | Local, development/staging and production; which variables exist, which are secret; backups |

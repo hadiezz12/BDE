@@ -20,6 +20,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { Sticker } from "@/components/ui/Sticker";
+import { FollowButton } from "@/components/notifications/FollowButton";
 import { AssociationGallery } from "./AssociationGallery";
 import { EventSeriesList } from "./EventSeriesList";
 import { MemberCardSection } from "./MemberCardSection";
@@ -42,6 +43,8 @@ export interface ProfileViewer {
   membership?: string;
   /** Where the visitor edits this page, when they may. */
   manageHref?: string;
+  /** Signed-in visitors: whether they follow this association (Phase 10). */
+  following?: boolean | null;
 }
 
 /**
@@ -195,6 +198,10 @@ export function AssociationProfile({
                 <Icon name="check" size={18} strokeWidth={2.25} className="mt-0.5 shrink-0 text-assoc-text" />
                 <span className="font-bold leading-snug">Tu en fais partie : {viewer.membership}</span>
               </p>
+            )}
+
+            {!preview && user && typeof viewer.following === "boolean" && (
+              <FollowButton organizationId={association.id} following={viewer.following} name={association.name} />
             )}
 
             {(open.length > 0 || offer || (!preview && viewer.manageHref)) && (

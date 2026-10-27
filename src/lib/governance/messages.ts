@@ -258,6 +258,24 @@ export type GovernanceErrorCode =
   | "template_too_long"
   | "template_variable_unknown"
   | "too_many_interviewers"
+  | "approver_must_differ"
+  | "audience_invalid"
+  | "broadcast_closed"
+  | "broadcast_duplicate"
+  | "broadcast_invalid"
+  | "broadcast_no_recipient"
+  | "broadcast_not_found"
+  | "broadcast_rate_limited"
+  | "broadcast_too_large"
+  | "delivery_not_found"
+  | "delivery_not_retryable"
+  | "importance_not_allowed"
+  | "link_invalid"
+  | "notification_not_found"
+  | "quiet_hours_invalid"
+  | "schedule_invalid"
+  | "topic_essential"
+  | "topic_not_found"
   | "unavailable"
   | "unexpected";
 
@@ -547,6 +565,42 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   template_variable_unknown:
     "Un champ entre accolades n'est pas reconnu. Ceux qui marchent : {prenom}, {association}, {recrutement}, {poste}, {reference}.",
   too_many_interviewers: "5 personnes au plus par entretien.",
+  approver_must_differ:
+    "Une annonce par e-mail à tout le campus doit être approuvée par une autre personne du BDE que celle qui l'a écrite.",
+  audience_invalid:
+    "Choisis à qui envoyer le message dans la liste.",
+  broadcast_closed:
+    "Ce message est déjà parti ou annulé : il ne se modifie plus.",
+  broadcast_duplicate:
+    "Le même message a déjà été préparé cette semaine. Modifie-le ou annule l'ancien.",
+  broadcast_invalid:
+    "Le titre fait de 3 à 120 caractères et le texte de 1 à 2 000.",
+  broadcast_no_recipient:
+    "Personne ne recevrait ce message pour l'instant (aucun membre ou abonné·e).",
+  broadcast_not_found:
+    "Ce message n'existe pas, ou tu ne peux pas y toucher.",
+  broadcast_rate_limited:
+    "La limite de messages pour aujourd'hui est atteinte (3 par jour pour le BDE, 5 par asso). Réessaie demain.",
+  broadcast_too_large:
+    "Ce message toucherait plus de 5 000 personnes : seul le BDE peut écrire à tout le campus.",
+  delivery_not_found:
+    "Cet envoi n'existe pas (ou plus).",
+  delivery_not_retryable:
+    "Cet envoi ne peut pas être relancé (adresse absente ou bloquée, ou déjà reparti).",
+  importance_not_allowed:
+    "Seule une annonce du BDE à tout le campus peut être marquée importante.",
+  link_invalid:
+    "Le lien doit mener à une page publique du site (événement, article, asso ou recrutement).",
+  notification_not_found:
+    "Cette notification n'existe plus.",
+  quiet_hours_invalid:
+    "Indique deux heures différentes, au format 22:00.",
+  schedule_invalid:
+    "La date d'envoi doit être dans les 30 prochains jours.",
+  topic_essential:
+    "Ces messages ne se désactivent pas : ils concernent une démarche en cours ou la sécurité de ton compte.",
+  topic_not_found:
+    "Ce type de notification n'existe pas.",
   unavailable: "Le service est momentanément indisponible. Réessaie dans un instant.",
   unexpected: "Une erreur inattendue est survenue. Réessaie, et préviens le BDE si ça continue.",
 };

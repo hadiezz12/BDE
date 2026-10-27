@@ -3,13 +3,13 @@
 import { useActionState, type ReactNode } from "react";
 import { cx } from "@/lib/cx";
 import { plural } from "@/lib/format";
-import { markNotificationsRead } from "@/app/actions/events";
+import { markNotificationsRead } from "@/app/actions/notifications";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 
 /**
- * The message list's toolbar and wrapper. "Tout marquer comme lu" is a real
- * request (mark_notifications_read: the student's own rows only); once it
+ * The notification list's toolbar and wrapper. "Tout marquer comme lu" is a real
+ * request (mark_notifications_read: the person's own rows only); once it
  * succeeds the wrapper takes [data-read-all] at once (the server-rendered
  * NotificationItems restyle themselves from it) and the next load shows
  * them read from the database.

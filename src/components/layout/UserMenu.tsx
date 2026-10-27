@@ -20,10 +20,14 @@ interface Props {
   session: Session;
   /** "Gérer…" links from the person's effective permissions (lib/governance/workspace.ts). */
   managed: ManageEntry[];
+  /** Unread notifications (capped at 100 by the database), shown next to "Notifications". */
+  unread?: number;
 }
 
+const unreadText = (n: number) => (n >= 100 ? "99+" : String(n));
+
 /** Desktop: disclosure panel under the avatar. */
-export function UserMenu({ session, managed }: Props) {
+export function UserMenu({ session, managed, unread = 0 }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const panelId = useId();
@@ -84,14 +88,18 @@ export function UserMenu({ session, managed }: Props) {
         hidden={!open}
         className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-80 rounded-md border border-line-strong bg-raised p-2 shadow-[var(--pop-shadow)]"
       >
-        <AccountLinks session={session} managed={managed} />
+        <AccountLinks session={session} managed={managed} unread={unread} />
       </div>
     </div>
   );
 }
 
-/** Mobile: avatar button opening a bottom sheet with the same links. */
-export function MobileUserButton({ session, managed }: Props) {
+/**
+ * Mobile: avatar button opening a bottom sheet with the same links. Below
+ * 400px the header has no room for the bell: the avatar then carries the
+ * unread count, and the sheet shows it next to "Notifications".
+ */
+export function MobileUserButton({ session, managed, unread = 0 }: Props) {
   const [open, setOpen] = useState(false);
   useCloseOnNavigate(setOpen);
   const user = session.user;
@@ -101,20 +109,31 @@ export function MobileUserButton({ session, managed }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="inline-flex size-11 items-center justify-center rounded-sm hover:bg-fg/8"
+        className="relative inline-flex size-11 items-center justify-center rounded-sm hover:bg-fg/8"
       >
         {user ? (
           <Avatar name={accountName(user)} photo={user.avatar} src={user.avatarUrl} accent="rose" size={30} />
         ) : (
           <Icon name="user" size={22} />
         )}
-        <span className="sr-only">{user ? "Mon compte" : "Connexion et options"}</span>
+        {user && unread > 0 && (
+          <span
+            aria-hidden
+            className="absolute -right-0.5 -top-0.5 min-w-5 rounded-xs bg-accent px-1 py-0.5 text-center font-mono text-[0.66rem] font-bold leading-none text-accent-fg ring-2 ring-bg xs:hidden"
+          >
+            {unreadText(unread)}
+          </span>
+        )}
+        <span className="sr-only">
+          {user ? "Mon compte" : "Connexion et options"}
+          {user && unread > 0 ? `, ${unread >= 100 ? "plus de 99" : unread} ${unread > 1 ? "notifications non lues" : "notification non lue"}` : ""}
+        </span>
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} label={user ? "Mon compte" : "Connexion"} variant="sheet">
         <div className="mx-auto max-w-xl px-3 pb-5 pt-2">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line-strong" aria-hidden />
           {user ? (
-            <AccountLinks session={session} managed={managed} />
+            <AccountLinks session={session} managed={managed} unread={unread} />
           ) : (
             <div className="flex flex-col gap-4 px-2 py-3">
               <p className="type-card">
@@ -159,7 +178,7 @@ function useCloseOnNavigate(setOpen: (open: boolean) => void) {
   }
 }
 
-function AccountLinks({ session, managed }: Props) {
+function AccountLinks({ session, managed, unread = 0 }: Props) {
   const user = session.user!;
   // Only what the student filled in; nothing when they skipped it.
   const detail = session.pending === "onboarding" ? "Profil à compléter" : studyLine(user);
@@ -178,6 +197,12 @@ function AccountLinks({ session, managed }: Props) {
             <Link href={item.href} className="flex min-h-11 items-center gap-3 rounded-sm px-2 font-semibold hover:bg-fg/8">
               <Icon name={item.icon} size={18} className="text-muted" />
               {item.label}
+              {item.href === routes.accountNotifications && unread > 0 && (
+                <span className="ml-auto rounded-xs bg-accent px-1.5 py-0.5 font-mono text-[0.72rem] font-bold leading-none text-accent-fg">
+                  <span aria-hidden>{unreadText(unread)}</span>
+                  <span className="sr-only">, {unread >= 100 ? "plus de 99" : unread} non lue{unread > 1 ? "s" : ""}</span>
+                </span>
+              )}
             </Link>
           </li>
         ))}

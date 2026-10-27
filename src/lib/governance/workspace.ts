@@ -73,7 +73,13 @@ export interface ManageEntry {
  * its own key (associations, moderation, featured posts), and every function
  * they call checks it again in the database.
  */
-const PLATFORM_CENTER_KEYS = ["platform.organizations.manage", "platform.content.moderate", "platform.content.feature"];
+const PLATFORM_CENTER_KEYS = [
+  "platform.organizations.manage",
+  "platform.content.moderate",
+  "platform.content.feature",
+  "platform.communications.broadcast",
+  "platform.communications.monitor",
+];
 
 export const canUsePlatform = (access: MyAccess | null) =>
   Boolean(access?.platform.some((key) => PLATFORM_CENTER_KEYS.includes(key)));

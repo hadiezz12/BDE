@@ -38,7 +38,7 @@ export function AccountNav({ unread = 0, className }: { unread?: number; classNa
                   {item.label}
                   {count > 0 && (
                     <span className="rounded-xs bg-accent px-1.5 py-0.5 font-mono text-[0.72rem] font-bold leading-none text-accent-fg">
-                      <span aria-hidden>{count}</span>
+                      <span aria-hidden>{count >= 100 ? "99+" : count}</span>
                       <span className="sr-only">, {plural(count, "non lue", "non lues")}</span>
                     </span>
                   )}

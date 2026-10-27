@@ -69,6 +69,7 @@ Database guards: an ordinary position may only carry grantable organization keys
 | `recruitment.applications.review` (score and comment against the grid, declare a conflict) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
 | `recruitment.reviews.view_team` (read the others' submitted reviews, the internal discussion, the averages) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
 | `recruitment.committee.manage` (appoint and revoke committee members, assign applications, the grid, the rules, templates, labels, conflicts, the access log) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
+| `communications.send` (messages to the association's members and to its followers, 5 a day, plain text; Phase 10) | team | ✓ | | ✓ | ✓ (Phase 10) |
 | `recruitment.applications.shortlist` (move an application on, ask the candidate a question) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
 | `recruitment.interviews.manage` (slots, invitations, rescheduling, cancelling, attendance) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
 | `recruitment.decisions.propose`, `.approve`, `.release` (propose an outcome; validate or return it under the campaign's policy; announce it, now or later, and withdraw an offer) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
@@ -91,6 +92,8 @@ lending them would let a borrower hand out rights the lender's position does not
 | `platform.content.feature` (featured stories and important BDE announcements on the campus feed, Phase 6; events "à l'affiche" of the agenda and home page, Phase 7) | BDE president, BDE vice-president |
 | `platform.recovery` (restore a vacant BDE office, end a compromised one) | guardian only |
 | `platform.privacy.requests` (compile everything held about one candidate's applications, erase an application, on a written request, second factor, audited) | the privacy officer only (Phase 9), provisioned by the project owner |
+| `platform.communications.broadcast` (announcements to all students, to the BDE's members and followers; approve another officer's campus-wide e-mail, second factor; Phase 10) | BDE president, BDE vice-president |
+| `platform.communications.monitor` (delivery health, failed e-mails without content or address, retry with the second factor, template preview; Phase 10) | BDE president, BDE vice-president |
 
 The two BDE offices also carry every organization key **of the BDE organization itself**, so they
 run the BDE's own team like any president. They get no key inside another association.

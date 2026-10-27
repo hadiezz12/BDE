@@ -31,6 +31,10 @@ const INTERNAL = new Set([
   "bootstrap_invalid",
   "bootstrap_already_done",
   "office_does_not_match_organization",
+  // Phase 10: the worker's and the operator's own functions (never an RPC).
+  "capture_disabled",
+  "provider_event_invalid",
+  "notification_type_unknown",
 ]);
 
 test("every refusal the database can raise has French words (or is internal on purpose)", () => {
@@ -59,11 +63,12 @@ test("constraint errors become sentences, never Postgres text", () => {
   }
 });
 
-const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events", "recruitment"]);
+const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events", "recruitment", "communications"]);
 
 const RESOURCE_TYPES = new Set([
   "recruitment_campaign", "recruitment_position", "recruitment_form", "recruitment_settings",
   "application", "recruitment_committee_member", "recruitment_rubric", "recruitment_offer",
+  "notification_broadcast", "notification_delivery", "notification_config",
 ]);
 
 test("every audited action has a sentence", () => {

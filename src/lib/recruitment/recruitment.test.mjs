@@ -31,7 +31,8 @@ import { acceptFor, attachmentHeader, formatsLine, safeFileName, sizeLabel, snif
 import { parseCampaignStep, parsePosition } from "./input.ts";
 import { campaignChecklist, campaignStage, recruitmentDoneMessage } from "./desk.ts";
 import { formSummary, previewCampaign, stateOnceOnline } from "./preview.ts";
-import { applicationMessage, isApplicationMessage, renderApplicationEmail } from "./messages.ts";
+import { applicationMessage, isApplicationMessage } from "../../../supabase/functions/_shared/notifications/recruitment.ts";
+import { renderNotificationEmail } from "../../../supabase/functions/_shared/notifications/email.ts";
 
 const POS_A = "11111111-1111-4111-8111-111111111111";
 const POS_B = "22222222-2222-4222-8222-222222222222";
@@ -402,11 +403,13 @@ test("application messages say what happened, never more", () => {
   assert.match(applicationMessage("recruitment_cancelled", { ...p, reason: "Report.", was: "submitted" }).body, /Raison donnée : Report\. Ta candidature reste lisible/);
   assert.ok(isApplicationMessage("application_withdrawn") && !isApplicationMessage("event_promoted"));
   const site = new URL("https://site.example.test");
-  const mail = renderApplicationEmail({ kind: "application_submitted", payload: { ...p, title: "<b>x</b>" }, applicationId: null, name: "Tom Exemple", site });
+  // Application e-mails are confidential: a neutral subject, the details read on the site, signed in.
+  const application_id = "0d000000-0000-4000-8000-0000000000aa";
+  const mail = renderNotificationEmail({ kind: "application_submitted", payload: { ...p, organization: "<b>x</b>" }, application_id, name: "Tom Exemple", site, essential: true, confidential: true });
+  assert.equal(mail.subject, "Du nouveau sur ta candidature");
   assert.ok(mail.html.includes("&lt;b&gt;") && !mail.html.includes("<b>x"));
-  assert.ok(mail.html.includes("https://site.example.test/account/applications"));
-  assert.ok(mail.html.includes("https://site.example.test/recruitment/recrutement-2027"));
-  const cancelled = renderApplicationEmail({ kind: "recruitment_cancelled", payload: p, applicationId: null, name: null, site });
-  assert.ok(!cancelled.html.includes("/recruitment/recrutement-2027"), "a cancelled campaign is not advertised");
-  assert.ok(!renderApplicationEmail({ kind: "application_submitted", payload: { ...p, slug: "../evil" }, applicationId: null, name: null, site }).html.includes("evil"));
+  assert.ok(!mail.text.includes("Trésorerie") && !mail.text.includes("K7Q2M9XA"), "no position, no reference in the inbox");
+  assert.ok(mail.html.includes(`https://site.example.test/account/applications/${application_id}`));
+  const odd = renderNotificationEmail({ kind: "application_submitted", payload: { ...p, slug: "../evil" }, application_id: "../evil", name: null, site, essential: true, confidential: true });
+  assert.ok(!odd.html.includes("evil") && odd.html.includes("https://site.example.test/account/applications"));
 });

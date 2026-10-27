@@ -5,6 +5,8 @@ import { routes } from "@/lib/routes";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Icon } from "@/components/ui/Icon";
 import { MobileUserButton, UserMenu } from "@/components/layout/UserMenu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import type { NotificationSummary } from "@/lib/notifications/view";
 
 /**
  * The sign above the office door: a thin ink (night) strip with the panther,
@@ -12,7 +14,15 @@ import { MobileUserButton, UserMenu } from "@/components/layout/UserMenu";
  * the workspace needs the height. Sticky from lg: up; on phones the section
  * rail is the sticky element instead.
  */
-export function ManageTopBar({ session, managed }: { session: Session; managed: ManageEntry[] }) {
+export function ManageTopBar({
+  session,
+  managed,
+  notifications,
+}: {
+  session: Session;
+  managed: ManageEntry[];
+  notifications: NotificationSummary | null;
+}) {
   return (
     <header data-surface="night" data-theme="dark" className="z-40 border-b border-line lg:sticky lg:top-0">
       <div className="flex h-14 items-center gap-3 px-[var(--gutter)] lg:px-6">
@@ -62,11 +72,13 @@ export function ManageTopBar({ session, managed }: { session: Session; managed: 
             <Icon name="arrow-left" size={20} label="Retour au site public" />
           </Link>
 
+          {session.user && notifications && <NotificationBell initial={notifications} userId={session.user.id} />}
+
           <div className="hidden lg:block">
-            <UserMenu session={session} managed={managed} />
+            <UserMenu session={session} managed={managed} unread={notifications?.unread ?? 0} />
           </div>
           <div className="lg:hidden">
-            <MobileUserButton session={session} managed={managed} />
+            <MobileUserButton session={session} managed={managed} unread={notifications?.unread ?? 0} />
           </div>
         </div>
       </div>

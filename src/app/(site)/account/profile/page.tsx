@@ -5,11 +5,10 @@ import { formatDateLong } from "@/lib/format";
 import { getSession } from "@/lib/session";
 import { getAvatarUrl, getMyProfile } from "@/lib/data/profile";
 import { getBde } from "@/lib/data/associations";
-import { getNotificationPreferences } from "@/lib/data/preferences";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { NotificationPreferencesForm } from "@/components/account/NotificationPreferencesForm";
+import { ButtonLink } from "@/components/ui/Button";
 import { ProfileForm } from "@/components/account/ProfileForm";
 import { AvatarField } from "@/components/account/AvatarField";
 import { accountName } from "@/components/account/identity";
@@ -41,8 +40,8 @@ const WHERE_IT_SHOWS: Array<{ icon: IconName; what: string; where: string }> = [
 /**
  * Profil: "Tes infos" (photo, name, studies, read-only school email), then
  * what the student wants to hear about. Profile and photo are real and
- * private to the student; notification preferences are still a design shell
- * (their phase brings the sending).
+ * private to the student. What the student receives has its own page
+ * (Notifications › Réglages, Phase 10); this page points there.
  */
 export default async function AccountProfilePage() {
   const { user } = await getSession();
@@ -51,11 +50,8 @@ export default async function AccountProfilePage() {
   const avatarUrl = await getAvatarUrl(profile.avatarPath);
 
   const card = user.memberCard;
-  const [preferences, bde] = await Promise.all([
-    getNotificationPreferences(user.id),
-    // Without a card, the way to the BDE's page, where the card is presented (#carte).
-    card ? Promise.resolve(null) : getBde(),
-  ]);
+  // Without a card, the way to the BDE's page, where the card is presented (#carte).
+  const bde = card ? null : await getBde();
   const who = user.email;
 
   return (
@@ -99,9 +95,13 @@ export default async function AccountProfilePage() {
               index="02"
               kicker="Notifications"
               title="Ce que tu reçois"
-              description="Coche où tu veux être prévenu·e, sorte par sorte. Le reste, tu le verras en passant sur le site."
+              description="Sujet par sujet, sur le site et par e-mail, tes heures calmes et les assos que tu suis : tout est sur une seule page."
             />
-            <NotificationPreferencesForm preferences={preferences} email={user.email} className="mt-6" />
+            <div className="mt-6">
+              <ButtonLink href={routes.accountNotificationSettings} variant="secondary" icon="arrow-right">
+                Régler mes notifications
+              </ButtonLink>
+            </div>
           </section>
         </div>
 

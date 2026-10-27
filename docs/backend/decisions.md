@@ -723,3 +723,84 @@ foundational choice.
   pinned to the bottom of the screen (`DoneAnnouncer`, read out by screen readers).
 - **Reason:** without it the confirmation vanished with the form.
 - **Consequence:** forms that stay keep their inline message; nothing is announced twice.
+
+## D72. One notification model, three layers (Phase 10)
+
+- **Decision:** a catalog (`notification_topics`, `notification_types`), the in-app record
+  (`notifications`, the Phase 7 outbox renamed with its rows and keys kept) and one delivery row
+  per channel (`notification_deliveries`). Every producer calls `private.notify`.
+- **Reason:** the outbox mixed two channels in one status; preferences, suppression, retries and
+  provider events need their own rows. Keeping `dedupe_key` means a producer firing again after the
+  migration still collides with its old row.
+- **Alternatives:** a new table beside the outbox (two systems); a queue extension (pgmq) — more
+  moving parts for the volume of a BDE.
+- **Consequence:** no producer inserts rows itself; the site reads only through the centre's
+  functions.
+
+## D73. E-mail is sent by a Supabase Edge Function, woken by the database (Phase 10)
+
+- **Decision:** `notifications-worker` (Deno), called every minute by pg_cron through pg_net with
+  a bearer token kept in Vault, connected to the database with `SUPABASE_DB_URL`; it calls only
+  private functions. The Next.js worker route and its privileged client are removed.
+- **Reason:** nothing scheduled the Phase 7 route, it needed the secret API key in the site, and
+  the site's host is not decided. The database already owns the queue and the clock.
+- **Alternatives:** a cron on the site's host; a third-party scheduler.
+- **Consequence:** the Brevo key lives only in the function's secrets; the site never sends mail.
+  `verify_jwt` is off for both functions: the token compared in the database is the gate.
+
+## D74. Three delivery modes, off by default (Phase 10)
+
+- **Decision:** `off` (nothing claimed), `capture` (rendered and stored, never sent) and `live`,
+  set by the operator with `private.set_notification_config` (audited). Live needs a sender, the
+  site's address and the key, or nothing is claimed.
+- **Reason:** test the whole chain on the development project without sending anything, and never
+  send from an environment by accident.
+- **Consequence:** the development project runs in `capture`; production waits for the BDE's domain.
+
+## D75. Retries, unknown outcomes and the provider's events (Phase 10)
+
+- **Decision:** a 5-minute lease under `skip locked`; exponential backoff with jitter, at most 6
+  attempts; a timeout after sending is `outcome_unknown`, retried only after 10 minutes; each
+  message carries our key in `X-Mailin-custom`, and an attempt Brevo acknowledged (its `request`
+  or `delivered` event) is reconciled instead of sent again.
+- **Reason:** Brevo has no idempotency key; a blind retry after a timeout could send twice.
+- **Consequence:** a duplicate is possible only when Brevo accepted a message and never sent its
+  events for 10 minutes; a lost e-mail is not.
+
+## D76. Essential, operational, optional (Phase 10)
+
+- **Decision:** what concerns a step in progress or the account's security always arrives (and has
+  no unsubscribe link); operational messages always stay in the centre, their e-mail can be turned
+  off; BDE announcements and followed associations are opt-in by e-mail. Every change is recorded
+  (`notification_preference_changes`), including from the one-click link.
+- **Reason:** a student must not miss a registration, an offer or a security change; everything
+  else is their choice (and the consent must be provable).
+- **Consequence:** an audience's e-mail count is an estimate made from these choices.
+
+## D77. Confidential e-mails say nothing (Phase 10)
+
+- **Decision:** every message about an application is `confidential`: a neutral subject and body,
+  no position, reference, message, outcome or "important" mark; an offer and a refusal read the
+  same. The details are read on the site, signed in.
+- **Reason:** e-mail is read on shared screens and lock screens, and kept by providers.
+- **Consequence:** candidates open the site to read their news (a link takes them there).
+
+## D78. Messages to an audience, not a chat (Phase 10)
+
+- **Decision:** broadcasts are prepared, estimated, then submitted; the database resolves and
+  freezes the audience (never a list of addresses from a browser), limits them (3/day BDE, 5/day
+  per association, 5 000 people for members or followers), requires the second factor for e-mail
+  and a second BDE officer's approval for a campus-wide e-mail, re-checks each person when
+  dispatching and audits each step. `communications.send` is grantable, not delegable.
+- **Reason:** the brief's campus-wide channel without spam, mistakes or a single person able to
+  e-mail every student.
+- **Consequence:** no replies or threads; associations keep their own channels for discussion.
+
+## D79. Phase 10 fixed forward (Phase 10)
+
+- **Decision:** `20261027082914_notification_broadcast_options_fix`: each audience option carries
+  its own estimate (`array || object || object` had appended the counts as a separate element).
+  The functions migration was split in two (`create_notification_functions` and
+  `create_notification_delivery_functions`) to be applied on the development project.
+- **Reason:** found while verifying the composer on the development project.
+- **Consequence:** same signature and grants; a pgTAP test covers the shape.

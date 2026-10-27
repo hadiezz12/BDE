@@ -23,7 +23,8 @@ import {
   unknownPlaceholders,
 } from "./review.ts";
 import { CANDIDATE_STAGE, slotsByDay } from "./candidate.ts";
-import { applicationMessage, isTeamMessage, renderApplicationEmail, teamLink } from "./messages.ts";
+import { applicationMessage, isTeamMessage, teamLink } from "../../../supabase/functions/_shared/notifications/recruitment.ts";
+import { renderNotificationEmail } from "../../../supabase/functions/_shared/notifications/email.ts";
 
 const grid = [
   { id: "motivation", label: "Motivation", description: null, max: 5, weight: 2, required: true },
@@ -138,7 +139,8 @@ test("messages: the candidate gets the association's words, the team a workspace
   assert.equal(teamLink({ link: "https://evil.example.test/manage/evaluations" }), null);
   assert.equal(teamLink({ link: "/manage/x/recruitment/../../admin" }), null);
   const site = new URL("https://site.example.test");
-  const mail = renderApplicationEmail({ kind: "recruitment_review_assigned", payload: { ...p, link }, applicationId: null, name: null, site });
+  const mail = renderNotificationEmail({ kind: "recruitment_review_assigned", payload: { ...p, link }, name: null, site, essential: false, confidential: true });
+  assert.equal(mail.subject, "Recrutement : du nouveau dans ton espace de gestion");
   assert.ok(mail.html.includes(`https://site.example.test${link}`));
   assert.ok(!mail.html.includes("/account/applications"), "a team message never points to a candidate's page");
 });

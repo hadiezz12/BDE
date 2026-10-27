@@ -223,7 +223,7 @@ roles: writes go only through the event functions ([events.md](events.md)). Poli
 | `events`, `event_coorganizers` | the event's team (`events.edit`, `events.publish`; an author their own drafts). Visitors read through `public_events` / `public_event` only |
 | `event_registrations` | the student their own rows. Teams read through `event_attendees` (`events.attendees.view`) |
 | `event_bookmarks` | the student their own rows |
-| `notification_outbox` | the recipient their own rows (no write: `mark_notifications_read`) |
+| `notification_outbox` (renamed `notifications` in Phase 10) | the recipient their own rows (no write: `mark_notifications_read`) |
 
 Each has a restrictive policy requiring the second factor when the person enrolled one. New
 private helpers, `security definer`, about the caller only: `private.my_event_team_organization_ids()`,
@@ -296,3 +296,29 @@ material step, with no candidate identity and no outcome.
   foreign key is covered (`20261019141733_index_governance_foreign_keys.sql`).
 - Lists are built server-side in one function call per screen (no per-row policy round trips from
   the client).
+
+## Phase 10: notifications
+
+Every Phase 10 table has RLS enabled and no write grant for the API roles ([notifications.md](notifications.md)).
+
+| Table | Who reads |
+| --- | --- |
+| `notification_topics`, `notification_types` | everyone (the catalog's public words) |
+| `notifications` | the recipient, own rows (Phase 7 policy kept, renamed `notifications_read_own`; MFA restrictive policy) — also in the `supabase_realtime` publication, which applies RLS |
+| `notification_preferences`, `notification_settings`, `notification_preference_changes`, `notification_follows` | the person, own rows (MFA restrictive policies) |
+| `notification_deliveries`, `notification_delivery_attempts`, `notification_provider_events`, `notification_suppressions`, `notification_unsubscribe_tokens`, `notification_broadcasts`, `notification_broadcast_recipients`, `notification_config`, `notification_worker_runs`, `notification_email_captures` | nobody through the API |
+
+Granted to `authenticated`: `my_notifications`, `my_notification_summary`, `mark_notifications_read`,
+`archive_notifications`, `open_notification`, `my_notification_preferences`,
+`set_notification_preference`, `set_notification_settings`, `follow_organization`, `am_i_following`,
+`clear_my_email_suppression` (own rows only); `notification_broadcast_options`,
+`create_notification_broadcast`, `submit_notification_broadcast`, `approve_notification_broadcast`,
+`cancel_notification_broadcast`, `organization_broadcasts` (`communications.send` or
+`platform.communications.broadcast`); `notification_health`, `notification_failed_deliveries`,
+`retry_notification_delivery` (`platform.communications.monitor`). Granted to `anon` and
+`authenticated`: `peek_unsubscribe_token`, `unsubscribe_with_token` (the token is the proof).
+Every `private.*` function of Phase 10 is revoked from `public`, `anon`, `authenticated` and
+`service_role`: the worker and the jobs run them as the owner. The Phase 7 functions
+`claim_notification_emails` and `complete_notification_email` are dropped. Jobs:
+`notifications-dispatch` (every minute), `notification-reminders` (every 15 minutes, replaces
+`enqueue-event-reminders`), `notification-retention` (03:40).

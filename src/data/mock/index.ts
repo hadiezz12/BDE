@@ -10,7 +10,6 @@ export { associations } from "./associations";
 export { eventSeries } from "./event-series";
 export { events } from "./events";
 export { users } from "./users";
-export { notifications } from "./notifications";
 export { tasks } from "./manage";
 export { ticketSales } from "./analytics";
 export type { DailySales, TicketSalesSeries } from "./analytics";

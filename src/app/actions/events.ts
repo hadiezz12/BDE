@@ -264,15 +264,6 @@ export async function setEventBookmark(_prev: GovernanceActionState, form: FormD
   );
 }
 
-export async function markNotificationsRead(_prev: GovernanceActionState, form: FormData): Promise<GovernanceActionState> {
-  const ids = form.getAll("id").map((v) => Number(v)).filter((n) => Number.isInteger(n) && n > 0);
-  return run(
-    "mark_notifications_read",
-    (s) => s.rpc("mark_notifications_read", ids.length ? { p_ids: ids } : {}),
-    "Messages marqués comme lus.",
-  );
-}
-
 // ---- BDE: moderation, the front page, the catalog ------------------------------------------------
 
 export async function hideEvent(_prev: GovernanceActionState, form: FormData): Promise<GovernanceActionState> {

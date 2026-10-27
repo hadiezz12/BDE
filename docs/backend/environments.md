@@ -45,8 +45,11 @@ runs the full local stack from scratch on every push (see
   `publish-scheduled-posts` (every minute) where it exists. It is enabled here; check it on any
   new environment ([publishing.md](publishing.md#scheduling)). Phase 7 adds the job
   `enqueue-event-reminders` (every 15 minutes) the same way ([events.md](events.md#messages)).
-- No e-mail transport is configured (Phase 7): `EMAIL_TRANSPORT` and the worker secret are empty,
-  so event messages stay in the students' Notifications.
+- E-mail (Phase 10) runs in **test mode** (`capture`): the `notifications-worker` and
+  `notifications-webhook` Edge Functions are deployed, the three Vault secrets
+  (`notifications_worker_url`, `notifications_worker_token`, `notifications_webhook_token`) were
+  generated inside the database, and every e-mail is rendered and kept in
+  `notification_email_captures` (7 days), never sent ([notifications.md](notifications.md#configuration)).
 - Its legacy `anon` / `service_role` keys are still active next to the new
   publishable/secret keys. Nothing uses them: disable them in Dashboard → Settings → API Keys.
 
@@ -89,10 +92,11 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
 - Enable the `pg_cron` extension before applying the Phase 6 migrations, or scheduled posts never
   go out (the job `publish-scheduled-posts` is created only where the extension exists); the same
   holds for the Phase 7 reminders (`enqueue-event-reminders`).
-- E-mail (Phase 7): choose a sender on the BDE's own domain, authenticate it (SPF, DKIM, DMARC)
-  with the provider, set `EMAIL_TRANSPORT`, `EMAIL_FROM`, the provider key and a long random
-  `NOTIFICATIONS_WORKER_SECRET`, then schedule a POST to `/api/notifications/send` every few
-  minutes ([events.md](events.md#messages)).
+- E-mail (Phase 10): deploy the two notification Edge Functions, create the three Vault secrets,
+  authenticate a sender on the BDE's own domain with Brevo (SPF, DKIM, DMARC), set the function
+  secret `BREVO_API_KEY`, point Brevo's webhook at `notifications-webhook`, try `capture`, then
+  switch to `live` ([notifications.md](notifications.md#configuration)). Nothing in the site's
+  environment is involved.
 - Recruitment (Phase 8): `pg_cron` also runs `enqueue-recruitment-reminders` (hourly) and
   `purge-recruitment-data` (nightly, applies the BDE's retention). Set a long random
   `MAINTENANCE_WORKER_SECRET` and schedule a POST to `/api/maintenance/storage-cleanup` (hourly is
@@ -104,12 +108,9 @@ accounts (`@comptes.example.test`) sign in with a password, no e-mail needed: se
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | public (inlined into the browser bundle) | all three clients | project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public (inlined into the browser bundle) | browser and server clients | Dashboard → Settings → API Keys → publishable (`sb_publishable_…`) |
-| `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — only the e-mail worker (Phase 7) and the Storage cleanup worker (Phase 8) | API Keys → secret (`sb_secret_…`). Leave empty until a worker is set up. |
-| `NOTIFICATIONS_WORKER_SECRET` | **secret**, server only | the e-mail worker's bearer token (32+ characters); empty = endpoint not found | a random string you generate |
+| `SUPABASE_SECRET_KEY` | **secret**, server only | `createSupabaseAdminClient()` — only the Storage cleanup worker (Phase 8) | API Keys → secret (`sb_secret_…`). Leave empty until a worker is set up. |
 | `MAINTENANCE_WORKER_SECRET` | **secret**, server only | the Storage cleanup worker's bearer token (32+ characters); empty = endpoint not found | a random string you generate |
-| `EMAIL_TRANSPORT` | server only, not secret | empty (no e-mail), `log` (development only) or `brevo` | the operator's choice |
-| `EMAIL_FROM` | server only, not secret | the sender, e.g. `Very Pink Club <adresse@domaine-du-bde>` | the BDE's domain, once bought |
-| `BREVO_API_KEY` | **secret**, server only | the `brevo` transport | the provider's dashboard |
+| `BREVO_API_KEY` | **secret**, **Edge Function secret only** (`supabase secrets set`), never in the site | the `notifications-worker` in `live` mode | Brevo's dashboard |
 | `AUTH_SSO_PROVIDER` | server only, not secret | shows institutional sign-in on `/login` (`azure` or `google`) | leave empty until the school's provider is configured in Supabase |
 | `AUTH_TEST_ACCOUNTS` | server only, not secret | development only: `on` shows the "Comptes de test" form on `/login` | `on` in a development `.env.local`; **never set in production** |
 | `SUPABASE_ACCESS_TOKEN` | **secret**, personal | the Supabase CLI (`login`, `link`, `gen types --linked`) | your account's access tokens; `npx supabase login` stores it for you |

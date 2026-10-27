@@ -398,25 +398,6 @@ export interface UserProfile {
   managedAssociationIds: string[];
 }
 
-export type NotificationKind = "evenement" | "candidature" | "association" | "bde";
-
-export interface Notification {
-  id: string;
-  userId: string;
-  kind: NotificationKind;
-  title: string;
-  body: string;
-  createdAt: string;
-  read: boolean;
-  href?: string;
-}
-
-/** Where a student wants to hear about a kind of notification. */
-export type NotificationChannel = "espace" | "mail";
-
-/** Per-kind notification settings (student space › Profil). */
-export type NotificationPreferences = Record<NotificationKind, Record<NotificationChannel, boolean>>;
-
 /* ---- Management-side shapes ------------------------------------------- */
 
 export interface ManageTask {

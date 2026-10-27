@@ -159,8 +159,10 @@ tells the people working on it; cancelling a campaign stops the same.
 Candidate kinds (interview invited / scheduled / rescheduled / cancelled, question asked /
 extended / reminder, offer and its reminder / expiry / withdrawal, not selected, waiting list) and
 team kinds (assigned, mention, answer received, interview booked, decision to validate, offer
-accepted / declined, candidate withdrew) go through `notification_outbox` in the transaction of
-the step they report. Payloads never carry a score, a note or another candidate's name; team
+accepted / declined, candidate withdrew) are notifications (`private.notify`, Phase 10:
+[notifications.md](notifications.md)) created in the transaction of the step they report; their
+e-mails are confidential and the interview reminders (candidate and interviewers) come from the
+Phase 10 reminders job. Payloads never carry a score, a note or another candidate's name; team
 messages link only into the workspace (`teamLink` allows `/manage/evaluations` and an
 application's page, nothing else).
 
