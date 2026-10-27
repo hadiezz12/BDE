@@ -29,7 +29,7 @@ test("the BDE reads the site's continuity: governance, the year, operations, the
   await page.getByRole("link", { name: "Continuité", exact: true }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: "Continuité" })).toBeVisible();
   const main = page.locator("main");
-  await expect(main.getByText("Points à régler")).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Points à régler" })).toBeVisible();
   await expect(main.getByText("Vice-présidence du BDE").first()).toBeVisible();
 
   await page.goto("/manage/plateforme/continuite/annee");
@@ -38,20 +38,20 @@ test("the BDE reads the site's continuity: governance, the year, operations, the
 
   await page.goto("/manage/plateforme/continuite/operations");
   await expect(main.getByText("Vérification de la continuité").first()).toBeVisible();
-  await expect(main.getByText("Contrôle de sécurité")).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Contrôle de sécurité" })).toBeVisible();
   // Without the second factor: the jobs are visible, the retry is not offered.
   await expect(main.getByRole("button", { name: "Relancer" })).toHaveCount(0);
 
   await page.goto("/manage/plateforme/continuite/registre");
-  await expect(main.getByText("Registre des comptes techniques")).toBeVisible();
-  await expect(main.getByText("Nom de domaine")).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Registre des comptes techniques" })).toBeVisible();
+  await expect(main.getByText("Nom de domaine", { exact: true }).first()).toBeVisible();
 
   await page.goto("/manage/plateforme/continuite/conservation");
-  await expect(main.getByText(/pas encore décidée/)).toBeVisible();
+  await expect(main.getByText(/pas encore décidée/).first()).toBeVisible();
 
   await page.goto("/manage/plateforme/continuite/passation");
-  await expect(main.getByText("Direction du BDE")).toBeVisible();
-  await expect(main.getByText("Santé du site")).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Direction du BDE" })).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Santé du site" })).toBeVisible();
 });
 
 test("an association president ticks the handover checklist, and the control centre stays closed", async ({ page }) => {
@@ -67,20 +67,20 @@ test("an association president ticks the handover checklist, and the control cen
 
   await page.goto("/manage/plateforme/continuite");
   await expect(page.getByText(/réservé/i).first()).toBeVisible();
-  await expect(page.getByText("Points à régler")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Points à régler" })).toHaveCount(0);
 });
 
 test("the guardian sees BDE availability only, and a student sees no handover", async ({ page }) => {
   await signInAs(page, "garance.garante");
   await page.goto("/manage/continuite");
-  await expect(page.getByText("Points de continuité")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Points de continuité" })).toBeVisible();
   await page.goto("/manage/plateforme/continuite/operations");
-  await expect(page.getByText("Contrôle de sécurité")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Contrôle de sécurité" })).toHaveCount(0);
 
   await page.context().clearCookies();
   await signInAs(page, "nina");
   await page.goto("/manage/exemple-finance/continuite");
-  await expect(page.getByText("Liste de passation")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Liste de passation" })).toHaveCount(0);
 });
 
 test("the public health check says three things and nothing else", async ({ request }) => {
