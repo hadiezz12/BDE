@@ -41,7 +41,8 @@ test("an association president reads every view, prints a report and downloads a
   await expect(main.getByText("Présence réelle")).toBeVisible();
 
   await page.goto("/manage/exemple-finance/analytics?vue=recrutement");
-  await expect(main.getByText("Jamais par évaluateur·rice.")).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Travail en cours" })).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Recrutements de la période" })).toBeVisible();
 
   // A malformed range falls back with a reason, never an unbounded query.
   await page.goto("/manage/exemple-finance/analytics?du=2026-12-01&au=2026-01-01");
