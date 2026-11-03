@@ -11,5 +11,3 @@ export { eventSeries } from "./event-series";
 export { events } from "./events";
 export { users } from "./users";
 export { tasks } from "./manage";
-export { ticketSales } from "./analytics";
-export type { DailySales, TicketSalesSeries } from "./analytics";

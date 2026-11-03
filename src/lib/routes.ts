@@ -122,7 +122,10 @@ export const routes = {
   manageMedia: (asso: string) => `/manage/${asso}/media`,
   /** Messages to the association's members and followers (Phase 10). */
   manageCommunications: (asso: string) => `/manage/${asso}/communication`,
+  /** The association's statistics (Phase 13), its printable report and its CSV export (POST). */
   manageAnalytics: (asso: string) => `/manage/${asso}/analytics`,
+  manageAnalyticsReport: (asso: string) => `/manage/${asso}/analytics/rapport`,
+  manageAnalyticsExport: (asso: string) => `/manage/${asso}/analytics/export`,
   /** The association's continuity and handover checklist (Phase 11). */
   manageHandover: (asso: string) => `/manage/${asso}/continuite`,
   /** The public page editor: content (index), then the tabs below. */
@@ -161,6 +164,10 @@ export const routes = {
   managePlatformRegister: "/manage/plateforme/continuite/registre",
   managePlatformRetention: "/manage/plateforme/continuite/conservation",
   managePlatformHandover: "/manage/plateforme/continuite/passation",
+  /** The platform's statistics (Phase 13), its printable report and its CSV export (POST). */
+  managePlatformAnalytics: "/manage/plateforme/statistiques",
+  managePlatformAnalyticsReport: "/manage/plateforme/statistiques/rapport",
+  managePlatformAnalyticsExport: "/manage/plateforme/statistiques/export",
   manageContinuity: "/manage/continuite",
   /** Everything a person has to evaluate, interview or validate, across associations (Phase 9). */
   manageReviewWork: "/manage/evaluations",

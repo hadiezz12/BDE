@@ -131,6 +131,7 @@ export const JOB_WORDS: Record<string, string> = {
   "purge-recruitment-data": "Conservation des candidatures",
   "data-retention": "Conservation des données",
   "platform-health-report": "Point hebdomadaire de continuité",
+  "analytics-refresh": "Comptes des statistiques",
 };
 
 /** The institutional register's lines, in words (also used by the continuity pages). */

@@ -53,6 +53,10 @@ export const JOB_INFO: Record<string, { help: string; every: string }> = {
     every: "Chaque nuit",
   },
   "platform-health-report": { help: "Envoie le point de continuité au bureau du BDE.", every: "Le lundi matin" },
+  "analytics-refresh": {
+    help: "Recompte les statistiques des 40 derniers jours et contrôle les plus anciens, sans rien modifier d'autre.",
+    every: "Chaque heure (à la 25e minute)",
+  },
 };
 
 export type IssueKind =

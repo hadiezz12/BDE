@@ -289,6 +289,10 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   incident_updated: "a mis à jour un incident",
   incident_resolved: "a résolu un incident",
   account_responsibilities_viewed: "a consulté les responsabilités d'un compte (demande RGPD)",
+  // Phase 13 — statistics
+  analytics_exported: "a exporté des statistiques",
+  analytics_settings_changed: "a changé le seuil de confidentialité des statistiques",
+  analytics_recomputed: "a recalculé des statistiques",
 };
 
 /** Confirmations shown by a page after an answer removed the card it came from (?fait=…). */

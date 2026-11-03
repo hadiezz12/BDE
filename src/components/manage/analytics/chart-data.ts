@@ -1,41 +1,19 @@
-import type { DayCount, MonthCount } from "@/lib/data/analytics";
-import { dateParts, formatDayShort } from "@/lib/format";
+import type { Bucket } from "@/lib/analytics/period";
 import type { ColumnDatum } from "./ColumnChart";
 
 /**
- * Turns the analytics series into ColumnChart columns: short axis labels
- * ("8", "sept") under the columns, full labels ("Mer. 8 oct.",
- * "Septembre 2026") in the table of values.
+ * Turns period buckets (days, weeks, months) and their counts into
+ * ColumnChart columns: short axis labels ("8", "3 nov.", "sept") under the
+ * columns, full labels ("Mar. 8 oct.", "Semaine du 3 nov.", "Septembre
+ * 2026") in the table of values. A bucket cut by the period's edge says so
+ * in its label.
  */
-
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-/** "Mer. 8 oct." */
-export function dayLabel(iso: string): string {
-  return `${cap(dateParts(iso).weekday)}. ${formatDayShort(iso)}`;
-}
-
-/** One column per day; `markers` maps a day key ("2026-10-11") to a note shown as a diamond. */
-export function dayColumns(days: DayCount[], markers: Map<string, string> = new Map()): ColumnDatum[] {
-  return days.map((d) => ({
-    key: d.key,
-    axisLabel: dateParts(d.iso).day,
-    label: dayLabel(d.iso),
-    value: d.count,
-    marker: markers.get(d.key),
+export function bucketColumns(bs: Bucket[], values: number[], extra?: number[]): ColumnDatum[] {
+  return bs.map((b, i) => ({
+    key: b.key,
+    axisLabel: b.axisLabel,
+    label: b.label,
+    value: values[i] ?? 0,
+    extra: extra?.[i] || undefined,
   }));
-}
-
-/** One column per month: published, with what is programmed stacked on top. */
-export function monthColumns(months: MonthCount[]): ColumnDatum[] {
-  return months.map((m) => {
-    const parts = dateParts(m.iso);
-    return {
-      key: m.key,
-      axisLabel: parts.month,
-      label: `${cap(parts.monthLong)} ${m.key.slice(0, 4)}`,
-      value: m.published,
-      extra: m.scheduled,
-    };
-  });
 }

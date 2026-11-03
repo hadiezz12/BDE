@@ -74,7 +74,12 @@ Database guards: an ordinary position may only carry grantable organization keys
 | `recruitment.interviews.manage` (slots, invitations, rescheduling, cancelling, attendance) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
 | `recruitment.decisions.propose`, `.approve`, `.release` (propose an outcome; validate or return it under the campaign's policy; announce it, now or later, and withdraw an offer) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
 | `recruitment.applications.export` (CSV of essential fields, second factor, audited) | recruitment | ✓ | | ✓ | ✓ (Phase 9) |
-| `analytics.view` | insights | ✓ | ✓ | | later |
+| `analytics.view` (the statistics overview) | insights | ✓ | ✓ | | ✓ (Phase 13) |
+| `analytics.content.view` (statistics of articles) | insights | ✓ | ✓ | | ✓ (Phase 13) |
+| `analytics.events.view` (statistics of events and registrations) | insights | ✓ | ✓ | | ✓ (Phase 13) |
+| `analytics.recruitment.view` (statistics of recruitment: funnel and outcomes, small groups hidden) | insights | ✓ | | ✓ | ✓ (Phase 13) |
+| `analytics.recruitment.workflow.view` (work left per campaign, never per reviewer) | insights | ✓ | ✓ | | ✓ (Phase 13) |
+| `analytics.export` (printable report and CSV of the readable sections, audited) | insights | ✓ | | | ✓ (Phase 13) |
 
 Keys that hand out power (`members.manage`, `positions.*`, `delegations.manage`) are not delegable:
 lending them would let a borrower hand out rights the lender's position does not cover.
@@ -95,6 +100,8 @@ lending them would let a borrower hand out rights the lender's position does not
 | `platform.communications.broadcast` (announcements to all students, to the BDE's members and followers; approve another officer's campus-wide e-mail, second factor; Phase 10) | BDE president, BDE vice-president |
 | `platform.communications.monitor` (delivery health, failed e-mails without content or address, retry with the second factor, template preview; Phase 10) | BDE president, BDE vice-president |
 | `platform.operations.monitor` (scheduled jobs and their safe retry, queues, security self-check, institutional register, backup declarations, incidents; Phase 11) | BDE president, BDE vice-president |
+| `platform.analytics.view` (campus-wide statistics, recruitment in suppressed totals only; reports and CSV with the second factor; Phase 13) | BDE president, BDE vice-president |
+| `platform.analytics.configure` (the small-group threshold, recompute of past days; second factor; Phase 13) | BDE president, BDE vice-president |
 
 The two BDE offices also carry every organization key **of the BDE organization itself**, so they
 run the BDE's own team like any president. They get no key inside another association.
@@ -105,12 +112,12 @@ run the BDE's own team like any president. They get no key inside another associ
 | --- | --- |
 | Présidence (office) | every organization key, including `governance.succession` |
 | Présidence / Vice-présidence du BDE (offices) | every organization key except `governance.succession`, plus the BDE platform keys above |
-| Vice-présidence | members.view, members.invite, positions.assign, governance.view, audit.view, organization.settings.update, posts.create, posts.edit, posts.approve, posts.publish, events.*, media.manage, recruitment.campaigns.manage, recruitment.questions.manage, every recruitment review key except `recruitment.applications.export` (Phase 9), analytics.view |
-| Communication | members.view, posts.create, posts.edit, posts.publish, media.manage |
-| Événements | members.view, events.create, events.edit, events.publish, events.attendees.view, events.attendees.manage, media.manage |
-| Responsable recrutement | members.view, recruitment.* (every recruitment key, export included) |
+| Vice-présidence | members.view, members.invite, positions.assign, governance.view, audit.view, organization.settings.update, posts.create, posts.edit, posts.approve, posts.publish, events.*, media.manage, recruitment.campaigns.manage, recruitment.questions.manage, every recruitment review key except `recruitment.applications.export` (Phase 9), every analytics key (Phase 13) |
+| Communication | members.view, posts.create, posts.edit, posts.publish, media.manage, analytics.content.view |
+| Événements | members.view, events.create, events.edit, events.publish, events.attendees.view, events.attendees.manage, media.manage, analytics.events.view |
+| Responsable recrutement | members.view, recruitment.* (every recruitment key, export included), analytics.recruitment.view, analytics.recruitment.workflow.view |
 | Évaluation des candidatures | recruitment.applications.view, recruitment.documents.view, recruitment.applications.review |
-| Trésorerie | members.view, analytics.view |
+| Trésorerie | members.view, analytics.view, analytics.content.view, analytics.events.view, analytics.export |
 | Membre | none |
 | Sur mesure | none, chosen one by one |
 

@@ -85,7 +85,14 @@ export const MANAGE_SECTIONS: ManageSection[] = [
   },
   { key: "media", label: "Médias", icon: "image", href: routes.manageMedia, requires: ["media.manage"] },
   { key: "communications", label: "Messages", icon: "mail", href: routes.manageCommunications, requires: ["communications.send"] },
-  { key: "analytics", label: "Statistiques", icon: "chart", href: routes.manageAnalytics, requires: ["analytics.view"], soon: true },
+  {
+    key: "analytics",
+    label: "Statistiques",
+    icon: "chart",
+    href: routes.manageAnalytics,
+    // Phase 13: each view has its own key (the overview, articles, events, recruitment, its workflow).
+    requires: ["analytics.view", "analytics.content.view", "analytics.events.view", "analytics.recruitment.view", "analytics.recruitment.workflow.view"],
+  },
   {
     key: "continuity",
     label: "Passation",

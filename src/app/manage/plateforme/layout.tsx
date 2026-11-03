@@ -75,6 +75,11 @@ export default async function PlatformLayout({ children }: { children: ReactNode
       label: "Continuité",
       show: can("platform.organizations.manage") || can("platform.operations.monitor"),
     },
+    {
+      href: routes.managePlatformAnalytics,
+      label: "Statistiques",
+      show: can("platform.analytics.view") || can("platform.communications.monitor"),
+    },
     { href: routes.managePlatformHistory, label: "Historique", show: can("platform.audit.view") },
   ];
   // Measured on every visit, so a scheduler that stopped altogether is seen without any job running.

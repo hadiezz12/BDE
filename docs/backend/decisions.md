@@ -972,3 +972,55 @@ foundational choice.
   page; measured server times after removing the shipped index are low (docs/backend/search.md).
 - **Consequence:** revisit with Next's Cache Components when traffic justifies it, keeping
   personal data and moderation-sensitive reads uncached.
+
+## D94. Statistics are counted in the database, per section key, checked now (Phase 13)
+
+- **Decision:** two `security definer` functions (`organization_analytics`, `platform_analytics`)
+  return every figure, each section only when the caller holds its key at the time of the call;
+  five new organization keys (articles, events, recruitment, recruitment workflow, export) beside
+  the existing overview key, and two platform keys (view, configure).
+- **Reason:** brief §8–10: authenticated is not authorized, a communications officer is not a
+  recruiter, and no global analytics backdoor; computing in the browser would ship rows.
+- **Consequence:** the site holds no counting logic; a new figure is a database change with a test
+  and a line in the dictionary.
+
+## D95. Period counts are rebuilt into a daily table, never incremented (Phase 13)
+
+- **Decision:** `private.analytics_daily` holds counts per Paris day, organization, metric and
+  dimension, rebuilt by the hourly job for the last 40 days (delete and insert under a lock),
+  reconciled report-only for days 41–400, recomputed on request by the BDE; current-state figures
+  stay live reads.
+- **Reason:** brief §63–79: idempotent, late corrections caught, cheap period sums, and no copy of
+  a confidential record (counts only).
+- **Consequence:** a day older than 40 days changes only by a deliberate recompute; a retention
+  deletion shows up as a reconciliation difference rather than silently changing history.
+
+## D96. Small groups hidden with a configurable threshold, complements and dominance (Phase 13)
+
+- **Decision:** `private.analytics_suppress` hides a group under k (default 5, 3–20, BDE setting,
+  audited), cells under k with a complementary cell, and a breakdown where one outcome holds the
+  whole group; campus-wide recruitment is monthly totals only, never distinct candidates.
+- **Reason:** brief §45–49: an association of a dozen members or a campaign of three applicants
+  would otherwise tell each person's result.
+- **Consequence:** small campaigns show their stages only from k applications sent; residual
+  differencing risks are documented in analytics.md.
+
+## D97. No audience measurement, no scheduled summaries in Phase 13 (Phase 13)
+
+- **Decision:** page views, visitors, reading and e-mail opens are listed as "Non mesuré"; no
+  measurement script or log is added. Scheduled statistics summaries are not built.
+- **Reason:** brief §56–62: the CNIL exemption needs a narrowly scoped first-party counter and an
+  updated privacy notice (an owner and DPO decision); nothing depends on these figures yet.
+  Summaries are optional (§95) and would only send a link.
+- **Consequence:** both are later decisions; analytics.md states the conditions and the design
+  (notify a link through `private.notify`, rights rechecked at send time).
+
+## D98. Reports are built on demand and recorded before they are shown (Phase 13)
+
+- **Decision:** the printable report and the CSV are rebuilt from the dashboard functions at each
+  request, recorded by `log_analytics_export` first (a refused record means no file), never stored,
+  CSV cells neutralised; printing uses the browser (no PDF engine).
+- **Reason:** brief §90–97: no public or long-lived URL, no report outliving a right, no heavy
+  document infrastructure.
+- **Consequence:** a report URL alone shows nothing; each opening is one audit line (who, scope,
+  sections, period, never the figures).

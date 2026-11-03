@@ -340,3 +340,19 @@ Both have the restrictive second-factor policy and no table write for any API ro
 `private.search_tsquery`, `private.search_association_card`, `private.search_title_bonus`,
 `private.search_name_matches` and the two vector builders are executable by no API role
 ([search.md](search.md)).
+
+## Phase 13: statistics
+
+| Table | Who reads |
+| --- | --- |
+| `private.analytics_daily` | nobody through the API (private schema, RLS on, nothing granted); counts only, no person, no row id |
+| `private.analytics_settings` | nobody through the API; changed only by `set_analytics_min_group_size` |
+
+Granted to `authenticated` only (revoked from `public` and `anon`): `organization_analytics`,
+`platform_analytics`, `analytics_years`, `log_analytics_export`, `set_analytics_min_group_size`,
+`recompute_analytics`. Each checks its keys at the time of the call; the last two also need the
+second factor, and the platform exports too. The helpers (`private.analytics_source_counts`,
+`refresh_analytics`, `reconcile_analytics`, `run_analytics_refresh`, `analytics_freshness`,
+`analytics_k`, `analytics_suppress`, `analytics_check_period`, `analytics_sums`,
+`analytics_series`, `analytics_campaign_funnel`, `analytics_campaign_workflow`) are executable by
+no API role ([analytics.md](analytics.md)).

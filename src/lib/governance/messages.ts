@@ -307,6 +307,10 @@ export type GovernanceErrorCode =
   | "saved_limit"
   | "search_invalid"
   | "secret_not_allowed"
+  // Phase 13 — statistics
+  | "analytics_export_invalid"
+  | "analytics_period_invalid"
+  | "analytics_threshold_invalid"
   | "unavailable"
   | "unexpected";
 
@@ -683,6 +687,10 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   item_not_found: "Ce contenu n'est pas (ou plus) public : il ne peut pas être enregistré.",
   saved_limit: "Tu as déjà 500 contenus enregistrés. Retires-en quelques-uns pour en garder d'autres.",
   search_invalid: "Cette recherche n'est pas valide. Change un filtre ou recommence.",
+  analytics_export_invalid: "Cet export n'est pas valide. Recharge la page et recommence.",
+  analytics_period_invalid:
+    "Cette période n'est pas valide : une date de début avant la fin, pas avant le 1er janvier 2020, deux ans au plus.",
+  analytics_threshold_invalid: "Le seuil doit être un nombre entier entre 3 et 20.",
   secret_not_allowed:
     "Ce texte ressemble à un mot de passe ou à une clé. Le registre n'en contient jamais : indique seulement qui détient l'accès et comment le joindre.",
   unavailable:"Le service est momentanément indisponible. Réessaie dans un instant.",

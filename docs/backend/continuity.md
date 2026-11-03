@@ -60,11 +60,12 @@ by pg_cron as `select private.run_scheduled_job('<key>')`:
   consecutive failures).
 
 `private.execute_job` is a fixed `case`: no function name is read from a
-table, no dynamic SQL. The catalog (`scheduled_jobs`) lists ten jobs:
+table, no dynamic SQL. The catalog (`scheduled_jobs`) lists eleven jobs:
 `publish-scheduled-posts`, `notifications-dispatch`, `notification-reminders`,
 `recruitment-review-jobs`, `enqueue-recruitment-reminders`,
 `governance-health`, `storage-cleanup`, `purge-recruitment-data`,
-`data-retention`, `platform-health-report`.
+`data-retention`, `platform-health-report`, and since Phase 13
+`analytics-refresh` (hourly at :25, the daily statistics counts; [analytics.md](analytics.md)).
 
 **Health** (`private.job_health`) is measured from the last *success*, never
 from the job's existence: late after twice its period plus ten minutes,

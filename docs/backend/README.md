@@ -20,7 +20,9 @@ and header bell, each person's choices, e-mail sent by a Supabase Edge Function 
 development project), reminders, BDE and association messages, and delivery monitoring. Phase 11
 added continuity (expiry without jobs, academic years, the job dispatcher, retention, runbooks).
 Phase 12 added one public search across the campus, saved items, optional interests, the BDE's
-front-page spotlights and links between modules by real ids.
+front-page spotlights and links between modules by real ids. Phase 13 added statistics: an
+association dashboard and a BDE platform dashboard counted in the database by each section's key,
+small groups hidden, printable reports and CSV exports (audited), and no audience measurement.
 
 Read in this order:
 
@@ -39,6 +41,7 @@ Read in this order:
 | [notifications.md](notifications.md) | Phase 10: the catalog and `private.notify`, the notification centre and bell, choices and unsubscribing, e-mail by Edge Function (modes, retries, webhook, suppression), reminders, broadcasts, monitoring, retention, configuration |
 | [continuity.md](continuity.md) | Phase 11: expiry without jobs, academic years and the rollover, the job dispatcher and its health, the governance checker, handover checklists, retention policies, the storage-cleanup function, the institutional register, backups, incidents, reads per audience. Runbooks: `docs/operations/`; role guides: `docs/guides/` |
 | [search.md](search.md) | Phase 12: the public search (what is searchable, ranking, filters, the API), saved items, interests, spotlights, related articles, caching and performance |
+| [analytics.md](analytics.md) | Phase 13: the statistics — who reads what, how counts are made and refreshed, the metric dictionary, small-group suppression and residual risks, the audience-measurement assessment, reports and exports, performance |
 | [recruitment-review.md](recruitment-review.md) | Phase 9: who reads an application (keys, committees, scopes, the seal), grids and reviews, conflicts, interviews, questions, decisions, offers and onboarding, what candidates see, exports, data rights, retention |
 | [publishing.md](publishing.md) | Posts and revisions, the three state concerns, editorial policy and approval, body format and XSS layers, images, scheduling (the pg_cron worker), addresses, the public read model, reports and moderation |
 | [environments.md](environments.md) | Local, development/staging and production; which variables exist, which are secret; backups |

@@ -46,9 +46,10 @@ function body(signature) {
 }
 
 test("every recurring job has a name, a description and a frequency", () => {
-  const block = migrations.split("insert into public.scheduled_jobs (job_key, area, schedule, expected_every, critical, retryable, sort_order) values")[1];
-  const jobs = [...block.slice(0, block.indexOf(";\n")).matchAll(/^\s*\('([a-z-]+)',/gm)].map((m) => m[1]);
-  assert.equal(jobs.length, 10);
+  // Every migration that adds jobs to the catalog (Phase 11's ten, Phase 13's analytics-refresh).
+  const blocks = migrations.split("insert into public.scheduled_jobs (job_key, area, schedule, expected_every, critical, retryable, sort_order) values").slice(1);
+  const jobs = blocks.flatMap((block) => [...block.slice(0, block.indexOf(";\n")).matchAll(/^\s*\('([a-z-]+)',/gm)].map((m) => m[1]));
+  assert.equal(jobs.length, 11);
   assert.deepEqual(sorted(Object.keys(JOB_WORDS)), sorted(jobs));
   assert.deepEqual(sorted(Object.keys(JOB_INFO)), sorted(jobs));
   // The dispatcher runs exactly the catalog's jobs.

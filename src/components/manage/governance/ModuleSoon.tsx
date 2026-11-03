@@ -6,13 +6,12 @@ import { ManagePageHeader } from "@/components/manage/ManagePageHeader";
 import { canOpenSection, sectionByKey, type ManageSectionKey } from "@/components/manage/sections";
 import { SectionDenied } from "./SectionDenied";
 
-type ModuleKey = Extract<ManageSectionKey, "content" | "events" | "media" | "analytics" | "settings">;
+type ModuleKey = Extract<ManageSectionKey, "content" | "events" | "media" | "settings">;
 
 const PURPOSE: Record<ModuleKey, string> = {
   content: "Les articles de l'asso : brouillons, relecture et publication dans le fil Campus.",
   events: "Les événements de l'asso : préparation, publication et inscriptions.",
   media: "La médiathèque de l'asso : photos et visuels.",
-  analytics: "Les chiffres de fréquentation de l'asso.",
   settings: "La page publique de l'asso : nom, présentation, couleur, réseaux et contact.",
 };
 
