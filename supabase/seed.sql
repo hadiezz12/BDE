@@ -721,6 +721,13 @@ begin
   perform public.submit_application((v_app ->> 'application_id')::uuid, v_version, true);
   perform public.withdraw_application((v_app ->> 'application_id')::uuid, 'Retrait fictif.');
 
+  -- ---- The campus front page (Alice, BDE): Sports' recruitment featured, Finance "à l'honneur" -------
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', v_alice, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  perform public.set_campaign_prominence(
+    (select id from public.recruitment_campaigns where organization_id = v_sports and title = 'Recrutement 2027 (exemple)'),
+    'featured', null);
+  perform public.set_association_prominence(v_finance, 'featured', null);
+
   perform set_config('request.jwt.claims', null, true);
 end;
 $seed8$;

@@ -632,6 +632,9 @@ export type Database = {
         Row: {
           first_published_at: string | null
           organization_id: string
+          prominence: string
+          prominence_by: string | null
+          prominence_until: string | null
           published_at: string | null
           published_by: string | null
           published_revision: number | null
@@ -646,6 +649,9 @@ export type Database = {
         Insert: {
           first_published_at?: string | null
           organization_id: string
+          prominence?: string
+          prominence_by?: string | null
+          prominence_until?: string | null
           published_at?: string | null
           published_by?: string | null
           published_revision?: number | null
@@ -659,6 +665,9 @@ export type Database = {
         Update: {
           first_published_at?: string | null
           organization_id?: string
+          prominence?: string
+          prominence_by?: string | null
+          prominence_until?: string | null
           published_at?: string | null
           published_by?: string | null
           published_revision?: number | null
@@ -695,6 +704,7 @@ export type Database = {
           organization_id: string
           pillars: Json
           revision: number
+          search: unknown
           short_name: string | null
           social_links: Json
           stage: string
@@ -718,6 +728,7 @@ export type Database = {
           organization_id: string
           pillars?: Json
           revision?: number
+          search?: never
           short_name?: string | null
           social_links?: Json
           stage: string
@@ -740,6 +751,7 @@ export type Database = {
           organization_id?: string
           pillars?: Json
           revision?: number
+          search?: never
           short_name?: string | null
           social_links?: Json
           stage?: string
@@ -987,33 +999,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_bookmarks: {
-        Row: {
-          created_at: string
-          event_id: string
-          user_id: string
-        }
-        ComputedFields: never
-        Insert: {
-          created_at?: string
-          event_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          event_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_bookmarks_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -3694,6 +3679,9 @@ export type Database = {
           organization_id: string
           paused_at: string | null
           process: Json
+          prominence: string
+          prominence_by: string | null
+          prominence_until: string | null
           publication: string
           published_at: string | null
           required_reviews: number
@@ -3740,6 +3728,9 @@ export type Database = {
           organization_id: string
           paused_at?: string | null
           process?: Json
+          prominence?: string
+          prominence_by?: string | null
+          prominence_until?: string | null
           publication?: string
           published_at?: string | null
           required_reviews?: number
@@ -3785,6 +3776,9 @@ export type Database = {
           organization_id?: string
           paused_at?: string | null
           process?: Json
+          prominence?: string
+          prominence_by?: string | null
+          prominence_until?: string | null
           publication?: string
           published_at?: string | null
           required_reviews?: number
@@ -4545,6 +4539,7 @@ export type Database = {
           missions: string | null
           openings: number | null
           retired_at: string | null
+          search: unknown
           slug: string
           summary: string | null
           team: string | null
@@ -4566,6 +4561,7 @@ export type Database = {
           missions?: string | null
           openings?: number | null
           retired_at?: string | null
+          search?: never
           slug: string
           summary?: string | null
           team?: string | null
@@ -4586,6 +4582,7 @@ export type Database = {
           missions?: string | null
           openings?: number | null
           retired_at?: string | null
+          search?: never
           slug?: string
           summary?: string | null
           team?: string | null
@@ -4979,6 +4976,82 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_items: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          kind: string
+          organization_id: string | null
+          position_id: string | null
+          post_id: string | null
+          target_id: string | null
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          kind: string
+          organization_id?: string | null
+          position_id?: string | null
+          post_id?: string | null
+          target_id?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string | null
+          position_id?: string | null
+          post_id?: string | null
+          target_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_items_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "recruitment_positions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_items_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_job_runs: {
         Row: {
           duration_ms: number
@@ -5087,6 +5160,33 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      student_interests: {
+        Row: {
+          category_id: string
+          created_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          category_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_interests_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "association_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -5486,6 +5586,7 @@ export type Database = {
         Returns: Json
       }
       my_applications: { Args: never; Returns: Json }
+      my_campus_suggestions: { Args: never; Returns: Json }
       my_event_status: { Args: { p_event_id: string }; Returns: Json }
       my_events: { Args: never; Returns: Json }
       my_governance_inbox: { Args: never; Returns: Json }
@@ -5502,6 +5603,8 @@ export type Database = {
         Returns: Json
       }
       my_recruitment_work: { Args: never; Returns: Json }
+      my_saved_items: { Args: { p_kind?: string }; Returns: Json }
+      my_saved_keys: { Args: never; Returns: Json }
       notification_broadcast_options: {
         Args: { p_organization_id: string }
         Returns: Json
@@ -5657,6 +5760,8 @@ export type Database = {
         }
         Returns: Json
       }
+      public_featured_associations: { Args: never; Returns: Json }
+      public_featured_campaigns: { Args: never; Returns: Json }
       public_featured_events: { Args: never; Returns: Json }
       public_featured_posts: { Args: never; Returns: Json }
       public_portrait_path: {
@@ -5697,6 +5802,10 @@ export type Database = {
       }
       public_recruitment_privacy: { Args: never; Returns: Json }
       public_recruitment_sitemap: { Args: never; Returns: Json }
+      public_related_posts: {
+        Args: { p_id: string; p_limit?: number; p_type: string }
+        Returns: Json
+      }
       public_series_events: { Args: { p_series_key: string }; Returns: Json }
       publish_association_page: {
         Args: { p_expected_revision: number; p_organization_id: string }
@@ -5974,6 +6083,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_item: {
+        Args: { p_id: string; p_kind: string; p_saved: boolean }
+        Returns: boolean
+      }
       save_post_revision: {
         Args: {
           p_content: Json
@@ -6023,6 +6136,22 @@ export type Database = {
         Args: { p_at: string; p_post_id: string; p_revision_id: string }
         Returns: undefined
       }
+      search_campus: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_offset?: number
+          p_organization?: string
+          p_per_type?: number
+          p_place?: string
+          p_q?: string
+          p_sort?: string
+          p_status?: string
+          p_type?: string
+          p_when?: string
+        }
+        Returns: Json
+      }
       security_health: { Args: never; Returns: Json }
       set_application_tag: {
         Args: { p_application_id: string; p_on: boolean; p_tag_id: string }
@@ -6032,9 +6161,21 @@ export type Database = {
         Args: { p_base: Json; p_items: Json; p_organization_id: string }
         Returns: number
       }
+      set_association_prominence: {
+        Args: {
+          p_organization_id: string
+          p_prominence: string
+          p_until?: string
+        }
+        Returns: undefined
+      }
       set_association_team_presentation: {
         Args: { p_base: Json; p_entries: Json; p_organization_id: string }
         Returns: number
+      }
+      set_campaign_prominence: {
+        Args: { p_campaign_id: string; p_prominence: string; p_until?: string }
+        Returns: undefined
       }
       set_editorial_settings: {
         Args: {
@@ -6042,10 +6183,6 @@ export type Database = {
           p_review_mode: string
           p_show_authors: boolean
         }
-        Returns: undefined
-      }
-      set_event_bookmark: {
-        Args: { p_event_id: string; p_saved: boolean }
         Returns: undefined
       }
       set_event_pin: {
@@ -6069,6 +6206,10 @@ export type Database = {
       set_membership_status: {
         Args: { p_membership_id: string; p_reason?: string; p_status: string }
         Returns: undefined
+      }
+      set_my_interests: {
+        Args: { p_category_slugs: string[] }
+        Returns: number
       }
       set_my_public_team_profile: {
         Args: {
