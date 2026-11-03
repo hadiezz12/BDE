@@ -3,4 +3,4 @@
  * page compares it with the last one the database recorded, to show schema
  * drift; a unit test fails when a migration is added without updating it.
  */
-export const LATEST_MIGRATION = "20261103073152";
+export const LATEST_MIGRATION = "20261103193024";

@@ -5211,6 +5211,7 @@ export type Database = {
         }
         Returns: Json
       }
+      analytics_years: { Args: never; Returns: Json }
       answer_clarification: {
         Args: { p_answer: string; p_clarification_id: string }
         Returns: Json
@@ -5567,6 +5568,17 @@ export type Database = {
         }
         Returns: Json
       }
+      log_analytics_export: {
+        Args: {
+          p_from: string
+          p_kind: string
+          p_organization_id: string
+          p_scope: string
+          p_sections: string[]
+          p_to: string
+        }
+        Returns: undefined
+      }
       mark_notifications_read: { Args: { p_ids?: number[] }; Returns: number }
       member_access: { Args: { p_membership_id: string }; Returns: Json }
       moderated_post: { Args: { p_post_id: string }; Returns: Json }
@@ -5629,6 +5641,16 @@ export type Database = {
         Args: { p_campaign_id: string; p_decision_ids: string[] }
         Returns: undefined
       }
+      organization_analytics: {
+        Args: {
+          p_compare_from?: string
+          p_compare_to?: string
+          p_from: string
+          p_organization_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
       organization_broadcasts: {
         Args: { p_organization_id: string }
         Returns: Json
@@ -5643,6 +5665,15 @@ export type Database = {
       }
       organization_team: { Args: { p_organization_id: string }; Returns: Json }
       peek_unsubscribe_token: { Args: { p_token: string }; Returns: Json }
+      platform_analytics: {
+        Args: {
+          p_compare_from?: string
+          p_compare_to?: string
+          p_from: string
+          p_to: string
+        }
+        Returns: Json
+      }
       platform_events: {
         Args: { p_q?: string; p_view?: string }
         Returns: Json
@@ -5826,6 +5857,10 @@ export type Database = {
       }
       publish_recruitment_rubric: {
         Args: { p_campaign_id: string; p_kind: string }
+        Returns: Json
+      }
+      recompute_analytics: {
+        Args: { p_from: string; p_to: string }
         Returns: Json
       }
       record_backup_verification: {
@@ -6153,6 +6188,10 @@ export type Database = {
         Returns: Json
       }
       security_health: { Args: never; Returns: Json }
+      set_analytics_min_group_size: {
+        Args: { p_value: number }
+        Returns: undefined
+      }
       set_application_tag: {
         Args: { p_application_id: string; p_on: boolean; p_tag_id: string }
         Returns: undefined

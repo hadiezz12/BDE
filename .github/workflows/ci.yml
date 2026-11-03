@@ -97,6 +97,12 @@ jobs:
           DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
           test -n "$DB_URL"
           bash supabase/tests/concurrency/search.sh "$DB_URL"
+      - name: Analytics load and concurrency (parallel sessions)
+        # Two refreshes at once, a synthetic campus timed against budgets (Phase 13).
+        run: |
+          DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
+          test -n "$DB_URL"
+          bash supabase/tests/concurrency/analytics.sh "$DB_URL"
       - name: Database lint (plpgsql_check)
         # Findings are also published as a notice (the job log needs a GitHub session).
         run: |

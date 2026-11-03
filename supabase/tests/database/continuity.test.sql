@@ -106,7 +106,7 @@ select throws_ok($$ insert into public.academic_years (label, starts_on, ends_on
                    select '1999–2000', starts_on + 10, ends_on + 10, mandate_starts_at, mandate_ends_at
                      from public.academic_years where status = 'current' $$,
   '23P01', null, 'two years never overlap');
-select is(pg_temp.n($$ select count(*) from public.scheduled_jobs $$), 10, 'ten recurring jobs in the catalog');
+select is(pg_temp.n($$ select count(*) from public.scheduled_jobs $$), 11, 'eleven recurring jobs in the catalog (Phase 13 added analytics-refresh)');
 select is(pg_temp.n($$ select count(*) from public.retention_policies where keep_months is not null $$), 0,
   'no retention period is configured by default (nothing is deleted until the BDE decides)');
 select ok(not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace

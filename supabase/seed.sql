@@ -731,3 +731,8 @@ begin
   perform set_config('request.jwt.claims', null, true);
 end;
 $seed8$;
+
+-- ---- Statistics (Phase 13): the daily counts of everything above, as the hourly job would -------------------
+select private.refresh_analytics(date '2020-01-01', (now() at time zone 'Europe/Paris')::date);
+-- Then one regular run of the job, so the pages show when the counts were last computed.
+select private.run_scheduled_job('analytics-refresh');
