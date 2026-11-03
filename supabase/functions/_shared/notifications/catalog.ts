@@ -133,6 +133,7 @@ export function notificationPath(n: NotificationRef): string {
       return "/account/privacy";
     case "privacy_request_received":
     case "privacy_request_due":
+    case "privacy_form_flagged":
       return "/manage/donnees";
     case "privacy_breach_deadline":
       return p.target === "operations" ? "/manage/plateforme/continuite/operations" : "/manage/donnees";

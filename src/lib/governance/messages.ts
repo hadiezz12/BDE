@@ -313,6 +313,9 @@ export type GovernanceErrorCode =
   | "analytics_threshold_invalid"
   // Phase 14 — privacy
   | "erasure_on_hold"
+  | "form_not_found"
+  | "form_privacy_justification_invalid"
+  | "form_privacy_review_required"
   | "erasure_responsibilities_active"
   | "privacy_confirmation_required"
   | "privacy_erasure_pending"
@@ -710,6 +713,11 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   analytics_period_invalid:
     "Cette période n'est pas valide : une date de début avant la fin, pas avant le 1er janvier 2020, deux ans au plus.",
   analytics_threshold_invalid: "Le seuil doit être un nombre entier entre 3 et 20.",
+  form_not_found: "Aucun brouillon de formulaire en cours pour ce recrutement : les questions publiées ne changent pas.",
+  form_privacy_justification_invalid:
+    "Explique en une ou deux phrases (20 caractères au moins) pourquoi ces questions sont nécessaires pour ce recrutement.",
+  form_privacy_review_required:
+    "Ce formulaire pose des questions sensibles (santé, religion, opinions, origine, justice, pièce d'identité, date de naissance, adresse, téléphone, banque). Retire-les, ou explique pourquoi elles sont nécessaires avant de publier.",
   erasure_on_hold:
     "Une conservation exceptionnelle (litige, réclamation) s'applique à ce compte : rien n'est effacé tant qu'elle n'est pas levée ou arrivée à sa date de revue.",
   erasure_responsibilities_active:

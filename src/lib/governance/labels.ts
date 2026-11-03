@@ -294,6 +294,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   analytics_settings_changed: "a changé le seuil de confidentialité des statistiques",
   analytics_recomputed: "a recalculé des statistiques",
   // Phase 14 — privacy
+  recruitment_form_privacy_reviewed: "a justifié des questions sensibles d'un formulaire de recrutement",
   personal_data_exported: "a téléchargé ses données personnelles",
   privacy_notice_recorded: "a enregistré une version approuvée de la notice de confidentialité",
   privacy_request_decided: "a décidé d'une demande sur les données personnelles",

@@ -15,7 +15,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(157);
+select plan(168);
 
 create temporary table fx (k text primary key, id uuid, v text) on commit drop;
 grant select, insert, update on fx to anon, authenticated, service_role;
@@ -466,6 +466,45 @@ set local role anon;
 select is(public.public_privacy_notice('fr') -> 'current' ->> 'version', '2026-11-test', 'and is the notice in force for visitors');
 select is(length(public.public_privacy_notice('fr') -> 'current' ->> 'hash'), 64, 'with the hash of its exact text');
 set local role authenticated;
+
+-- =============================================================================
+-- 8b. The form builder flags sensitive questions; a justification unlocks publication (§13–§16)
+-- =============================================================================
+
+reset role;
+select is(cardinality(private.form_sensitive_terms('{"questions": [{"label": "Ta motivation en quelques lignes"}, {"label": "Ton sport préféré"}]}')), 0,
+  'an ordinary form flags nothing');
+select ok(private.form_sensitive_terms('{"questions": [{"label": "Ta date de naissance"}, {"label": "As-tu un problème de santé ?"}, {"label": "Ton numéro de téléphone"}, {"label": "Ta religion"}]}')
+          @> array['naissance', 'religion', 'sante', 'telephone'], 'date of birth, health, phone and religion are flagged');
+select is((select count(*)::integer from public.recruitment_form_versions where status = 'published'
+            and cardinality(private.form_sensitive_terms(schema)) > 0), 0, 'no live form of the seed asks anything sensitive');
+insert into fx (k, id) values ('c_sports', (select campaign_id from public.recruitment_positions where id = pg_temp.fid('pos_events')));
+insert into public.recruitment_form_versions (campaign_id, number, status, schema, edit_version, created_by)
+select v.campaign_id, (select max(number) + 1 from public.recruitment_form_versions where campaign_id = v.campaign_id), 'draft',
+       jsonb_set(v.schema, '{questions}', (v.schema -> 'questions') || jsonb_build_array(jsonb_build_object(
+         'id', 'birth', 'type', 'long_text', 'label', 'Ta date de naissance (question fictive)', 'scope', 'shared',
+         'section', 's1', 'required', false, 'max_length', 100))),
+       1, pg_temp.fid('emma')
+  from public.recruitment_form_versions v where v.campaign_id = pg_temp.fid('c_sports') and v.status = 'published';
+set local role authenticated;
+select pg_temp.as_user('emma', 'aal2');
+select ok(public.recruitment_form_privacy_check(pg_temp.fid('c_sports')) -> 'flagged' ? 'naissance', 'the editor sees what is flagged');
+select throws_ok($$ select public.publish_recruitment_form(pg_temp.fid('c_sports')) $$, 'P0001', 'form_privacy_review_required',
+  'the version cannot go live without a justification');
+select throws_ok($$ select public.record_form_privacy_review(pg_temp.fid('c_sports'), 'parce que') $$, 'P0001',
+  'form_privacy_justification_invalid', 'a real explanation is needed');
+select lives_ok($$ select public.record_form_privacy_review(pg_temp.fid('c_sports'),
+    'Question fictive : vérifier la majorité pour un déplacement en tournoi, sans conserver la date ensuite.') $$, 'the president explains it');
+select lives_ok($$ select public.publish_recruitment_form(pg_temp.fid('c_sports')) $$, 'then the version can be published');
+reset role;
+select ok(exists (select 1 from public.notifications where recipient_id = pg_temp.fid('lea') and kind = 'privacy_form_flagged'),
+  'and the privacy officer is told');
+select ok(exists (select 1 from public.recruitment_form_privacy_reviews r join public.recruitment_form_versions v on v.id = r.form_version_id
+                   where v.campaign_id = pg_temp.fid('c_sports') and v.status = 'published'), 'the justification stays with that exact version');
+set local role authenticated;
+select pg_temp.as_user('nina', 'aal2');
+select throws_ok($$ select public.record_form_privacy_review(pg_temp.fid('c_sports'), 'Une justification assez longue pour passer.') $$,
+  'P0001', 'insufficient_permission', 'a student cannot justify someone else''s form');
 
 -- =============================================================================
 -- 9. The security posture of the schema (§72, §109)

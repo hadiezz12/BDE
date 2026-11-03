@@ -27,6 +27,7 @@ export type PlatformMessageKind =
   | "privacy_request_due"
   | "privacy_breach_deadline"
   | "privacy_request_updated"
+  | "privacy_form_flagged"
   | "content_approval_requested"
   | "content_approval_pending"
   | "content_review_done"
@@ -58,6 +59,7 @@ export const PLATFORM_KINDS: readonly PlatformMessageKind[] = [
   "privacy_request_due",
   "privacy_breach_deadline",
   "privacy_request_updated",
+  "privacy_form_flagged",
   "content_approval_requested",
   "content_approval_pending",
   "content_review_done",
@@ -131,6 +133,7 @@ export interface PlatformMessagePayload {
   due_at?: string | null;
   aware_at?: string | null;
   deadline?: string | null;
+  flagged?: string[] | null;
 }
 
 /** The recurring jobs, in words (also used by the continuity pages). */
@@ -467,6 +470,11 @@ export function platformMessage(kind: PlatformMessageKind, p: PlatformMessagePay
       };
     case "privacy_request_updated":
       return privacyUpdate(p);
+    case "privacy_form_flagged":
+      return {
+        title: `Questions sensibles justifiées : ${org}`,
+        body: `Le formulaire « ${p.title ?? "recrutement"} » pose des questions sensibles (${(p.flagged ?? []).length} thème(s)) ; l'asso a écrit pourquoi. À examiner si besoin.`,
+      };
     case "platform_health_report":
       return healthReport(p);
     case "content_approval_requested":

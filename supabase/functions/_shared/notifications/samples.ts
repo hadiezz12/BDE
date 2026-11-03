@@ -56,6 +56,7 @@ export function samplePayload(kind: string, now = Date.now()): Payload {
   if (kind === "privacy_request_updated" || kind === "privacy_request_received" || kind === "privacy_request_due") {
     return { ...base, reference: "PR-000001", kind: "access", step: "received", due_at: at(30) };
   }
+  if (kind === "privacy_form_flagged") return { ...base, title: "Recrutement test (exemple)", flagged: ["naissance"] };
   if (kind === "privacy_breach_deadline") return { ...base, title: "Incident test (exemple)", aware_at: at(-2), deadline: at(1), target: "privacy" };
   if (kind === "campus_announcement") return { ...base, title: "Annonce test (exemple)" };
   if (kind === "association_message" || kind === "followed_announcement") return { ...base, title: "Message test (exemple)" };

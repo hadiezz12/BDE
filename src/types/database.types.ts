@@ -4451,6 +4451,39 @@ export type Database = {
           },
         ]
       }
+      recruitment_form_privacy_reviews: {
+        Row: {
+          flagged: string[]
+          form_version_id: string
+          justification: string
+          reviewed_at: string
+          reviewed_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          flagged: string[]
+          form_version_id: string
+          justification: string
+          reviewed_at?: string
+          reviewed_by?: string | null
+        }
+        Update: {
+          flagged?: string[]
+          form_version_id?: string
+          justification?: string
+          reviewed_at?: string
+          reviewed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruitment_form_privacy_reviews_form_version_id_fkey"
+            columns: ["form_version_id"]
+            isOneToOne: true
+            referencedRelation: "recruitment_form_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recruitment_form_versions: {
         Row: {
           campaign_id: string
@@ -6238,6 +6271,10 @@ export type Database = {
         }
         Returns: string
       }
+      record_form_privacy_review: {
+        Args: { p_campaign_id: string; p_justification: string }
+        Returns: Json
+      }
       record_offline_privacy_request: {
         Args: {
           p_details: string
@@ -6298,6 +6335,10 @@ export type Database = {
       }
       recruitment_form_preview: {
         Args: { p_campaign_id: string; p_position_id: string; p_which?: string }
+        Returns: Json
+      }
+      recruitment_form_privacy_check: {
+        Args: { p_campaign_id: string }
         Returns: Json
       }
       recruitment_interview_board: {
