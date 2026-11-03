@@ -23,6 +23,10 @@ export type PlatformMessageKind =
   | "governance_mandate_expiring"
   | "governance_issue_alert"
   | "platform_health_report"
+  | "privacy_request_received"
+  | "privacy_request_due"
+  | "privacy_breach_deadline"
+  | "privacy_request_updated"
   | "content_approval_requested"
   | "content_approval_pending"
   | "content_review_done"
@@ -50,6 +54,10 @@ export const PLATFORM_KINDS: readonly PlatformMessageKind[] = [
   "governance_mandate_expiring",
   "governance_issue_alert",
   "platform_health_report",
+  "privacy_request_received",
+  "privacy_request_due",
+  "privacy_breach_deadline",
+  "privacy_request_updated",
   "content_approval_requested",
   "content_approval_pending",
   "content_review_done",
@@ -117,6 +125,12 @@ export interface PlatformMessagePayload {
   reviewer_access_expiring?: number;
   backups_verified?: number;
   open_incidents?: number;
+  // Phase 14: data-subject requests and personal-data incidents (reference and dates only).
+  reference?: string | null;
+  step?: string | null;
+  due_at?: string | null;
+  aware_at?: string | null;
+  deadline?: string | null;
 }
 
 /** The recurring jobs, in words (also used by the continuity pages). */
@@ -132,6 +146,7 @@ export const JOB_WORDS: Record<string, string> = {
   "data-retention": "Conservation des données",
   "platform-health-report": "Point hebdomadaire de continuité",
   "analytics-refresh": "Comptes des statistiques",
+  "privacy-housekeeping": "Suivi des demandes sur les données",
 };
 
 /** The institutional register's lines, in words (also used by the continuity pages). */
@@ -275,6 +290,33 @@ function issueMessage(p: PlatformMessagePayload, org: string): { title: string; 
   }
 }
 
+/** The kinds of data-subject requests, in words (also used by the privacy pages). */
+export const PRIVACY_KIND_WORDS: Record<string, string> = {
+  access: "accès à tes données",
+  portability: "copie de tes données dans un format réutilisable",
+  rectification: "correction de données",
+  erasure: "effacement de tes données",
+  restriction: "limitation d'un traitement",
+  objection: "opposition à un traitement",
+  consent_withdrawal: "retrait d'un consentement",
+  other: "autre demande",
+};
+
+function privacyUpdate(p: PlatformMessagePayload): { title: string; body: string } {
+  const ref = p.reference ?? "ta demande";
+  const step = p.step ?? "";
+  if (step === "received") {
+    return { title: `Demande reçue : ${ref}`, body: `Réponse au plus tard le ${p.due_at ? messageWhen(p.due_at) : "dans un mois"}. Tu peux suivre son avancement depuis Mes données.` };
+  }
+  if (step === "extended") {
+    return { title: `Délai prolongé : ${ref}`, body: `La réponse arrivera au plus tard le ${p.due_at ? messageWhen(p.due_at) : "dans les deux mois"}. La raison est indiquée dans Mes données.` };
+  }
+  if (step === "decided") return { title: `Décision sur ta demande ${ref}`, body: "La décision et ses raisons sont dans Mes données." };
+  if (step.startsWith("export")) return { title: `Tes données sont prêtes : ${ref}`, body: "Le fichier se télécharge depuis Mes données, pendant 14 jours." };
+  if (step === "completed") return { title: `Demande terminée : ${ref}`, body: "Le détail est dans Mes données." };
+  return { title: `Message sur ta demande ${ref}`, body: "Un nouveau message t'attend dans Mes données." };
+}
+
 function healthReport(p: PlatformMessagePayload): { title: string; body: string } {
   const lines: string[] = [];
   const add = (n: number | undefined, one: string, many: string) => {
@@ -408,6 +450,23 @@ export function platformMessage(kind: PlatformMessageKind, p: PlatformMessagePay
       };
     case "governance_issue_alert":
       return issueMessage(p, org);
+    case "privacy_request_received":
+      return {
+        title: `Nouvelle demande sur les données : ${p.reference ?? "à voir"}`,
+        body: `${cap(PRIVACY_KIND_WORDS[p.kind ?? ""] ?? "une demande")}, à traiter${p.due_at ? ` avant le ${messageWhen(p.due_at)}` : ""}.`,
+      };
+    case "privacy_request_due":
+      return {
+        title: `Demande ${p.reference ?? ""} : délai bientôt atteint`,
+        body: `La réponse est due ${p.due_at ? `le ${messageWhen(p.due_at)}` : "bientôt"}. Le délai ne se prolonge qu'une fois, en prévenant la personne.`,
+      };
+    case "privacy_breach_deadline":
+      return {
+        title: "Incident de données : décision de notification en attente",
+        body: `« ${p.title ?? "Incident"} » : la décision de notifier ou non la CNIL est à prendre${p.deadline ? ` avant le ${messageWhen(p.deadline)}` : ""} (72 heures après la découverte).`,
+      };
+    case "privacy_request_updated":
+      return privacyUpdate(p);
     case "platform_health_report":
       return healthReport(p);
     case "content_approval_requested":

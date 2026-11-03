@@ -63,7 +63,7 @@ test("constraint errors become sentences, never Postgres text", () => {
   }
 });
 
-const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events", "recruitment", "communications", "continuity"]);
+const CATEGORIES = new Set(["organization", "team", "roles", "delegation", "leadership", "recovery", "bootstrap", "profile", "media", "catalog", "content", "moderation", "events", "recruitment", "communications", "continuity", "analytics", "privacy"]);
 
 const RESOURCE_TYPES = new Set([
   "recruitment_campaign", "recruitment_position", "recruitment_form", "recruitment_settings",

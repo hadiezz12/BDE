@@ -311,6 +311,25 @@ export type GovernanceErrorCode =
   | "analytics_export_invalid"
   | "analytics_period_invalid"
   | "analytics_threshold_invalid"
+  // Phase 14 — privacy
+  | "erasure_on_hold"
+  | "erasure_responsibilities_active"
+  | "privacy_confirmation_required"
+  | "privacy_erasure_pending"
+  | "privacy_export_expired"
+  | "privacy_export_limit"
+  | "privacy_export_missing"
+  | "privacy_extension_unavailable"
+  | "privacy_identity_unverified"
+  | "privacy_notice_invalid"
+  | "privacy_notice_version_exists"
+  | "privacy_request_closed"
+  | "privacy_request_invalid"
+  | "privacy_request_limit"
+  | "privacy_request_not_found"
+  | "privacy_self_handling"
+  | "retention_hold_invalid"
+  | "retention_note_required"
   | "unavailable"
   | "unexpected";
 
@@ -691,6 +710,29 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   analytics_period_invalid:
     "Cette période n'est pas valide : une date de début avant la fin, pas avant le 1er janvier 2020, deux ans au plus.",
   analytics_threshold_invalid: "Le seuil doit être un nombre entier entre 3 et 20.",
+  erasure_on_hold:
+    "Une conservation exceptionnelle (litige, réclamation) s'applique à ce compte : rien n'est effacé tant qu'elle n'est pas levée ou arrivée à sa date de revue.",
+  erasure_responsibilities_active:
+    "Cette personne occupe encore un poste, un rôle ou un siège de comité. Confirme qu'ils prennent fin maintenant pour lancer l'effacement.",
+  privacy_confirmation_required: "Recopie la référence de la demande (PR-…) pour confirmer l'effacement.",
+  privacy_erasure_pending: "Des fichiers attendent encore d'être supprimés du stockage : la demande sera terminée une fois le nettoyage fait.",
+  privacy_export_expired: "Ce fichier n'est plus disponible (14 jours passés). Fais une nouvelle demande si tu en as encore besoin.",
+  privacy_export_limit: "Tu as déjà téléchargé tes données dix fois aujourd'hui. Réessaie demain.",
+  privacy_export_missing: "Prépare l'export des données avant de terminer une demande d'accès.",
+  privacy_extension_unavailable: "Le délai ne peut être prolongé qu'une fois, et avant la fin du premier mois.",
+  privacy_identity_unverified: "L'identité de la personne n'est pas encore vérifiée : vérifie-la avant de décider (sauf refus motivé).",
+  privacy_notice_invalid: "Ce texte de notice n'est pas valide : vérifie les sections, la date d'approbation et qui l'a approuvé.",
+  privacy_notice_version_exists: "Cette version de la notice est déjà enregistrée. Donne-lui un autre numéro.",
+  privacy_request_closed: "Cette demande est déjà décidée, terminée ou retirée : elle ne peut plus changer ainsi.",
+  privacy_request_invalid:
+    "Cette demande n'est pas complète : choisis son type et, pour une correction, une limitation, une opposition ou une autre demande, explique-la en quelques mots (2 000 caractères au plus).",
+  privacy_request_limit:
+    "Une demande du même type est déjà en cours, ou tu en as fait six ce mois-ci : elle sera traitée d'abord. Tu peux la suivre ci-dessous.",
+  privacy_request_not_found: "Cette demande n'existe pas ou ne te concerne pas.",
+  privacy_self_handling: "Tu ne peux pas traiter ta propre demande : une autre personne chargée des données doit s'en occuper.",
+  retention_hold_invalid:
+    "Cette conservation exceptionnelle n'est pas valide : un objet réel, une base, qui l'a décidée, et une date de revue dans l'année.",
+  retention_note_required: "Indique la décision qui fixe cette durée (qui l'a prise, quand) : une durée de conservation ne se règle pas sans référence.",
   secret_not_allowed:
     "Ce texte ressemble à un mot de passe ou à une clé. Le registre n'en contient jamais : indique seulement qui détient l'accès et comment le joindre.",
   unavailable:"Le service est momentanément indisponible. Réessaie dans un instant.",

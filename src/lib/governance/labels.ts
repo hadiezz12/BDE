@@ -293,6 +293,17 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   analytics_exported: "a exporté des statistiques",
   analytics_settings_changed: "a changé le seuil de confidentialité des statistiques",
   analytics_recomputed: "a recalculé des statistiques",
+  // Phase 14 — privacy
+  personal_data_exported: "a téléchargé ses données personnelles",
+  privacy_notice_recorded: "a enregistré une version approuvée de la notice de confidentialité",
+  privacy_request_decided: "a décidé d'une demande sur les données personnelles",
+  privacy_export_prepared: "a préparé l'export des données d'une personne (demande d'accès)",
+  privacy_erasure_executed: "a effacé les données d'une personne (demande d'effacement)",
+  privacy_erasures_reapplied: "a effacé à nouveau des données revenues avec une restauration",
+  retention_hold_placed: "a placé une conservation exceptionnelle",
+  retention_hold_released: "a levé une conservation exceptionnelle",
+  privacy_incident_opened: "a ouvert un incident de données personnelles",
+  privacy_incident_assessed: "a enregistré l'évaluation d'un incident de données personnelles",
 };
 
 /** Confirmations shown by a page after an answer removed the card it came from (?fait=…). */

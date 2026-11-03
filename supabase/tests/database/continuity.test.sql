@@ -106,7 +106,7 @@ select throws_ok($$ insert into public.academic_years (label, starts_on, ends_on
                    select '1999–2000', starts_on + 10, ends_on + 10, mandate_starts_at, mandate_ends_at
                      from public.academic_years where status = 'current' $$,
   '23P01', null, 'two years never overlap');
-select is(pg_temp.n($$ select count(*) from public.scheduled_jobs $$), 11, 'eleven recurring jobs in the catalog (Phase 13 added analytics-refresh)');
+select is(pg_temp.n($$ select count(*) from public.scheduled_jobs $$), 12, 'twelve recurring jobs in the catalog (Phase 13 added analytics-refresh, Phase 14 privacy-housekeeping)');
 select is(pg_temp.n($$ select count(*) from public.retention_policies where keep_months is not null $$), 0,
   'no retention period is configured by default (nothing is deleted until the BDE decides)');
 select ok(not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace
@@ -482,9 +482,9 @@ select is((public.preview_retention_policy('notifications_read', 12) ->> 'count'
   'the preview counts what 12 months would delete');
 select is(pg_temp.n($$ select count(*) from public.notifications where read_at < now() - interval '12 months' $$), (select v::integer from fx where k = 'old_read'),
   'and deletes nothing');
-select throws_ok($$ select public.set_retention_policy('notifications_read', 12) $$, 'P0001', 'retention_confirmation_required',
+select throws_ok($$ select public.set_retention_policy('notifications_read', 12, 'Décision de test') $$, 'P0001', 'retention_confirmation_required',
   'a policy that would delete needs the previewed count confirmed');
-select throws_ok($$ select public.set_retention_policy('notifications_read', 12, null, 1) $$, 'P0001', 'retention_confirmation_required',
+select throws_ok($$ select public.set_retention_policy('notifications_read', 12, 'Décision de test', 1) $$, 'P0001', 'retention_confirmation_required',
   'a wrong count is refused');
 select throws_ok($$ select public.set_retention_policy('cvs', 1) $$, 'P0001', 'policy_unknown', 'only the listed policies exist');
 select lives_ok($$ select public.set_retention_policy('notifications_read', 12, 'Décision de test', (select v::bigint from fx where k = 'old_read')) $$,

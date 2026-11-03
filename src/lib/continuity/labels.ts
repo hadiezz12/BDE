@@ -53,6 +53,10 @@ export const JOB_INFO: Record<string, { help: string; every: string }> = {
     every: "Chaque nuit",
   },
   "platform-health-report": { help: "Envoie le point de continuité au bureau du BDE.", every: "Le lundi matin" },
+  "privacy-housekeeping": {
+    help: "Efface les exports de données expirés, rappelle les demandes à échéance et les décisions d'incident en attente. Ne décide rien.",
+    every: "Chaque heure (à la 40e minute)",
+  },
   "analytics-refresh": {
     help: "Recompte les statistiques des 40 derniers jours et contrôle les plus anciens, sans rien modifier d'autre.",
     every: "Chaque heure (à la 25e minute)",
@@ -244,6 +248,12 @@ export const RETENTION_POLICY: Record<string, { label: string; from: string }> =
   notification_suppressions_cleared: { label: "Adresses débloquées (historique)", from: "depuis le déblocage" },
   event_registrations_past: { label: "Inscriptions aux événements passés", from: "depuis la fin de l'événement" },
   governance_issues_resolved: { label: "Points de continuité résolus", from: "depuis leur résolution" },
+  // Phase 14
+  privacy_requests_closed: { label: "Demandes sur les données personnelles closes", from: "depuis leur clôture" },
+  organization_invitations_closed: { label: "Invitations répondues ou expirées (adresse e-mail)", from: "depuis la réponse ou l'expiration" },
+  content_reports_resolved: { label: "Signalements de contenus traités", from: "depuis leur traitement" },
+  application_access_log: { label: "Journal des ouvertures de candidatures et de fichiers", from: "depuis l'ouverture (un an au moins)" },
+  governance_audit_events: { label: "Historique de gouvernance (journal d'audit)", from: "depuis l'action (un an au moins)" },
 };
 
 export const RETENTION_HOUSEKEEPING: Record<string, string> = {

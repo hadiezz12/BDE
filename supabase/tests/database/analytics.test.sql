@@ -645,7 +645,8 @@ select is((public.platform_analytics(pg_temp.today() - 30, pg_temp.today()) -> '
 -- =============================================================================
 
 reset role;
-update public.position_assignments set ends_at = now() - interval '1 second'
+-- (Never before its start: right after a fresh seed the mandate may have begun less than a second ago.)
+update public.position_assignments set ends_at = greatest(now() - interval '1 second', starts_at + interval '1 microsecond')
  where user_id = pg_temp.fid('julie') and office = 'association_president' and status = 'active';
 set local role authenticated;
 select pg_temp.as_user('julie');

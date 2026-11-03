@@ -128,6 +128,14 @@ export function notificationPath(n: NotificationRef): string {
       }
     case "platform_health_report":
       return "/manage/plateforme/continuite";
+    // Phase 14: the requester's own page, the officer's desk, the BDE's operations.
+    case "privacy_request_updated":
+      return "/account/privacy";
+    case "privacy_request_received":
+    case "privacy_request_due":
+      return "/manage/donnees";
+    case "privacy_breach_deadline":
+      return p.target === "operations" ? "/manage/plateforme/continuite/operations" : "/manage/donnees";
     case "content_approval_requested":
     case "content_approval_pending":
     case "content_review_done":
@@ -158,6 +166,7 @@ export function notificationAction(kind: string): string {
   if (kind.startsWith("account_")) return kind.includes("mfa") ? "Sécurité du compte" : "Ouvrir";
   if (kind.startsWith("governance_")) return kind.endsWith("received") || kind === "governance_approval_required" ? "Mes invitations" : "Ouvrir";
   if (kind.startsWith("content_")) return "Ouvrir l'article";
+  if (kind === "privacy_request_updated") return "Mes données";
   return "Ouvrir";
 }
 
@@ -169,6 +178,8 @@ export function notificationReason(kind: string): string {
   }
   if (kind.startsWith("account_")) return "il s'agit de la sécurité de ton compte";
   if (kind === "platform_health_report") return "tu fais partie du bureau du BDE";
+  if (kind === "privacy_request_updated") return "tu as fait une demande sur tes données personnelles";
+  if (kind.startsWith("privacy_")) return "tu traites les demandes et incidents de données personnelles";
   if (kind.startsWith("governance_")) return "il s'agit de ton rôle dans une équipe";
   if (kind.startsWith("content_")) return "tu fais partie de l'équipe éditoriale d'une asso";
   if (kind === "campus_announcement") return "tu as choisi de recevoir les annonces du BDE";

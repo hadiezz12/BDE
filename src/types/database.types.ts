@@ -2624,14 +2624,27 @@ export type Database = {
       }
       operational_incidents: {
         Row: {
+          affected_estimate: number | null
+          assessed_at: string | null
+          assessed_by: string | null
+          assessment_note: string | null
+          authority_decision: string
+          authority_notified_at: string | null
+          aware_at: string | null
           created_at: string
+          data_categories: string[]
           detected_at: string
           id: string
           impact: string | null
+          impact_types: string[]
+          individuals_decision: string
+          individuals_informed_at: string | null
           kind: string
           opened_by: string | null
           owner_user_id: string | null
+          personal_data: string
           resolved_at: string | null
+          risk: string
           severity: string
           status: string
           title: string
@@ -2639,28 +2652,54 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          affected_estimate?: number | null
+          assessed_at?: string | null
+          assessed_by?: string | null
+          assessment_note?: string | null
+          authority_decision?: string
+          authority_notified_at?: string | null
+          aware_at?: string | null
           created_at?: string
+          data_categories?: string[]
           detected_at?: string
           id?: string
           impact?: string | null
+          impact_types?: string[]
+          individuals_decision?: string
+          individuals_informed_at?: string | null
           kind: string
           opened_by?: string | null
           owner_user_id?: string | null
+          personal_data?: string
           resolved_at?: string | null
+          risk?: string
           severity: string
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          affected_estimate?: number | null
+          assessed_at?: string | null
+          assessed_by?: string | null
+          assessment_note?: string | null
+          authority_decision?: string
+          authority_notified_at?: string | null
+          aware_at?: string | null
           created_at?: string
+          data_categories?: string[]
           detected_at?: string
           id?: string
           impact?: string | null
+          impact_types?: string[]
+          individuals_decision?: string
+          individuals_informed_at?: string | null
           kind?: string
           opened_by?: string | null
           owner_user_id?: string | null
+          personal_data?: string
           resolved_at?: string | null
+          risk?: string
           severity?: string
           status?: string
           title?: string
@@ -3580,11 +3619,218 @@ export type Database = {
           },
         ]
       }
+      privacy_notice_versions: {
+        Row: {
+          approval_reference: string | null
+          approved_by: string
+          approved_on: string
+          content_hash: string
+          effective_at: string
+          id: string
+          language: string
+          recorded_at: string
+          recorded_by: string | null
+          sections: Json
+          version: string
+        }
+        ComputedFields: never
+        Insert: {
+          approval_reference?: string | null
+          approved_by: string
+          approved_on: string
+          content_hash: string
+          effective_at: string
+          id?: string
+          language?: string
+          recorded_at?: string
+          recorded_by?: string | null
+          sections: Json
+          version: string
+        }
+        Update: {
+          approval_reference?: string | null
+          approved_by?: string
+          approved_on?: string
+          content_hash?: string
+          effective_at?: string
+          id?: string
+          language?: string
+          recorded_at?: string
+          recorded_by?: string | null
+          sections?: Json
+          version?: string
+        }
+        Relationships: []
+      }
+      privacy_request_artifacts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          download_count: number
+          downloaded_at: string | null
+          expires_at: string
+          id: string
+          kind: string
+          payload: Json | null
+          purged_at: string | null
+          request_id: string
+          size_bytes: number
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          download_count?: number
+          downloaded_at?: string | null
+          expires_at: string
+          id?: string
+          kind?: string
+          payload?: Json | null
+          purged_at?: string | null
+          request_id: string
+          size_bytes: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          download_count?: number
+          downloaded_at?: string | null
+          expires_at?: string
+          id?: string
+          kind?: string
+          payload?: Json | null
+          purged_at?: string | null
+          request_id?: string
+          size_bytes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_request_artifacts_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "privacy_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      privacy_request_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          id: number
+          note: string | null
+          occurred_at: string
+          request_id: string
+          visible_to_requester: boolean
+        }
+        ComputedFields: never
+        Insert: {
+          action: string
+          actor_id?: string | null
+          id?: never
+          note?: string | null
+          occurred_at?: string
+          request_id: string
+          visible_to_requester?: boolean
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          id?: never
+          note?: string | null
+          occurred_at?: string
+          request_id?: string
+          visible_to_requester?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "privacy_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      privacy_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          decided_at: string | null
+          decision_reason: string | null
+          details: string | null
+          due_at: string
+          extended_until: string | null
+          extension_notified_at: string | null
+          extension_reason: string | null
+          handler_id: string | null
+          id: string
+          identity_note: string | null
+          identity_status: string
+          kind: string
+          received_at: string
+          reference: string
+          requester_id: string | null
+          source: string
+          status: string
+          updated_at: string
+          withdrawn_at: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          details?: string | null
+          due_at: string
+          extended_until?: string | null
+          extension_notified_at?: string | null
+          extension_reason?: string | null
+          handler_id?: string | null
+          id?: string
+          identity_note?: string | null
+          identity_status: string
+          kind: string
+          received_at?: string
+          reference?: string
+          requester_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          withdrawn_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          details?: string | null
+          due_at?: string
+          extended_until?: string | null
+          extension_notified_at?: string | null
+          extension_reason?: string | null
+          handler_id?: string | null
+          id?: string
+          identity_note?: string | null
+          identity_status?: string
+          kind?: string
+          received_at?: string
+          reference?: string
+          requester_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          withdrawn_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_path: string | null
           created_at: string
           display_name: string | null
+          erased_at: string | null
           first_name: string | null
           id: string
           last_name: string | null
@@ -3598,6 +3844,7 @@ export type Database = {
           avatar_path?: string | null
           created_at?: string
           display_name?: string | null
+          erased_at?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
@@ -3610,6 +3857,7 @@ export type Database = {
           avatar_path?: string | null
           created_at?: string
           display_name?: string | null
+          erased_at?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
@@ -4948,6 +5196,52 @@ export type Database = {
           },
         ]
       }
+      retention_holds: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decided_by: string
+          id: string
+          legal_basis: string
+          purpose: string
+          release_reason: string | null
+          released_at: string | null
+          released_by: string | null
+          review_on: string
+          scope: string
+          subject_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decided_by: string
+          id?: string
+          legal_basis: string
+          purpose: string
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          review_on: string
+          scope: string
+          subject_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decided_by?: string
+          id?: string
+          legal_basis?: string
+          purpose?: string
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          review_on?: string
+          scope?: string
+          subject_id?: string
+        }
+        Relationships: []
+      }
       retention_policies: {
         Row: {
           keep_months: number | null
@@ -5196,6 +5490,10 @@ export type Database = {
       academic_year_preparation: { Args: { p_year_id?: string }; Returns: Json }
       academic_years: { Args: never; Returns: Json }
       account_responsibilities: { Args: { p_email: string }; Returns: Json }
+      add_privacy_request_note: {
+        Args: { p_note: string; p_request_id: string; p_visible: boolean }
+        Returns: undefined
+      }
       add_recruitment_position: {
         Args: { p_campaign_id: string; p_title: string }
         Returns: string
@@ -5256,6 +5554,23 @@ export type Database = {
       }
       archive_recruitment_campaign: {
         Args: { p_archived: boolean; p_campaign_id: string }
+        Returns: undefined
+      }
+      assess_privacy_incident: {
+        Args: {
+          p_affected_estimate: number
+          p_authority_decision: string
+          p_authority_notified_at: string
+          p_aware_at: string
+          p_categories: string[]
+          p_impact: string[]
+          p_incident_id: string
+          p_individuals_decision: string
+          p_individuals_informed_at: string
+          p_note: string
+          p_personal_data: string
+          p_risk: string
+        }
         Returns: undefined
       }
       assign_position: {
@@ -5343,6 +5658,10 @@ export type Database = {
       clear_my_email_suppression: { Args: never; Returns: number }
       complete_interview: {
         Args: { p_interview_id: string; p_outcome: string }
+        Returns: undefined
+      }
+      complete_privacy_request: {
+        Args: { p_note: string; p_request_id: string }
         Returns: undefined
       }
       complete_storage_cleanup: {
@@ -5459,6 +5778,10 @@ export type Database = {
         Returns: string
       }
       current_academic_year: { Args: never; Returns: Json }
+      decide_privacy_request: {
+        Args: { p_decision: string; p_reason: string; p_request_id: string }
+        Returns: undefined
+      }
       declare_recruitment_conflict: {
         Args: { p_application_id: string; p_note?: string }
         Returns: string
@@ -5515,6 +5838,14 @@ export type Database = {
       event_dashboard: { Args: { p_organization_id: string }; Returns: Json }
       event_editor: { Args: { p_event_id: string }; Returns: Json }
       event_preview: { Args: { p_event_id: string }; Returns: Json }
+      execute_privacy_erasure: {
+        Args: {
+          p_confirm_reference: string
+          p_end_responsibilities: boolean
+          p_request_id: string
+        }
+        Returns: Json
+      }
       export_event_attendees: { Args: { p_event_id: string }; Returns: Json }
       extend_clarification: {
         Args: {
@@ -5522,6 +5853,10 @@ export type Database = {
           p_due_at: string
           p_reason?: string
         }
+        Returns: undefined
+      }
+      extend_privacy_request: {
+        Args: { p_months: number; p_reason: string; p_request_id: string }
         Returns: undefined
       }
       follow_organization: {
@@ -5614,6 +5949,8 @@ export type Database = {
         }
         Returns: Json
       }
+      my_personal_data: { Args: never; Returns: Json }
+      my_privacy_overview: { Args: never; Returns: Json }
       my_recruitment_work: { Args: never; Returns: Json }
       my_saved_items: { Args: { p_kind?: string }; Returns: Json }
       my_saved_keys: { Args: never; Returns: Json }
@@ -5635,6 +5972,10 @@ export type Database = {
           p_severity: string
           p_title: string
         }
+        Returns: string
+      }
+      open_privacy_incident: {
+        Args: { p_aware_at: string; p_impact: string; p_title: string }
         Returns: string
       }
       order_recruitment_waitlist: {
@@ -5665,6 +6006,17 @@ export type Database = {
       }
       organization_team: { Args: { p_organization_id: string }; Returns: Json }
       peek_unsubscribe_token: { Args: { p_token: string }; Returns: Json }
+      place_retention_hold: {
+        Args: {
+          p_decided_by: string
+          p_legal_basis: string
+          p_purpose: string
+          p_review_on: string
+          p_scope: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
       platform_analytics: {
         Args: {
           p_compare_from?: string
@@ -5700,8 +6052,16 @@ export type Database = {
         Args: { p_post_id: string; p_revision_id?: string }
         Returns: Json
       }
+      prepare_privacy_export: {
+        Args: { p_include_assessments: boolean; p_request_id: string }
+        Returns: Json
+      }
       preview_retention_policy: {
         Args: { p_key: string; p_months: number }
+        Returns: Json
+      }
+      privacy_artifact_payload: {
+        Args: { p_artifact_id: string }
         Returns: Json
       }
       privacy_candidate_report: {
@@ -5712,6 +6072,8 @@ export type Database = {
         Args: { p_application_id: string; p_reason: string }
         Returns: undefined
       }
+      privacy_request_detail: { Args: { p_request_id: string }; Returns: Json }
+      privacy_requests_queue: { Args: never; Returns: Json }
       propose_association_appointment: {
         Args: {
           p_candidate_email: string
@@ -5814,6 +6176,7 @@ export type Database = {
         }
         Returns: Json
       }
+      public_privacy_notice: { Args: { p_language?: string }; Returns: Json }
       public_recruitment_campaign: { Args: { p_slug: string }; Returns: Json }
       public_recruitment_campaigns: {
         Args: {
@@ -5863,6 +6226,7 @@ export type Database = {
         Args: { p_from: string; p_to: string }
         Returns: Json
       }
+      reconcile_privacy_erasures: { Args: never; Returns: Json }
       record_backup_verification: {
         Args: {
           p_checked_on: string
@@ -5873,6 +6237,28 @@ export type Database = {
           p_outcome: string
         }
         Returns: string
+      }
+      record_offline_privacy_request: {
+        Args: {
+          p_details: string
+          p_email: string
+          p_identity_note: string
+          p_kind: string
+          p_received_at: string
+        }
+        Returns: Json
+      }
+      record_privacy_notice_version: {
+        Args: {
+          p_approved_by: string
+          p_approved_on: string
+          p_effective_at: string
+          p_language: string
+          p_reference: string
+          p_sections: Json
+          p_version: string
+        }
+        Returns: Json
       }
       recruitment_application: {
         Args: { p_application_id: string }
@@ -5950,6 +6336,10 @@ export type Database = {
           p_offer_expires_at?: string
         }
         Returns: Json
+      }
+      release_retention_hold: {
+        Args: { p_hold_id: string; p_reason: string }
+        Returns: undefined
       }
       remove_application_document: {
         Args: { p_document_id: string }
@@ -6353,6 +6743,10 @@ export type Database = {
         Args: { p_post_id: string; p_revision_id: string }
         Returns: undefined
       }
+      submit_privacy_request: {
+        Args: { p_details: string; p_kind: string }
+        Returns: Json
+      }
       submit_recruitment_review: {
         Args: { p_review_id: string; p_version: number }
         Returns: Json
@@ -6458,6 +6852,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      verify_privacy_request_identity: {
+        Args: { p_note: string; p_request_id: string; p_status: string }
+        Returns: undefined
+      }
       withdraw_application: {
         Args: { p_application_id: string; p_reason?: string }
         Returns: Json
@@ -6468,6 +6866,10 @@ export type Database = {
       }
       withdraw_post_revision: {
         Args: { p_post_id: string; p_revision_id: string }
+        Returns: undefined
+      }
+      withdraw_privacy_request: {
+        Args: { p_request_id: string }
         Returns: undefined
       }
       withdraw_recruitment_offer: {
