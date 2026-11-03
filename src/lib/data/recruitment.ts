@@ -31,7 +31,8 @@ type PublicRpc =
   | "public_recruitment_facets"
   | "public_association_recruitment"
   | "public_recruitment_sitemap"
-  | "public_recruitment_privacy";
+  | "public_recruitment_privacy"
+  | "public_featured_campaigns";
 
 async function rpc<T>(name: PublicRpc, args?: Record<string, unknown>): Promise<T | null> {
   let supabase;
@@ -76,6 +77,18 @@ export async function getCampaigns(query: CampaignQuery = {}): Promise<CampaignI
 }
 
 /** Campaigns taking applications now, closing soonest first — memoised for the request. */
+/**
+ * Recruitment the BDE put on the campus front page (Phase 12), while it is
+ * public and open or about to open: a close, a pause or a moderation takes
+ * it off at once (the database checks at every read).
+ */
+export const getFeaturedCampaigns = cache(async (): Promise<(CampaignItem & { featuredUntil: string | null })[]> =>
+  ((await rpc<(CampaignCardPayload & { prominence_until: string | null })[]>("public_featured_campaigns")) ?? []).map((c) => ({
+    ...toCampaignItem(c),
+    featuredUntil: c.prominence_until,
+  })),
+);
+
 export const getOpenCampaigns = cache(async (limit = 12): Promise<CampaignItem[]> => getCampaigns({ view: "open", limit }));
 
 export const getRecruitmentFacets = cache(async (): Promise<RecruitmentFacets> => {

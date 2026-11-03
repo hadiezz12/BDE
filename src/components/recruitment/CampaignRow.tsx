@@ -21,11 +21,14 @@ export function CampaignRow({
   campaign,
   headingLevel = 3,
   note,
+  featured = false,
 }: {
   campaign: CampaignItem;
   headingLevel?: 2 | 3;
   /** Personal line for a signed-in student, e.g. "Ta candidature : en cours de lecture". */
   note?: string;
+  /** Put on the campus front page by the BDE (public_featured_campaigns). */
+  featured?: boolean;
 }) {
   const H = headingLevel === 2 ? "h2" : "h3";
   const closed = isOver(campaign.status);
@@ -60,7 +63,10 @@ export function CampaignRow({
       {/* Identity, title, roles */}
       <div className="flex min-w-0 flex-col gap-3 self-start [grid-area:main]">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <AssociationIdentity association={campaign.association} size="sm" link={false} />
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <AssociationIdentity association={campaign.association} size="sm" link={false} />
+            {featured && <StatusBadge tone="accent">À la une du BDE</StatusBadge>}
+          </span>
           <span className="sm:hidden">{status}</span>
         </div>
         <H className="type-title text-[clamp(1.45rem,1.05rem+1.6vw,2.4rem)] break-words hyphens-auto">

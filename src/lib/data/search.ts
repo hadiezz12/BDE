@@ -1,103 +1,116 @@
 import "server-only";
+import { cache } from "react";
+import type { SearchEntry } from "@/lib/types";
 import { routes } from "@/lib/routes";
-import type { CampaignItem, EventItem, PostItem, SearchEntry } from "@/lib/types";
-import { formatDayShort, formatTime } from "@/lib/format";
-import { POST_KIND_LABEL } from "@/components/campus/labels";
-import { getAssociations } from "./associations";
+import { createSupabasePublicClient } from "@/lib/supabase/public";
+import { SupabaseConfigError } from "@/lib/supabase/env";
+import { searchEntries } from "@/lib/search/match";
+import { entriesFromHits, type SearchHitPayload } from "@/lib/search/entries";
+import { searchArgs, type SearchState, type SearchType } from "@/lib/search/query";
 import { getEventSeries } from "./event-series";
-import { getUpcomingEvents } from "./events";
-import { getLatestPosts } from "./posts";
-import { getCampaigns } from "./recruitment";
+import { logDataError, toDataError } from "./errors";
 
 /**
- * The small local index shipped to the client for the ⌘K dialog (and the
- * /search page's associations, events and recruitment). Articles are only
- * the 30 latest here: the /search page asks the database's full-text search
- * for them instead (public_posts), so older articles are found too.
- *
- * Events: the BDE's eight events of the year (one page each) and the dated
- * events still to come (the 60 next, as on the agenda). The /search page
- * asks the database for dated events too (public_events), past ones included.
+ * The campus search, read as a visitor (anon client, no cookies) through
+ * public.search_campus, whoever is signed in: what it returns is exactly
+ * what a visitor may read right now (published, visible, of a public page),
+ * checked by the database at every call. Nothing is indexed or cached on
+ * the site's side, so a moderation, an unpublication or a closed campaign
+ * shows on the next search.
  */
-export async function getSearchIndex(): Promise<SearchEntry[]> {
-  const [associations, series, upcoming, campaigns, posts] = await Promise.all([
-    getAssociations(),
-    getEventSeries(),
-    getUpcomingEvents().catch(() => [] as EventItem[]),
-    // Current campaigns (open, paused, opening later); the /search page asks the database for the rest.
-    getCampaigns({ view: "current", limit: 100 }).catch(() => [] as CampaignItem[]),
-    // Same memoised read as the article page's "Ailleurs sur le campus"; the site still works without it.
-    getLatestPosts(30).catch(() => [] as PostItem[]),
-  ]);
-  const producers = new Map(associations.map((a) => [a.id, a.name]));
 
-  return [
-    ...associations.map<SearchEntry>((a) => ({
-      kind: "association",
-      id: a.id,
-      title: a.name,
-      context: a.kind,
-      href: routes.association(a.slug),
-      accent: a.accent,
-      keywords: [a.shortName, a.tagline, ...a.categories.map((c) => c.label)].filter(Boolean).join(" "),
-    })),
-    ...series.map<SearchEntry>((s) => ({
-      kind: "evenement",
-      id: s.id,
-      title: s.name,
-      context: `${s.subtitle} · ${s.period}`,
-      href: routes.event(s.slug),
-      accent: s.accent,
-      keywords: [s.description, producers.get(s.associationId)].filter(Boolean).join(" "),
-    })),
-    ...upcoming.map(eventSearchEntry),
-    ...campaigns.map(campaignSearchEntry),
-    ...posts.map(postSearchEntry),
-  ];
+export interface SearchResults {
+  results: SearchEntry[];
+  /** Matches per database type, whatever the page. */
+  counts: Record<SearchType, number>;
+  total: number;
+  hasMore: boolean;
+  /** One character typed (or only common words): nothing searched. */
+  tooShort: boolean;
 }
 
-/**
- * A published post as a search result: its kind and association on the
- * context line; its introduction, tags, rubrique and kind as words that
- * match without being shown.
- */
-export function postSearchEntry(p: PostItem): SearchEntry {
-  const kind = POST_KIND_LABEL[p.kind];
+interface SearchPayload {
+  results: SearchHitPayload[];
+  counts: Record<SearchType, number>;
+  total: number;
+  has_more: boolean;
+  too_short: boolean;
+}
+
+const NO_COUNTS: Record<SearchType, number> = { association: 0, post: 0, event: 0, campaign: 0, position: 0 };
+
+async function searchRpc(args: ReturnType<typeof searchArgs>): Promise<SearchResults> {
+  let supabase;
+  try {
+    supabase = createSupabasePublicClient();
+  } catch (error) {
+    if (error instanceof SupabaseConfigError) return { results: [], counts: NO_COUNTS, total: 0, hasMore: false, tooShort: false };
+    throw error;
+  }
+  const { data, error } = await supabase.rpc("search_campus", args as never);
+  if (error) {
+    logDataError("search_campus", error);
+    throw toDataError(error);
+  }
+  const payload = data as unknown as SearchPayload;
+  const now = new Date();
   return {
-    kind: "article",
-    id: p.id,
-    title: p.title,
-    context: `${kind} · ${p.association.shortName ?? p.association.name}`,
-    href: routes.post(p.slug),
-    accent: p.association.accent,
-    keywords: [p.excerpt, ...p.tags, p.category?.label, kind, p.association.name].filter(Boolean).join(" "),
+    results: entriesFromHits(payload.results ?? [], now),
+    counts: { ...NO_COUNTS, ...payload.counts },
+    total: payload.total ?? 0,
+    hasMore: Boolean(payload.has_more),
+    tooShort: Boolean(payload.too_short),
   };
 }
 
-/** A published event as a search result: date and association on the context line. */
-export function eventSearchEntry(e: EventItem): SearchEntry {
-  const when = `${formatDayShort(e.startsAt)} à ${formatTime(e.startsAt)}`;
-  return {
+/** One page of a search, as the /search page shows it. */
+export const searchCampus = cache(
+  async (state: SearchState, options: Parameters<typeof searchArgs>[1] = {}): Promise<SearchResults> =>
+    searchRpc(searchArgs(state, options)),
+);
+
+/**
+ * The BDE's events of the year (their pages, from its maquette): the site's
+ * own content, matched here, not in the database.
+ */
+export async function searchEventSeries(q: string, limit = 3): Promise<SearchEntry[]> {
+  const series = await getEventSeries();
+  const index: SearchEntry[] = series.map((s) => ({
     kind: "evenement",
-    id: e.id,
-    title: e.status === "cancelled" ? `${e.title} (annulé)` : e.title,
-    context: `${when} · ${e.association.shortName ?? e.association.name}`,
-    href: routes.event(e.slug),
-    accent: e.association.accent,
-    keywords: [e.summary, e.category?.label, e.venue.name, e.venue.city, e.association.name].filter(Boolean).join(" "),
-  };
+    id: s.id,
+    title: s.name,
+    context: `Événement de l'année · ${s.period}`,
+    href: routes.event(s.slug),
+    accent: s.accent,
+    keywords: [s.subtitle, s.description].filter(Boolean).join(" "),
+  }));
+  return searchEntries(index, q, limit);
 }
 
-/** A published campaign as a search result: its positions and teams as words that match. */
-export function campaignSearchEntry(c: CampaignItem): SearchEntry {
-  const roles = `${c.positions.length} poste${c.positions.length > 1 ? "s" : ""}`;
-  return {
-    kind: "recrutement",
-    id: c.id,
-    title: `${c.association.name} — ${c.title}`,
-    context: c.seats !== null ? `${roles} · ${c.seats} place${c.seats > 1 ? "s" : ""}` : roles,
-    href: routes.campaign(c.slug),
-    accent: c.association.accent,
-    keywords: [c.intro, ...c.positions.map((p) => `${p.title} ${p.team ?? ""}`)].join(" "),
-  };
+/**
+ * The quick search (⌘K and /api/search): the best few of each type, in one
+ * call, plus the events of the year. Null when the database cannot be read.
+ */
+export async function quickSearch(q: string): Promise<{ results: SearchEntry[]; total: number; tooShort: boolean } | null> {
+  try {
+    const [found, series] = await Promise.all([
+      searchRpc({
+        p_q: q,
+        p_type: null,
+        p_category: null,
+        p_organization: null,
+        p_when: null,
+        p_status: null,
+        p_place: null,
+        p_sort: null,
+        p_limit: 16,
+        p_offset: 0,
+        p_per_type: 4,
+      }),
+      searchEventSeries(q, 2),
+    ]);
+    return { results: [...found.results, ...series], total: found.total + series.length, tooShort: found.tooShort };
+  } catch {
+    return null;
+  }
 }

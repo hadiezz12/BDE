@@ -904,3 +904,71 @@ foundational choice.
 - **Reason:** brief §90: permission-aware sections; the guardian's view limited to governance
   availability and recovery.
 - **Consequence:** the control centre opens with this key too; a "Continuité" tab groups the pages.
+
+## D88. Search reads the source tables at every call, no search index (Phase 12)
+
+- **Decision:** `public.search_campus` (security definer, like every public read) matches the
+  stored, generated tsvectors of the source tables through the public pages' own predicates and
+  returns their public cards (`private.public_card`). Two vectors were added
+  (`association_profiles.search` on the published profile, `recruitment_positions.search`), GIN
+  everywhere. Prefix matching is built from the lexemes Postgres extracted. No `pg_trgm`, no
+  search projection table, no outside search service.
+- **Reason:** brief §10–20: a copy could lag behind a moderation or an unpublication; the
+  predicates already exist and are tested; at campus size full-text search with GIN answers in
+  milliseconds. Trigram similarity returned false friends on short French words.
+- **Alternatives:** a `search_documents` table kept by triggers (one more thing to keep exactly in
+  sync with five visibility rules); a hosted search provider (sends content outside, costs, and the
+  same freshness problem).
+- **Consequence:** typos are not corrected (prefixes and accents are); if the campus grows by
+  orders of magnitude, revisit with measurements.
+
+## D89. One saved-items list with typed foreign keys; event bookmarks folded in (Phase 12)
+
+- **Decision:** `saved_items` with one nullable foreign key per kind, a check that exactly the
+  kind's column is set, a generated `target_id` and `unique (user_id, kind, target_id)`. Written
+  only by `save_item`, which saves what is public right now. `event_bookmarks` rows were moved
+  into it and the table and `set_event_bookmark` dropped.
+- **Reason:** brief §56: integrity (a deleted item leaves the list with it) without accepting
+  arbitrary type/id pairs; one list instead of a second bookmark system.
+- **Alternatives:** a polymorphic `(resource_type, resource_id)` without foreign keys (orphans,
+  unchecked ids); one table per kind (five tables, five policies, five functions).
+- **Consequence:** an item that stops being public keeps its row (the student may remove it) but
+  is shown with its kind and date only.
+
+## D90. Spotlights reuse prominence, BDE only, one association at a time (Phase 12)
+
+- **Decision:** `prominence`/`prominence_until`/`prominence_by` on `recruitment_campaigns` and
+  `association_pages`, set by `set_campaign_prominence` (3) and `set_association_prominence` (1,
+  never the BDE) under `platform.content.feature` with the second factor, audited; the reads check
+  visibility every time.
+- **Reason:** brief §42–44: no second featuring system; homepage placement is a BDE decision
+  distinct from an association's own pinning.
+- **Consequence:** no automatic release on close or moderation is needed (the read drops it);
+  an end date makes a spotlight expire by itself.
+
+## D91. Interests are chosen categories, suggestions say why (Phase 12)
+
+- **Decision:** optional `student_interests` over the association categories (8 max), private;
+  suggestions are upcoming events and open recruitment of associations listing one of them, each
+  with its reason. Nothing is inferred from behaviour; no ranking of people; no analytics.
+- **Reason:** brief §61–65: simple, transparent, under the student's control.
+- **Consequence:** an association without categories is never suggested; the BDE keeps the
+  catalog meaningful.
+
+## D92. No search index in the page shell; the quick search asks an API (Phase 12)
+
+- **Decision:** the header no longer builds and ships an index; ⌘K calls `GET /api/search`
+  (debounced, cancellable, no-store, rate-limited in memory per instance).
+- **Reason:** brief §72–73: five database reads and their payload on every page for a dialog most
+  visits never open; the index could not hold everything anyway.
+- **Consequence:** the dialog needs the network (it says when the search does not answer); the
+  `/search` page works without JavaScript.
+
+## D93. No caching layer added in Phase 12 (Phase 12)
+
+- **Decision:** public pages stay rendered per request; no `use cache`, no ISR on content pages.
+- **Reason:** brief §75–76: every read checks visibility at that instant, so moderation and
+  unpublication are immediate with nothing to invalidate; the shell reads the session on every
+  page; measured server times after removing the shipped index are low (docs/backend/search.md).
+- **Consequence:** revisit with Next's Cache Components when traffic justifies it, keeping
+  personal data and moderation-sensitive reads uncached.

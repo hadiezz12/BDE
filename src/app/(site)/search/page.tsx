@@ -2,13 +2,30 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { SearchEntry, SearchKind } from "@/lib/types";
-import { campaignSearchEntry, eventSearchEntry, getSearchIndex, postSearchEntry } from "@/lib/data/search";
-import { getCampaigns } from "@/lib/data/recruitment";
-import { getEventPage } from "@/lib/data/events";
-import { getFeed, getPostFacets } from "@/lib/data/posts";
-import { normaliseQuery, searchEntries, SEARCH_KIND_LABEL } from "@/lib/search";
 import { routes } from "@/lib/routes";
 import { plural } from "@/lib/format";
+import { searchCampus, searchEventSeries, type SearchResults } from "@/lib/data/search";
+import { getAssociations, getCategoryRefs } from "@/lib/data/associations";
+import { getEventFacets } from "@/lib/data/events";
+import { getPostFacets } from "@/lib/data/posts";
+import { SEARCH_KIND_LABEL } from "@/lib/search/match";
+import {
+  hasFilters,
+  PAGE_SIZE,
+  parseSearchState,
+  PLACE_LABEL,
+  searchHref,
+  STATUS_LABEL,
+  TAB_LABEL,
+  TYPE_KIND,
+  WHEN_LABEL,
+  type SearchPlace,
+  type SearchState,
+  type SearchStatus,
+  type SearchTab,
+  type SearchType,
+  type SearchWhen,
+} from "@/lib/search/query";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -17,122 +34,263 @@ import { Icon } from "@/components/ui/Icon";
 import { SearchForm } from "@/components/search/SearchForm";
 import { PageResultRow, SearchResultRow } from "@/components/search/SearchResultRow";
 import { SearchSections } from "@/components/search/SearchSections";
-import { SEARCH_SECTIONS } from "@/components/search/kinds";
+import { AssociationFilter, SearchPagination, SearchTabs, searchParamsOf } from "@/components/search/SearchControls";
 import { matchPages, type SitePage } from "@/components/search/pages";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-/** The full page lists every match; the ⌘K dialog stops at five per kind. */
-const RESULTS_PER_KIND = 50;
-const MAX_QUERY_LENGTH = 80;
 /**
- * Searches that lead to what the site really holds: the BDE's events, the
- * carte, the safety page. Only the ones with results are offered.
+ * Searches that lead to what the site itself holds (the BDE's events of the
+ * year, the carte, the safety page): only the ones with a match are offered.
  */
 const SUGGESTED_QUERIES = ["WEI", "Boo Party", "Rose Rain", "Barathons", "Apéro", "Carte", "VSS"];
 
+const GROUP_TAB: Record<SearchType, SearchTab> = {
+  association: "associations",
+  event: "evenements",
+  campaign: "recrutement",
+  position: "recrutement",
+  post: "articles",
+};
+const KIND_TYPE = Object.fromEntries(Object.entries(TYPE_KIND).map(([t, k]) => [k, t])) as Record<SearchKind, SearchType>;
+
 const listFr = new Intl.ListFormat("fr", { style: "long", type: "conjunction" });
 
-function readQuery(value: string | string[] | undefined): string {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return (raw ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_QUERY_LENGTH);
-}
-
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
-  const q = readQuery((await searchParams).q);
-  return q ? { title: `Recherche : ${q}`, robots: { index: false, follow: true } } : { title: "Rechercher" };
+  const { q } = parseSearchState(await searchParams);
+  // Results pages are never indexed (they change with every publication and
+  // would compete with the pages they list); their links are followed.
+  return {
+    title: q ? `Recherche : ${q}` : "Rechercher",
+    robots: { index: false, follow: true },
+    alternates: { canonical: routes.search },
+  };
 }
 
-function countByKind(index: SearchEntry[]): Record<SearchKind, number> {
-  const counts: Record<SearchKind, number> = { association: 0, evenement: 0, recrutement: 0, article: 0 };
-  for (const entry of index) counts[entry.kind] += 1;
-  return counts;
-}
-
-function groupByKind(results: SearchEntry[]): [SearchKind, SearchEntry[]][] {
-  const groups = new Map<SearchKind, SearchEntry[]>();
-  for (const entry of results) groups.set(entry.kind, [...(groups.get(entry.kind) ?? []), entry]);
-  return [...groups.entries()];
-}
-
-/** The local index's title ranking (src/lib/search.ts), to order the groups. */
-function titleScore(title: string, words: string[]): number {
-  const t = normaliseQuery(title);
-  return words.reduce((score, w) => score + (t.startsWith(w) || t.includes(` ${w}`) ? 3 : t.includes(w) ? 2 : 0), 0);
-}
-
-/**
- * The kind holding the best title match comes first (index order on a tie).
- * Inside a group the order stays: by relevance for the local index, newest
- * first for articles.
- */
-function rankGroups(groups: [SearchKind, SearchEntry[]][], query: string): [SearchKind, SearchEntry[]][] {
-  const words = normaliseQuery(query).split(/\s+/).filter(Boolean);
-  return groups
-    .map((group, i) => ({ group, i, best: Math.max(...group[1].map((e) => titleScore(e.title, words))) }))
-    .sort((a, b) => b.best - a.best || a.i - b.i)
-    .map(({ group }) => group);
-}
-
-/**
- * Articles come from the database's full-text search (public_posts: French
- * stemming, accents ignored, the association's name too), so the whole fil
- * is searched, not only the 30 latest the index carries. Null when the index
- * must answer instead: under two characters (the database would match
- * everything) or when the search cannot be reached.
- */
-async function searchArticlesInDatabase(q: string): Promise<SearchEntry[] | null> {
-  if (normaliseQuery(q).replace(/\s+/g, "").length < 2) return null;
-  try {
-    return (await getFeed({ q, limit: RESULTS_PER_KIND })).items.map(postSearchEntry);
-  } catch {
-    return null;
-  }
-}
-
-/** "Dans 1 association, 8 événements de l'année et les pages du site." — only what exists. */
-function scopeLine(counts: Record<SearchKind, number>): string {
+/** "Dans 3 associations, 12 événements publiés…" — only what exists, as a visitor sees it. */
+function scopeLine(counts: Record<SearchType, number>): string {
   const parts = [
     counts.association > 0 && plural(counts.association, "association"),
-    counts.evenement > 0 && plural(counts.evenement, "événement"),
-    counts.recrutement > 0 && plural(counts.recrutement, "campagne de recrutement", "campagnes de recrutement"),
-    counts.article > 0 && plural(counts.article, "article du fil", "articles du fil"),
+    counts.event > 0 && plural(counts.event, "événement publié", "événements publiés"),
+    counts.campaign > 0 && plural(counts.campaign, "recrutement", "recrutements"),
+    counts.post > 0 && plural(counts.post, "article", "articles"),
     "les pages du site",
   ].filter((p): p is string => Boolean(p));
   return `Dans ${listFr.format(parts)}.`;
 }
 
-/**
- * Dated events from the database's full-text search (public_events: French
- * stemming, accents ignored, the association's name too), the ones to come
- * first, then the last ones over. Null when the index must answer instead.
- */
-async function searchEventsInDatabase(q: string): Promise<SearchEntry[] | null> {
-  if (normaliseQuery(q).replace(/\s+/g, "").length < 2) return null;
+async function attempt<T>(read: () => Promise<T>): Promise<T | null> {
   try {
-    const [upcoming, past] = await Promise.all([
-      getEventPage({ q, limit: RESULTS_PER_KIND }),
-      getEventPage({ q, limit: RESULTS_PER_KIND, order: "desc" }),
-    ]);
-    return [...upcoming.items, ...past.items].slice(0, RESULTS_PER_KIND).map(eventSearchEntry);
+    return await read();
   } catch {
     return null;
   }
 }
 
 /**
- * Recruitment from the database's search (public_recruitment_campaigns:
- * campaign texts, association names, position titles, accents ignored),
- * current ones first, closed ones too. Null when the index must answer.
+ * /search — one search across the campus (public.search_campus: published,
+ * visible items of public pages only, checked at every request): tabs per
+ * type, filters that belong to the chosen type, pages of 12, every state in
+ * the URL. "Tout" groups the best of each type so none crowds out the
+ * others; without a query a tab lists (associations by name, events to
+ * come, newest articles, open recruitment first). Never indexed.
  */
-async function searchCampaignsInDatabase(q: string): Promise<SearchEntry[] | null> {
-  if (normaliseQuery(q).replace(/\s+/g, "").length < 2) return null;
-  try {
-    const found = await getCampaigns({ view: "all", q, limit: RESULTS_PER_KIND });
-    return found.map(campaignSearchEntry);
-  } catch {
-    return null;
+export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
+  const state = parseSearchState(await searchParams);
+  const { q, tab } = state;
+  const everything = tab === "tout";
+
+  // The "Tout" view: the best four of each type, and the counts every tab shows.
+  const overviewState: SearchState = { ...state, tab: "tout", category: null, when: null, place: null, status: null, page: 1 };
+  const [overview, page, positions, series, associations, categories] = await Promise.all([
+    attempt(() => searchCampus(overviewState, { type: null, perType: q ? 4 : 1, limit: 24, offset: 0 })),
+    everything ? Promise.resolve(null) : attempt(() => searchCampus(state)),
+    tab === "recrutement" && state.page === 1
+      ? attempt(() => searchCampus(state, { type: "position", limit: 6, offset: 0 }))
+      : Promise.resolve(null),
+    q && (everything || tab === "evenements") && state.page === 1 && !hasFilters(state)
+      ? searchEventSeries(q, 3)
+      : Promise.resolve([] as SearchEntry[]),
+    attempt(() => getAssociations()),
+    attempt(() => categoriesFor(tab)),
+  ]);
+  const failed = !overview || (!everything && !page);
+  const counts = overview?.counts ?? { association: 0, post: 0, event: 0, campaign: 0, position: 0 };
+  const pages: SitePage[] = q && everything ? matchPages(q) : [];
+  const tooShort = Boolean(overview?.tooShort);
+
+  const suggestions: FilterOption[] = (
+    await Promise.all(
+      SUGGESTED_QUERIES.map(async (s) => ((await searchEventSeries(s, 1)).length + matchPages(s).length > 0 ? s : null)),
+    )
+  )
+    .filter((s): s is string => s !== null)
+    .map((s) => ({ value: s, label: s }));
+
+  // Every match of each type (not just the four the "Tout" view keeps); positions count with recruitment.
+  const tabCounts = q
+    ? {
+        tout: counts.association + counts.event + counts.post + counts.campaign + counts.position,
+        associations: counts.association,
+        evenements: counts.event,
+        articles: counts.post,
+        recrutement: counts.campaign + counts.position,
+      }
+    : undefined;
+
+  const keep = searchParamsOf(state, ["q"]);
+
+  return (
+    <>
+      <PageHeader
+        kicker="Tout le site"
+        title="Recherche"
+        intro={
+          <p>
+            {q
+              ? "Associations, articles, événements, recrutements et pages du site : ce que tout le monde peut lire."
+              : scopeLine(counts)}
+          </p>
+        }
+      >
+        <SearchForm query={q} keep={keep} />
+        <p className="mt-3 hidden type-meta text-subtle lg:block">
+          Depuis n&apos;importe quelle page : Ctrl K, ⌘K sur Mac, ou la touche « / ».
+        </p>
+      </PageHeader>
+
+      <div className="wrap pb-section">
+        <SearchTabs state={state} counts={tabCounts} />
+
+        {!everything && (
+          <Filters state={state} categories={categories ?? []} associations={associations ?? []} />
+        )}
+        {everything && q && (associations?.length ?? 0) > 1 && (
+          <div className="mt-6">
+            <AssociationFilter state={state} associations={associations ?? []} />
+          </div>
+        )}
+
+        <div className="mt-10">
+          {failed ? (
+            <EmptyState title="La recherche ne répond pas pour l'instant." mark={<Icon name="alert" size={44} />}>
+              <p>Réessaie dans un instant. Les rubriques restent accessibles depuis le menu.</p>
+            </EmptyState>
+          ) : tooShort ? (
+            <EmptyState title="Encore une lettre." mark={<span className="type-numeral text-[4.5rem]">1</span>}>
+              <p>La recherche commence à deux caractères : un mot, le début d&apos;un nom, une asso.</p>
+            </EmptyState>
+          ) : everything && q ? (
+            <Overview state={state} overview={overview} series={series} pages={pages} suggestions={suggestions} />
+          ) : everything ? (
+            <Discover counts={counts} suggestions={suggestions} />
+          ) : (
+            <TabResults state={state} page={page!} positions={positions} series={series} overview={overview} />
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** Each type's own catalog of categories (the database checks the slug again). */
+async function categoriesFor(tab: SearchTab): Promise<{ slug: string; label: string }[]> {
+  switch (tab) {
+    case "associations":
+      return getCategoryRefs();
+    case "evenements":
+      return (await getEventFacets()).categories_all;
+    case "articles":
+      return (await getPostFacets()).categories.map(({ slug, label }) => ({ slug, label }));
+    default:
+      return [];
   }
+}
+
+/** Only the controls of the chosen type: no panel of fields that do not apply. */
+function Filters({
+  state,
+  categories,
+  associations,
+}: {
+  state: SearchState;
+  categories: { slug: string; label: string }[];
+  associations: { slug: string; name: string }[];
+}) {
+  const chips = (label: string, param: string, current: string | null, options: FilterOption[]) => (
+    <div className="flex flex-col gap-2">
+      <p className="type-label text-muted" aria-hidden>
+        {label}
+      </p>
+      <FilterChips
+        label={label}
+        param={param}
+        options={options}
+        current={current}
+        basePath={routes.search}
+        params={searchParamsOf(state, [param])}
+      />
+    </div>
+  );
+  const whenParam: Record<SearchWhen, string> = {
+    upcoming: "a-venir",
+    today: "aujourdhui",
+    week: "semaine",
+    weekend: "weekend",
+    past: "passes",
+  };
+  const placeParam: Record<SearchPlace, string> = { campus: "campus", external: "exterieur", online: "en-ligne" };
+  const statusParam: Record<SearchStatus, string> = { open: "ouvert", closing: "fin-proche", upcoming: "bientot", closed: "clos" };
+
+  return (
+    <div className="mt-6 flex flex-col gap-5">
+      {state.tab === "evenements" &&
+        chips(
+          "Quand",
+          "quand",
+          state.when ? whenParam[state.when] : null,
+          [
+            { value: null, label: state.q ? "Toutes les dates" : "À venir" },
+            ...(Object.keys(WHEN_LABEL) as SearchWhen[])
+              .filter((w) => state.q || w !== "upcoming")
+              .map((w) => ({ value: whenParam[w], label: WHEN_LABEL[w] })),
+          ],
+        )}
+      {state.tab === "evenements" &&
+        chips("Où", "lieu", state.place ? placeParam[state.place] : null, [
+          { value: null, label: "Partout" },
+          ...(Object.keys(PLACE_LABEL) as SearchPlace[]).map((p) => ({ value: placeParam[p], label: PLACE_LABEL[p] })),
+        ])}
+      {state.tab === "recrutement" &&
+        chips("Candidatures", "statut", state.status ? statusParam[state.status] : null, [
+          { value: null, label: "Toutes" },
+          ...(["open", "closing", "upcoming", "closed"] as SearchStatus[]).map((s) => ({ value: statusParam[s], label: STATUS_LABEL[s] })),
+        ])}
+      {categories.length > 0 &&
+        chips("Catégorie", "categorie", state.category, [
+          { value: null, label: "Toutes" },
+          ...categories.map((c) => ({ value: c.slug, label: c.label })),
+        ])}
+      {state.q &&
+        (state.tab === "articles" || state.tab === "evenements") &&
+        chips("Ordre", "tri", state.sort === "date" ? "date" : null, [
+          { value: null, label: "Pertinence" },
+          { value: "date", label: state.tab === "articles" ? "Plus récents" : "Par date" },
+        ])}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <AssociationFilter state={state} associations={associations} />
+        {state.tab === "evenements" && (
+          <Link
+            href={state.q ? `${routes.events}?q=${encodeURIComponent(state.q)}` : routes.events}
+            className="inline-flex min-h-10 items-center gap-1.5 type-label text-muted hover:text-accent-text"
+          >
+            Des dates précises ? L&apos;agenda
+            <Icon name="arrow-right" size={14} />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /** One block of results: the count as a big numeral, the rubrique, the rows. */
@@ -176,173 +334,223 @@ function ResultGroup({
   );
 }
 
-export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
-  const q = readQuery((await searchParams).q);
-  const [index, facets, found, foundEvents, foundCampaigns] = await Promise.all([
-    getSearchIndex(),
-    getPostFacets().catch(() => null),
-    q ? searchArticlesInDatabase(q) : Promise.resolve(null),
-    q ? searchEventsInDatabase(q) : Promise.resolve(null),
-    q ? searchCampaignsInDatabase(q) : Promise.resolve(null),
-  ]);
-  // Associations, the events of the year and recruitment: the local index, as in the ⌘K dialog.
-  // Dated events come from the database when it answers (past ones included), else from the index.
-  const dated = (e: SearchEntry) => e.kind === "evenement" && /^[0-9a-f]{8}-/.test(e.id);
-  // Recruitment too: the database's answer (closed campaigns included) replaces the index's current ones.
-  const others = index.filter(
-    (e) => e.kind !== "article" && !(foundEvents && dated(e)) && !(foundCampaigns && e.kind === "recrutement"),
-  );
-  const articles = q
-    ? (found ?? searchEntries(index.filter((e) => e.kind === "article"), q, RESULTS_PER_KIND))
-    : [];
+/**
+ * "Tout" with a query: the best of each type, the type holding the best
+ * match first (the database's order), each group linking to its tab.
+ */
+function Overview({
+  state,
+  overview,
+  series,
+  pages,
+  suggestions,
+}: {
+  state: SearchState;
+  overview: SearchResults | null;
+  series: SearchEntry[];
+  pages: SitePage[];
+  suggestions: FilterOption[];
+}) {
+  const results = overview?.results ?? [];
+  const counts = overview?.counts ?? { association: 0, post: 0, event: 0, campaign: 0, position: 0 };
+  const order: SearchType[] = [];
+  for (const r of results) {
+    const t = KIND_TYPE[r.kind];
+    if (!order.includes(t)) order.push(t);
+  }
+  if (series.length && !order.includes("event")) order.push("event");
+  const total = (overview?.total ? Object.values(counts).reduce((a, b) => a + b, 0) : 0) + series.length + pages.length;
 
-  // The fil counts every published article, not just the ones the index carries.
-  const counts = { ...countByKind(index), ...(facets ? { article: facets.total } : {}) };
-  const results = q
-    ? [...searchEntries(others, q, RESULTS_PER_KIND), ...(foundEvents ?? []), ...(foundCampaigns ?? []), ...articles]
-    : [];
-  const pages: SitePage[] = q ? matchPages(q) : [];
-  const groups = rankGroups(groupByKind(results), q);
-  const total = results.length + pages.length;
-  // Offered only when they lead somewhere. No number on these chips: the
-  // articles they would find are only known once the database is asked.
-  const suggestions: FilterOption[] = SUGGESTED_QUERIES.filter(
-    (s) => searchEntries(index, s, 1).length + matchPages(s).length > 0,
-  ).map((s) => ({ value: s, label: s }));
-
-  const jumps = [
-    ...groups.map(([kind, entries]) => ({
-      id: `resultats-${kind}`,
-      label: SEARCH_KIND_LABEL[kind],
-      count: entries.length,
-    })),
-    ...(pages.length > 0 ? [{ id: "resultats-pages", label: "Pages", count: pages.length }] : []),
-  ];
+  if (total === 0) return <NoResults state={state} otherTabs={null} suggestions={suggestions} />;
 
   return (
-    <>
-      <PageHeader kicker="Tout le site" title="Recherche" intro={<p>{scopeLine(counts)}</p>}>
-        <SearchForm query={q} />
-        <p className="mt-3 hidden type-meta text-subtle lg:block">
-          Depuis n&apos;importe quelle page : Ctrl K, ⌘K sur Mac, ou la touche « / ».
-        </p>
-      </PageHeader>
+    <section aria-labelledby="resultats">
+      <div className="flex flex-col gap-4 border-t-2 border-fg pt-3 lg:flex-row lg:items-baseline lg:justify-between lg:gap-8">
+        <h2 id="resultats" className="type-section break-words">
+          {plural(total, "résultat")} pour «&nbsp;{state.q}&nbsp;»
+        </h2>
+      </div>
+      <div className="mt-8 flex flex-col gap-14 lg:mt-12 lg:gap-20">
+        {order.map((type) => {
+          const kind = TYPE_KIND[type];
+          const rows = [...results.filter((r) => r.kind === kind), ...(type === "event" ? series : [])];
+          const count = counts[type] + (type === "event" ? series.length : 0);
+          const tab = GROUP_TAB[type];
+          return (
+            <ResultGroup
+              key={type}
+              id={`resultats-${type}`}
+              title={SEARCH_KIND_LABEL[kind]}
+              count={count}
+              more={{ href: searchHref(state, { tab }), label: `Tout voir dans ${TAB_LABEL[tab]}` }}
+            >
+              {rows.map((entry) => (
+                <li key={`${entry.kind}-${entry.id}`}>
+                  <SearchResultRow entry={entry} query={state.q} />
+                </li>
+              ))}
+            </ResultGroup>
+          );
+        })}
+        {pages.length > 0 && (
+          <ResultGroup id="resultats-pages" title="Pages" count={pages.length}>
+            {pages.map((p) => (
+              <li key={p.id}>
+                <PageResultRow page={p} query={state.q} />
+              </li>
+            ))}
+          </ResultGroup>
+        )}
+      </div>
+    </section>
+  );
+}
 
-      {q && total > 0 && (
-        <section aria-labelledby="resultats" className="wrap pb-section">
-          <div className="flex flex-col gap-4 border-t-2 border-fg pt-3 lg:flex-row lg:items-baseline lg:justify-between lg:gap-8">
-            <h2 id="resultats" className="type-section break-words">
-              {plural(total, "résultat")} pour «&nbsp;{q}&nbsp;»
-            </h2>
-            {jumps.length > 1 && (
-              <nav aria-label="Aller à une rubrique des résultats" className="shrink-0">
-                <ul className="flex flex-wrap gap-x-5 gap-y-1">
-                  {jumps.map((j) => (
-                    <li key={j.id}>
-                      <a
-                        href={`#${j.id}`}
-                        className="inline-flex min-h-10 items-center gap-2 type-label text-fg hover:text-accent-text"
-                      >
-                        {j.label}
-                        <span className="type-meta text-subtle">{j.count}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            )}
-          </div>
-
-          <div className="mt-8 flex flex-col gap-14 lg:mt-12 lg:gap-20">
-            {groups.map(([kind, entries]) => {
-              const section = SEARCH_SECTIONS.find((s) => s.kind === kind);
-              return (
-                <ResultGroup
-                  key={kind}
-                  id={`resultats-${kind}`}
-                  title={SEARCH_KIND_LABEL[kind]}
-                  count={entries.length}
-                  more={section ? { href: section.href, label: section.more } : undefined}
-                >
-                  {entries.map((entry) => (
-                    <li key={entry.id}>
-                      <SearchResultRow entry={entry} query={q} />
-                    </li>
-                  ))}
-                </ResultGroup>
-              );
-            })}
-            {pages.length > 0 && (
-              <ResultGroup id="resultats-pages" title="Pages" count={pages.length}>
-                {pages.map((page) => (
-                  <li key={page.id}>
-                    <PageResultRow page={page} query={q} />
-                  </li>
-                ))}
-              </ResultGroup>
-            )}
-          </div>
-        </section>
-      )}
-
-      {q && total === 0 && (
-        <section aria-labelledby="resultats" className="wrap pb-section">
-          <h2 id="resultats" className="sr-only">
-            Résultats
-          </h2>
-          <EmptyState
-            title={`Rien pour « ${q} ».`}
-            mark={<span className="type-numeral text-[4.5rem] sm:text-[6rem]">0</span>}
-            className="break-words"
-          >
-            <p>
-              Vérifie l&apos;orthographe ou essaie un mot plus court : le nom d&apos;un événement, d&apos;une asso ou
-              d&apos;une page. Les accents et les majuscules ne comptent pas.
-            </p>
-          </EmptyState>
-          {suggestions.length > 0 && (
-            <div className="mt-8">
-              <p className="mb-3 type-label text-muted">Essaie plutôt</p>
-              <FilterChips label="Recherches suggérées" param="q" options={suggestions} current={q} basePath={routes.search} />
-            </div>
-          )}
-          <div className="mt-[var(--section)]">
-            <SectionHeader kicker="Les rubriques" title="Ou va droit au but" />
-            <div className="mt-6">
-              <SearchSections counts={counts} />
-            </div>
-          </div>
-        </section>
-      )}
-
-      {!q && (
-        <div className="wrap flex flex-col gap-[var(--section)] pb-section">
-          {suggestions.length > 0 && (
-            <section aria-labelledby="suggestions">
-              <SectionHeader id="suggestions" index="01" kicker="Pour démarrer" title="Pas d'idée ? Essaie ça" />
-              <FilterChips
-                label="Recherches suggérées"
-                param="q"
-                options={suggestions}
-                current={null}
-                basePath={routes.search}
-                className="mt-6"
-              />
-            </section>
-          )}
-          <section aria-labelledby="rubriques">
-            <SectionHeader
-              id="rubriques"
-              index={suggestions.length > 0 ? "02" : "01"}
-              kicker="Les rubriques"
-              title="Ou va droit au but"
-            />
-            <div className="mt-6">
-              <SearchSections counts={counts} />
-            </div>
-          </section>
+/** One type: its page of results (or its listing without a query), then the pages. */
+function TabResults({
+  state,
+  page,
+  positions,
+  series,
+  overview,
+}: {
+  state: SearchState;
+  page: SearchResults;
+  positions: SearchResults | null;
+  series: SearchEntry[];
+  overview: SearchResults | null;
+}) {
+  const rows = [...(state.page === 1 ? series : []), ...page.results];
+  const positionRows = positions?.results ?? [];
+  if (rows.length === 0 && positionRows.length === 0) {
+    const elsewhere = state.q && overview ? overview.total : 0;
+    return <NoResults state={state} otherTabs={elsewhere > 0 ? elsewhere : null} suggestions={[]} />;
+  }
+  const label = TAB_LABEL[state.tab];
+  // Positions are counted with their campaigns: the heading says what the tab holds.
+  const found = page.total + (state.page === 1 ? series.length : 0) + (positions?.total ?? 0);
+  const heading = state.q ? `${plural(found, "résultat")} pour « ${state.q} »` : listingTitle(state, page.total);
+  return (
+    <section aria-labelledby="resultats">
+      <h2 id="resultats" className="type-section break-words border-t-2 border-fg pt-3">
+        {heading}
+      </h2>
+      {positionRows.length > 0 && (
+        <div className="mt-8">
+          <h3 className="type-label text-muted">
+            {state.q ? "Postes qui correspondent" : "Postes"} · {plural(positions?.total ?? positionRows.length, "poste")}
+          </h3>
+          <ul className="mt-2 border-b border-line">
+            {positionRows.map((entry) => (
+              <li key={entry.id}>
+                <SearchResultRow entry={entry} query={state.q} />
+              </li>
+            ))}
+          </ul>
         </div>
       )}
-    </>
+      {rows.length > 0 && (
+        <>
+          {positionRows.length > 0 && <h3 className="mt-10 type-label text-muted">Campagnes</h3>}
+          <ul className="mt-2 border-b border-line" aria-label={label}>
+            {rows.map((entry) => (
+              <li key={`${entry.kind}-${entry.id}`}>
+                <SearchResultRow entry={entry} query={state.q} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <SearchPagination state={state} total={page.total} pageSize={PAGE_SIZE} />
+    </section>
+  );
+}
+
+function listingTitle(state: SearchState, total: number): string {
+  switch (state.tab) {
+    case "associations":
+      return plural(total, "association");
+    case "evenements":
+      return state.when === "past" ? plural(total, "événement passé", "événements passés") : plural(total, "événement", "événements");
+    case "articles":
+      return plural(total, "article", "articles");
+    case "recrutement":
+      return plural(total, "recrutement", "recrutements");
+    default:
+      return plural(total, "résultat");
+  }
+}
+
+/** Nothing found: say so, offer what would find something, and the rubriques. */
+function NoResults({
+  state,
+  otherTabs,
+  suggestions,
+}: {
+  state: SearchState;
+  /** Results the same query finds in the other tabs. */
+  otherTabs: number | null;
+  suggestions: FilterOption[];
+}) {
+  const filtered = hasFilters(state);
+  return (
+    <section aria-labelledby="resultats">
+      <h2 id="resultats" className="sr-only">
+        Résultats
+      </h2>
+      <EmptyState
+        title={state.q ? `Rien pour « ${state.q} »${filtered ? " avec ces filtres" : ""}.` : "Rien à montrer avec ces filtres."}
+        mark={<span className="type-numeral text-[4.5rem] sm:text-[6rem]">0</span>}
+        className="break-words"
+        actions={
+          <>
+            {filtered && (
+              <Link href={searchHref(state, { association: null, category: null, when: null, place: null, status: null })} className="link font-semibold">
+                Retirer les filtres
+              </Link>
+            )}
+            {otherTabs !== null && (
+              <Link href={searchHref(state, { tab: "tout" })} className="link font-semibold">
+                {plural(otherTabs, "résultat")} dans les autres rubriques
+              </Link>
+            )}
+          </>
+        }
+      >
+        <p>
+          {state.q
+            ? "Vérifie l'orthographe ou essaie un mot plus court : le nom d'un événement, d'une asso ou d'un poste. Les accents et les majuscules ne comptent pas."
+            : "Change un filtre : les contenus arrivent quand les assos et le BDE les publient."}
+        </p>
+      </EmptyState>
+      {suggestions.length > 0 && (
+        <div className="mt-8">
+          <p className="mb-3 type-label text-muted">Essaie plutôt</p>
+          <FilterChips label="Recherches suggérées" param="q" options={suggestions} current={state.q} basePath={routes.search} />
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** No query: where to start, and what each rubrique holds. */
+function Discover({ counts, suggestions }: { counts: Record<SearchType, number>; suggestions: FilterOption[] }) {
+  return (
+    <div className="flex flex-col gap-[var(--section)]">
+      {suggestions.length > 0 && (
+        <section aria-labelledby="suggestions">
+          <SectionHeader id="suggestions" index="01" kicker="Pour démarrer" title="Pas d'idée ? Essaie ça" />
+          <FilterChips label="Recherches suggérées" param="q" options={suggestions} current={null} basePath={routes.search} className="mt-6" />
+        </section>
+      )}
+      <section aria-labelledby="rubriques">
+        <SectionHeader id="rubriques" index={suggestions.length > 0 ? "02" : "01"} kicker="Les rubriques" title="Ou va droit au but" />
+        <div className="mt-6">
+          <SearchSections
+            counts={{ association: counts.association, evenement: counts.event, recrutement: counts.campaign, article: counts.post }}
+          />
+        </div>
+      </section>
+    </div>
   );
 }

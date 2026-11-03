@@ -471,7 +471,10 @@ export interface Session {
 
 /* ---- Search ------------------------------------------------------------ */
 
-export type SearchKind = "association" | "evenement" | "recrutement" | "article";
+export type SearchKind = "association" | "evenement" | "recrutement" | "poste" | "article";
+
+/** What a student can save (public.save_item): the database's own kinds. */
+export type SavedKind = "association" | "post" | "event" | "campaign" | "position";
 
 export interface SearchEntry {
   kind: SearchKind;
@@ -481,9 +484,27 @@ export interface SearchEntry {
   context: string;
   href: string;
   accent: AccentKey;
-  /** Extra text that should match but is not displayed. */
-  keywords: string;
+  /** Extra text that should match but is not displayed (local matching only: pages, events of the year). */
+  keywords?: string;
+  /** A public line of the item itself (tagline, introduction, summary), shown under the title. */
+  excerpt?: string;
+  /** Its live state when it matters: cancelled, over, open until…, closed. */
+  status?: { label: string; tone: "live" | "soon" | "over" | "warn" };
+  /** Logo or cover, when the item has one. */
+  image?: Photo;
 }
+
+/** A saved item as the student's list shows it (public.my_saved_items). */
+export interface SavedItem {
+  kind: SavedKind;
+  id: string;
+  savedAt: string;
+  /** Null when the item is no longer public: only its kind and date are kept. */
+  entry: SearchEntry | null;
+}
+
+/** Ids the student saved, per kind (public.my_saved_keys), for the buttons of a page. */
+export type SavedKeys = Record<SavedKind, string[]>;
 
 /* ---- Safety (VSS / VDH) -------------------------------------------------- */
 

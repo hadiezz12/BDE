@@ -14,6 +14,9 @@ import { ApplyPanel } from "@/components/recruitment/ApplyPanel";
 import { DeadlineStamp } from "@/components/recruitment/DeadlineStamp";
 import { PositionBlock } from "@/components/recruitment/PositionBlock";
 import { STATUS_TONE } from "@/components/recruitment/campaign-facts";
+import { isSaved } from "@/lib/saved/data";
+import { withNext } from "@/lib/auth/next-path";
+import { SaveButton } from "@/components/saved/SaveButton";
 
 type Props = { params: Promise<{ slug: string; position: string }> };
 
@@ -42,20 +45,28 @@ export default async function PositionPage({ params }: Props) {
 
   const now = new Date();
   const session = await getSession();
-  const mine = applicationsFor(await getMyApplications(), campaign.id);
+  const [applications, saved] = await Promise.all([getMyApplications(), isSaved("position", position.id)]);
+  const mine = applicationsFor(applications, campaign.id);
   const index = campaign.positions.findIndex((p) => p.id === position.id);
   const others = campaign.positions.filter((p) => p.id !== position.id);
   const back = routes.campaignPosition(campaign.slug, position.slug);
 
   return (
     <div data-accent={campaign.association.accent} className="pb-[var(--section)]">
-      <div className="wrap pb-5 pt-6 sm:pt-8">
+      <div className="wrap flex flex-wrap items-start justify-between gap-x-6 gap-y-3 pb-5 pt-6 sm:pt-8">
         <Breadcrumbs
           items={[
             { href: routes.recruitment, label: "Recrutements" },
             { href: routes.campaign(campaign.slug), label: campaign.title },
             { href: back, label: position.title },
           ]}
+        />
+        <SaveButton
+          kind="position"
+          id={position.id}
+          initialSaved={saved}
+          signedIn={Boolean(session.user)}
+          loginHref={withNext(routes.login, back)}
         />
       </div>
 

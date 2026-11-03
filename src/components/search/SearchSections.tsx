@@ -10,10 +10,10 @@ const ROW =
 
 /**
  * The site's contents page, magazine-style: each section with what it holds
- * right now (real counts from the search index), then the safety page.
+ * right now (counted by the database, as a visitor sees it), then the safety page.
  * Shown when the query is empty or finds nothing.
  */
-export function SearchSections({ counts }: { counts: Record<SearchKind, number> }) {
+export function SearchSections({ counts }: { counts: Record<Exclude<SearchKind, "poste">, number> }) {
   return (
     <ul className="border-b border-line-strong">
       {SEARCH_SECTIONS.map((s) => (

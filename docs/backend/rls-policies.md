@@ -222,7 +222,7 @@ roles: writes go only through the event functions ([events.md](events.md)). Poli
 | `event_categories` | everyone the active ones; `platform.organizations.manage` all |
 | `events`, `event_coorganizers` | the event's team (`events.edit`, `events.publish`; an author their own drafts). Visitors read through `public_events` / `public_event` only |
 | `event_registrations` | the student their own rows. Teams read through `event_attendees` (`events.attendees.view`) |
-| `event_bookmarks` | the student their own rows |
+| `event_bookmarks` | the student their own rows (replaced by `saved_items` in Phase 12) |
 | `notification_outbox` (renamed `notifications` in Phase 10) | the recipient their own rows (no write: `mark_notifications_read`) |
 
 Each has a restrictive policy requiring the second factor when the person enrolled one. New
@@ -322,3 +322,21 @@ Every `private.*` function of Phase 10 is revoked from `public`, `anon`, `authen
 `claim_notification_emails` and `complete_notification_email` are dropped. Jobs:
 `notifications-dispatch` (every minute), `notification-reminders` (every 15 minutes, replaces
 `enqueue-event-reminders`), `notification-retention` (03:40).
+
+## Phase 12: search, saved items, interests
+
+| Table | Who reads |
+| --- | --- |
+| `saved_items` | the student their own rows; nobody else (no association, no BDE). Written only through `save_item` |
+| `student_interests` | the student their own rows; written only through `set_my_interests` |
+
+Both have the restrictive second-factor policy and no table write for any API role.
+`event_bookmarks` and `set_event_bookmark` are gone (rows moved into `saved_items`). Granted to
+`anon` and `authenticated`: `search_campus`, `public_featured_campaigns`,
+`public_featured_associations`, `public_related_posts`. Granted to `authenticated`: `save_item`,
+`my_saved_items`, `my_saved_keys`, `set_my_interests`, `my_campus_suggestions`,
+`set_campaign_prominence`, `set_association_prominence` (the last two check
+`platform.content.feature` and the second factor). The helpers `private.public_card`,
+`private.search_tsquery`, `private.search_association_card`, `private.search_title_bonus`,
+`private.search_name_matches` and the two vector builders are executable by no API role
+([search.md](search.md)).

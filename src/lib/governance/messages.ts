@@ -298,6 +298,14 @@ export type GovernanceErrorCode =
   | "rollover_checks_incomplete"
   | "rollover_too_early"
   | "rollover_warnings_unacknowledged"
+  // Phase 12 — search, saved items, interests, spotlights
+  | "association_page_not_public"
+  | "interest_invalid"
+  | "interests_limit"
+  | "item_invalid"
+  | "item_not_found"
+  | "saved_limit"
+  | "search_invalid"
   | "secret_not_allowed"
   | "unavailable"
   | "unexpected";
@@ -667,6 +675,14 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
     "Le passage à la nouvelle année se fait au plus tôt 30 jours avant son début.",
   rollover_warnings_unacknowledged:
     "Des vérifications demandent ton attention. Relis-les et coche « J'ai pris connaissance » pour continuer.",
+  association_page_not_public:
+    "Seule la page publique d'une association peut être mise à l'honneur (pas celle du BDE, ni une page hors ligne).",
+  interest_invalid: "Un de ces centres d'intérêt n'existe plus. Recharge la page et choisis à nouveau.",
+  interests_limit: "Huit centres d'intérêt au plus.",
+  item_invalid: "Ce contenu ne peut pas être enregistré.",
+  item_not_found: "Ce contenu n'est pas (ou plus) public : il ne peut pas être enregistré.",
+  saved_limit: "Tu as déjà 500 contenus enregistrés. Retires-en quelques-uns pour en garder d'autres.",
+  search_invalid: "Cette recherche n'est pas valide. Change un filtre ou recommence.",
   secret_not_allowed:
     "Ce texte ressemble à un mot de passe ou à une clé. Le registre n'en contient jamais : indique seulement qui détient l'accès et comment le joindre.",
   unavailable:"Le service est momentanément indisponible. Réessaie dans un instant.",

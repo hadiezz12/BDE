@@ -21,6 +21,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { Sticker } from "@/components/ui/Sticker";
 import { FollowButton } from "@/components/notifications/FollowButton";
+import { SaveButton } from "@/components/saved/SaveButton";
+import { withNext } from "@/lib/auth/next-path";
 import { AssociationGallery } from "./AssociationGallery";
 import { EventSeriesList } from "./EventSeriesList";
 import { MemberCardSection } from "./MemberCardSection";
@@ -45,6 +47,8 @@ export interface ProfileViewer {
   manageHref?: string;
   /** Signed-in visitors: whether they follow this association (Phase 10). */
   following?: boolean | null;
+  /** Signed-in visitors: whether they saved it (Phase 12; a bookmark, not a membership). */
+  saved?: boolean;
 }
 
 /**
@@ -200,8 +204,19 @@ export function AssociationProfile({
               </p>
             )}
 
-            {!preview && user && typeof viewer.following === "boolean" && (
-              <FollowButton organizationId={association.id} following={viewer.following} name={association.name} />
+            {!preview && (
+              <div className="flex flex-wrap items-start gap-3">
+                {user && typeof viewer.following === "boolean" && (
+                  <FollowButton organizationId={association.id} following={viewer.following} name={association.name} />
+                )}
+                <SaveButton
+                  kind="association"
+                  id={association.id}
+                  initialSaved={viewer.saved ?? false}
+                  signedIn={Boolean(user)}
+                  loginHref={withNext(routes.login, routes.association(association.slug))}
+                />
+              </div>
             )}
 
             {(open.length > 0 || offer || (!preview && viewer.manageHref)) && (

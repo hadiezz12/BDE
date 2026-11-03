@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { SearchEntry, Session } from "@/lib/types";
+import type { Session } from "@/lib/types";
 import type { ManageEntry } from "@/lib/governance/workspace";
 import { routes } from "@/lib/routes";
 import { BrandMark } from "@/components/brand/BrandMark";
@@ -24,12 +24,10 @@ import { MobileUserButton, UserMenu } from "./UserMenu";
 export function SiteHeader({
   session,
   managed,
-  searchIndex,
   notifications,
 }: {
   session: Session;
   managed: ManageEntry[];
-  searchIndex: SearchEntry[];
   /** The bell's first state (signed-in people only; it then stays current on its own). */
   notifications: NotificationSummary | null;
 }) {
@@ -74,7 +72,7 @@ export function SiteHeader({
             <Icon name="shield" size={21} label="Signaler une situation (VSS / VDH)" />
           </Link>
 
-          <CommandSearch index={searchIndex} />
+          <CommandSearch />
 
           {session.user && notifications && <NotificationBell initial={notifications} userId={session.user.id} />}
 

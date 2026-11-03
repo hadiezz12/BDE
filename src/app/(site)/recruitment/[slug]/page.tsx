@@ -10,6 +10,11 @@ import { SectionHeader } from "@/components/layout/SectionHeader";
 import { CampaignCard } from "@/components/recruitment/CampaignCard";
 import { isOpen, isOver } from "@/components/recruitment/campaign-facts";
 import { CampaignFiche } from "../_components/CampaignFiche";
+import { getRelatedPosts } from "@/lib/data/posts";
+import { isSaved } from "@/lib/saved/data";
+import { withNext } from "@/lib/auth/next-path";
+import { SaveButton } from "@/components/saved/SaveButton";
+import { RelatedPosts } from "@/components/campus/RelatedPosts";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -42,22 +47,43 @@ export default async function CampaignPage({ params }: Props) {
   const now = new Date();
   const session = await getSession();
   const open = isOpen(campaign.status);
-  const [applications, others] = await Promise.all([getMyApplications(), open ? Promise.resolve([]) : getOpenCampaigns(8)]);
+  const [applications, others, saved, announcements] = await Promise.all([
+    getMyApplications(),
+    open ? Promise.resolve([]) : getOpenCampaigns(8),
+    isSaved("campaign", campaign.id),
+    // The fiche never fails because its articles could not load.
+    getRelatedPosts("campaign", campaign.id, 3).catch(() => []),
+  ]);
   const mine = applicationsFor(applications, campaign.id);
   const { association } = campaign;
 
   return (
     <div data-accent={association.accent} className="pb-[var(--section)]">
-      <div className="wrap pb-5 pt-6 sm:pt-8">
+      <div className="wrap flex flex-wrap items-start justify-between gap-x-6 gap-y-3 pb-5 pt-6 sm:pt-8">
         <Breadcrumbs
           items={[
             { href: routes.recruitment, label: "Recrutements" },
             { href: routes.campaign(campaign.slug), label: campaign.title },
           ]}
         />
+        <SaveButton
+          kind="campaign"
+          id={campaign.id}
+          initialSaved={saved}
+          signedIn={Boolean(session.user)}
+          loginHref={withNext(routes.login, routes.campaign(campaign.slug))}
+        />
       </div>
 
       <CampaignFiche campaign={campaign} mine={mine} signedIn={Boolean(session.user)} now={now} />
+
+      <RelatedPosts
+        posts={announcements}
+        id="annonces"
+        kicker={`Publié par ${association.shortName ?? association.name}`}
+        title="Sur ce recrutement"
+        className="pt-[var(--section)]"
+      />
 
       {(isOver(campaign.status) || campaign.status === "a-venir" || campaign.status === "en-pause") &&
         others.filter((c) => c.id !== campaign.id).length > 0 && (

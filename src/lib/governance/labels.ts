@@ -201,6 +201,8 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   event_hidden: "a masqué un événement (modération BDE)",
   event_restored: "a rétabli un événement masqué (modération BDE)",
   event_prominence_changed: "a changé la mise en avant d'un événement",
+  campaign_prominence_changed: "a changé la mise en avant d'un recrutement sur la une du campus",
+  association_prominence_changed: "a changé l'asso à l'honneur sur la une du campus",
   event_category_created: "a créé une catégorie d'événements",
   event_category_updated: "a modifié une catégorie d'événements",
   recruitment_campaign_created: "a commencé un recrutement",

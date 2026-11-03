@@ -46,7 +46,8 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   return {
     title: f.kind ? `${POST_KIND_PLURAL[f.kind]} · Le fil du campus` : "Le fil du campus",
     description: DESCRIPTION,
-    alternates: { types: campusRssAlternate() },
+    // Every view of the fil points to the fil itself.
+    alternates: { canonical: routes.campus, types: campusRssAlternate() },
     // Filtered and paged views are for sharing, not for search engines (the sitemap lists every article).
     robots: filtered ? { index: false, follow: true } : undefined,
   };

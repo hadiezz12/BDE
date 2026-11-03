@@ -13,7 +13,7 @@ import { PROMINENCE_MAX_DAYS } from "./labels";
  * marked important.
  */
 
-function UntilField() {
+export function UntilField() {
   const today = parisDateKey(new Date());
   return (
     <Field

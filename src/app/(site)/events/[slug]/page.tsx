@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import type { EventItem, EventSeries } from "@/lib/types";
+import type { EventItem, EventSeries, PostItem } from "@/lib/types";
+import { getRelatedPosts } from "@/lib/data/posts";
 import { routes } from "@/lib/routes";
 import { siteUrl } from "@/lib/site-url";
 import { formatDayFull, formatTime } from "@/lib/format";
@@ -133,7 +134,7 @@ async function SeriesPage({ series }: { series: EventSeries }) {
  */
 async function EventPage({ event }: { event: EventItem }) {
   const now = new Date();
-  const [session, status, association, related, series, rights, my] = await Promise.all([
+  const [session, status, association, related, series, rights, my, announcements] = await Promise.all([
     getSession(),
     getMyEventStatus(event.id),
     getAssociationById(event.associationId).catch(() => null),
@@ -141,6 +142,8 @@ async function EventPage({ event }: { event: EventItem }) {
     event.seriesKey ? getEventSeriesBySlug(event.seriesKey) : Promise.resolve(null),
     rightsIn(event.association.slug),
     getMyEvents(),
+    // Articles that point to this event (the event never fails because of them).
+    getRelatedPosts("event", event.id, 3).catch(() => [] as PostItem[]),
   ]);
 
   const user = session.user;
@@ -176,6 +179,7 @@ async function EventPage({ event }: { event: EventItem }) {
         association={association}
         series={series}
         related={related}
+        announcements={announcements}
         personalFor={(e) => (user ? marks.get(e.id) : undefined)}
         url={url}
         now={now}

@@ -4,7 +4,11 @@ import type { EventItem } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { formatDateLong, formatDayFull, formatTime, plural, relativeDay } from "@/lib/format";
 import { getSession } from "@/lib/session";
-import { getAssociationsByIds, getBde, toRef } from "@/lib/data/associations";
+import { getAssociationsByIds, getBde, getCategoryRefs, toRef } from "@/lib/data/associations";
+import { getMyCampusSuggestions, getMySavedItems } from "@/lib/saved/data";
+import { campaignEntry, eventEntry } from "@/lib/search/entries";
+import { SearchResultRow } from "@/components/search/SearchResultRow";
+import { InterestsForm } from "@/components/account/InterestsForm";
 import { getMyApplications } from "@/lib/recruitment/me";
 import { getMyEvents } from "@/lib/events/me";
 import { getMyNotificationPage, getMyNotificationSummary } from "@/lib/notifications/data";
@@ -48,21 +52,31 @@ function nextOutLine(next: EventItem | undefined, now: Date): string {
 /**
  * "Mon espace": hello, the carte cotisante (pointer tilt), the next ticket,
  * then what deserves a look today — drafts still to send, unread
- * notifications — and the associations the student belongs to.
+ * notifications —, "Mon campus" (what they saved, and what their own chosen
+ * interests suggest, each with its reason: nothing inferred, no ranking of
+ * people), and the associations the student belongs to.
  */
 export default async function AccountHomePage() {
   const { user } = await getSession();
   if (!user) return null;
 
   const now = new Date();
-  const [my, applications, unreadPage, summary, associations, mfa] = await Promise.all([
+  const [my, applications, unreadPage, summary, associations, mfa, savedItems, suggestions, categories] = await Promise.all([
     getMyEvents(),
     getMyApplications(),
     getMyNotificationPage({ view: "unread", category: null, limit: 3 }),
     getMyNotificationSummary(),
     getAssociationsByIds([...new Set([...user.memberships.map((m) => m.associationId), ...user.managedAssociationIds])]),
     getMyMfaStatus(),
+    getMySavedItems(),
+    getMyCampusSuggestions(),
+    getCategoryRefs().catch(() => []),
   ]);
+  const latestSaved = (savedItems ?? []).slice(0, 4);
+  const forYou = [
+    ...(suggestions?.events ?? []).slice(0, 3).map(({ event, because }) => ({ entry: eventEntry(event, now), because })),
+    ...(suggestions?.campaigns ?? []).slice(0, 2).map(({ campaign, because }) => ({ entry: campaignEntry(campaign, now), because })),
+  ];
 
   const { tickets, saved } = splitMyEvents(my, now);
   const next = tickets[0];
@@ -253,6 +267,79 @@ export default async function AccountHomePage() {
               Les nouvelles de tes inscriptions, de tes candidatures, de tes équipes et des assos que tu suis arriveront ici.
             </EmptyState>
           )}
+        </section>
+      </div>
+
+      {/* Mon campus: what they kept, and what their own interests suggest */}
+      <div className="mt-[var(--section)] grid gap-x-8 gap-y-14 lg:grid-cols-12">
+        <section aria-labelledby="enregistres-titre" className="lg:col-span-7">
+          <SectionHeader
+            id="enregistres-titre"
+            kicker="Mon campus"
+            title="Enregistrés"
+            action={savedItems && savedItems.length > 0 ? { href: routes.accountSaved, label: `Tout voir (${savedItems.length})` } : undefined}
+          />
+          {latestSaved.length > 0 ? (
+            <ul className="mt-6 border-b border-line">
+              {latestSaved.map((item) => (
+                <li key={`${item.kind}-${item.id}`}>
+                  {item.entry ? (
+                    <SearchResultRow entry={item.entry} query="" />
+                  ) : (
+                    <p className="border-t border-line py-4 type-small text-muted">
+                      Un contenu enregistré n&apos;est plus en ligne.{" "}
+                      <Link href={routes.accountSaved} className="link font-bold text-fg">
+                        Le retirer
+                      </Link>
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              tone="quiet"
+              className="mt-6"
+              title="Rien d'enregistré pour l'instant."
+              actions={
+                <ButtonLink href={routes.search} variant="secondary" icon="search">
+                  Chercher sur le campus
+                </ButtonLink>
+              }
+            >
+              Le bouton «&nbsp;Enregistrer&nbsp;» d&apos;une asso, d&apos;un article, d&apos;un événement ou d&apos;un poste
+              le garde ici. Ce n&apos;est ni une inscription, ni une candidature.
+            </EmptyState>
+          )}
+        </section>
+
+        <section aria-labelledby="pour-toi-titre" className="flex flex-col gap-6 lg:col-span-5">
+          <SectionHeader
+            id="pour-toi-titre"
+            kicker={suggestions?.interests.length ? suggestions.interests.map((i) => i.label).join(" · ") : "Facultatif"}
+            title="Pour toi"
+          />
+          {suggestions && suggestions.interests.length > 0 ? (
+            forYou.length > 0 ? (
+              <ul className="border-b border-line">
+                {forYou.map(({ entry, because }) => (
+                  <li key={`${entry.kind}-${entry.id}`}>
+                    <SearchResultRow entry={entry} query="" kindLabel={`Parce que tu as choisi ${because.join(", ")}`} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="type-small text-muted">
+                Rien à venir pour l&apos;instant chez les assos de ces catégories. Ça viendra quand elles publieront.
+              </p>
+            )
+          ) : (
+            <p className="type-small text-muted">
+              Choisis des catégories d&apos;assos qui t&apos;intéressent : leurs événements à venir et leurs recrutements
+              ouverts s&apos;afficheront ici, avec la raison. Rien d&apos;autre n&apos;est utilisé.
+            </p>
+          )}
+          <InterestsForm categories={categories} chosen={suggestions?.interests.map((i) => i.slug) ?? []} />
         </section>
       </div>
 

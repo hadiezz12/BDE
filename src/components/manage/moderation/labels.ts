@@ -52,5 +52,8 @@ export function stamp(iso: string): string {
 /** Campus-wide prominence: at most 3 stories "à la une", 2 important BDE notices (public.set_post_prominence). */
 export const PROMINENCE_LIMIT = { featured: 3, important: 2 } as const;
 
+/** Campus front-page spotlights (Phase 12): three recruitments, one association (public.set_*_prominence). */
+export const SPOTLIGHT_LIMIT = { campaigns: 3, associations: 1 } as const;
+
 /** The furthest end date the database accepts for a prominence (60 days from now). */
 export const PROMINENCE_MAX_DAYS = 59;

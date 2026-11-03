@@ -1,12 +1,17 @@
-import type { SearchEntry, SearchKind } from "./types";
+import type { SearchEntry, SearchKind } from "../types";
 
-/** Client-safe matcher for the local search index. */
+/**
+ * Client-safe matching of the few things the site itself holds (its pages,
+ * the BDE's events of the year): everything else is searched by the
+ * database (public.search_campus).
+ */
 
 export const SEARCH_KIND_LABEL: Record<SearchKind, string> = {
   association: "Associations",
   evenement: "Événements",
   recrutement: "Recrutements",
-  article: "Campus",
+  poste: "Postes",
+  article: "Articles",
 };
 
 export function normaliseQuery(s: string): string {
@@ -23,7 +28,7 @@ export function searchEntries(index: SearchEntry[], query: string, limitPerKind 
   const scored = index
     .map((entry, i) => {
       const title = normaliseQuery(entry.title);
-      const haystack = `${title} ${normaliseQuery(entry.context)} ${normaliseQuery(entry.keywords)}`;
+      const haystack = `${title} ${normaliseQuery(entry.context)} ${normaliseQuery(entry.keywords ?? "")}`;
       if (!words.every((w) => haystack.includes(w))) return null;
       let score = 0;
       for (const w of words) {

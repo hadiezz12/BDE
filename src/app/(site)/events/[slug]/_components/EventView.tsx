@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
-import type { Association, CampusEvent, EventItem, EventSeries, UserProfile } from "@/lib/types";
+import type { Association, CampusEvent, EventItem, EventSeries, PostItem, UserProfile } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { dateParts, formatDayFull } from "@/lib/format";
@@ -14,6 +14,7 @@ import { MediaFrame } from "@/components/media/MediaFrame";
 import { Icon } from "@/components/ui/Icon";
 import { Sticker } from "@/components/ui/Sticker";
 import { ShareArticle } from "@/components/campus/ShareArticle";
+import { RelatedPosts } from "@/components/campus/RelatedPosts";
 import { AddToCalendar } from "@/components/events/AddToCalendar";
 import { EventActionBar } from "@/components/events/EventActionBar";
 import { EventDate } from "@/components/events/EventDate";
@@ -49,6 +50,7 @@ export function EventView({
   association,
   series,
   related,
+  announcements = [],
   personalFor,
   url,
   now,
@@ -65,6 +67,8 @@ export function EventView({
   association: Association | null;
   series: EventSeries | null;
   related: EventItem[];
+  /** Published articles about this event (by the link their association set). */
+  announcements?: PostItem[];
   personalFor: (e: EventItem) => PersonalState | undefined;
   /** The page's absolute address (calendar entries). */
   url: string;
@@ -277,6 +281,14 @@ export function EventView({
           />
         )}
       </article>
+
+      <RelatedPosts
+        posts={announcements}
+        id="articles-evenement"
+        kicker={past ? "Après coup" : "Le fil en parle"}
+        title={past ? "Le récap et les articles" : "Les articles sur cet événement"}
+        className="pt-[var(--section)]"
+      />
 
       {related.length > 0 && (
         <section aria-labelledby="a-suivre" className="wrap pt-[var(--section)]">

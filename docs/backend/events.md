@@ -198,7 +198,7 @@ or failed for each event.
 | Association page | `public_association_events(slug, 'upcoming' or 'past', limit)` | its events (pinned first) |
 | Series page | `public_series_events(key)` | the dated editions of one of the eight events of the year |
 | Sitemap | `public_event_sitemap()` | addresses and last changes |
-| A student | `my_event_status(event)`, `my_events()` | their registration (place, reference, private details if confirmed, whether they may still cancel), saved events |
+| A student | `my_event_status(event)`, `my_events()` | their registration (place, reference, private details if confirmed, whether they may still cancel), saved events (from `saved_items` since Phase 12: [search.md](search.md#saved-items-5360-80)) |
 | The team | `event_dashboard(org)`, `event_editor(event)`, `event_preview(event)`, `event_attendees(…)`, `export_event_attendees(event)` | as described above |
 | The BDE | `platform_events(q, view)` | public cards + hidden state, 100 at most |
 

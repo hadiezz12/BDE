@@ -16,13 +16,19 @@ export function AssociationsRail({
   associations,
   recruitingSeats,
   index,
+  featuredId = null,
 }: {
   associations: Association[];
   /** Open recruitment per association id: its places, or null when a position did not say. */
   recruitingSeats: Map<string, number | null>;
   index?: string;
+  /** The association "à l'honneur" chosen by the BDE (public_featured_associations): first, and marked so. */
+  featuredId?: string | null;
 }) {
   if (associations.length === 0) return null;
+  const ordered = featuredId
+    ? [...associations.filter((a) => a.id === featuredId), ...associations.filter((a) => a.id !== featuredId)]
+    : associations;
 
   return (
     <div data-surface="paper" className="grain">
@@ -36,14 +42,15 @@ export function AssociationsRail({
           description="Chaque asso dit qui elle est, quand elle se réunit et comment la rejoindre."
         />
         <ul className="rail mt-10 py-2">
-          {associations.map((a) => {
+          {ordered.map((a) => {
             const recruiting = recruitingSeats.has(a.id);
             const seats = recruitingSeats.get(a.id) ?? undefined;
+            const honoured = a.id === featuredId;
             return (
               <li key={a.id} className="w-[15rem] sm:w-[16.5rem]">
                 <AssociationTile
                   association={a}
-                  sticker={recruiting ? recruitingSticker(seats) : undefined}
+                  sticker={honoured ? { label: "À l'honneur", tone: "accent" } : recruiting ? recruitingSticker(seats) : undefined}
                   sizes="(min-width: 640px) 16.5rem, 15rem"
                   className="h-full"
                 />

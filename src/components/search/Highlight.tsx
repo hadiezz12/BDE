@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { normaliseQuery } from "@/lib/search";
+import { normaliseQuery } from "@/lib/search/match";
 
 /** Same folding as the search itself: accents and case ignored. */
 const fold = (ch: string) => ch.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();

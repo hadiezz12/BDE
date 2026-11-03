@@ -1,6 +1,6 @@
 import type { IconName } from "@/components/ui/Icon";
 import { routes } from "@/lib/routes";
-import { normaliseQuery } from "@/lib/search";
+import { normaliseQuery } from "@/lib/search/match";
 
 /**
  * The site's own pages, findable by search next to the data index
@@ -97,6 +97,14 @@ export const SITE_PAGES: SitePage[] = [
     href: routes.account,
     icon: "home",
     keywords: "compte espace profil billets candidatures notifications connexion",
+  },
+  {
+    id: "p-enregistres",
+    title: "Mes enregistrements",
+    context: "Les assos, articles, événements et postes que tu as gardés",
+    href: routes.accountSaved,
+    icon: "bookmark",
+    keywords: "enregistres enregistrements favoris sauvegardes garder plus tard",
   },
 ];
 

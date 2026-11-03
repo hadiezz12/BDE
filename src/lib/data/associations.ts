@@ -51,7 +51,7 @@ export function legacyId(a: Pick<Association, "id" | "slug">): string {
   return mockAssociations.find((m) => m.slug === a.slug)?.id ?? a.id;
 }
 
-async function rpc<T>(name: "public_associations" | "public_association_categories"): Promise<T | null> {
+async function rpc<T>(name: "public_associations" | "public_association_categories" | "public_featured_associations"): Promise<T | null> {
   let supabase;
   try {
     supabase = createSupabasePublicClient();
@@ -72,6 +72,16 @@ async function rpc<T>(name: "public_associations" | "public_association_categori
 export const getPublicAssociations = cache(async (): Promise<Association[]> => {
   const payload = await rpc<AssociationPayload[]>("public_associations");
   return (payload ?? []).map((p) => toAssociation(p));
+});
+
+/**
+ * The association "à l'honneur" on the campus front page (Phase 12, chosen
+ * by the BDE), while its page is public: its id and until when. The page
+ * itself comes from getPublicAssociations, like every other.
+ */
+export const getFeaturedAssociations = cache(async (): Promise<{ id: string; until: string | null }[]> => {
+  const payload = await rpc<{ id: string; prominence_until: string | null }[]>("public_featured_associations");
+  return (payload ?? []).map((p) => ({ id: p.id, until: p.prominence_until }));
 });
 
 /** Active categories with how many public pages use each. */

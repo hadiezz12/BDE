@@ -8,8 +8,8 @@ import { getMyEvents } from "@/lib/events/me";
 import { personalStates } from "@/lib/events/model";
 import { agendaWindow } from "@/lib/events/filters";
 import { getEventSeries } from "@/lib/data/event-series";
-import { getAssociations, getAssociationsByIds, getBde, legacyId } from "@/lib/data/associations";
-import { getOpenCampaigns } from "@/lib/data/recruitment";
+import { getAssociations, getAssociationsByIds, getBde, getFeaturedAssociations, legacyId } from "@/lib/data/associations";
+import { getFeaturedCampaigns, getOpenCampaigns } from "@/lib/data/recruitment";
 import { getFeaturedPosts, getFeed } from "@/lib/data/posts";
 import { getSafetyDirectory } from "@/lib/data/safety";
 import { getMemberCardOffer } from "@/lib/data/member-card";
@@ -43,6 +43,16 @@ export const metadata: Metadata = {
   title: { absolute: "Very Pink Club — le BDE de GEM Alpine Business School, Paris" },
   description:
     "8 événements, une carte à 30 €, et une promo qu'on ne lâche pas. Le Very Pink Club produit les week-ends, les soirées et les apéros de GEM Alpine Business School.",
+  alternates: { canonical: routes.home },
+  openGraph: {
+    type: "website",
+    siteName: "Very Pink Club",
+    locale: "fr_FR",
+    url: routes.home,
+    title: "Very Pink Club — le BDE de GEM Alpine Business School, Paris",
+    description:
+      "8 événements, une carte à 30 €, et une promo qu'on ne lâche pas. Le Very Pink Club produit les week-ends, les soirées et les apéros de GEM Alpine Business School.",
+  },
 };
 
 /**
@@ -77,8 +87,25 @@ async function HomeContent() {
   const weekSpan = agendaWindow({ when: "week", from: null, to: null }, now);
   // The agenda is one block among many: the front door still opens if it cannot be read.
   const none = () => [];
-  const [series, today, week, upcoming, featuredList, campaigns, associations, fil, highlights, safety, bde, applications, my, managed] =
-    await Promise.all([
+  const [
+    series,
+    today,
+    week,
+    upcoming,
+    featuredList,
+    campaigns,
+    associations,
+    fil,
+    highlights,
+    safety,
+    bde,
+    applications,
+    my,
+    managed,
+    cardOffer,
+    spotlightCampaigns,
+    spotlightAssociations,
+  ] = await Promise.all([
       getEventSeries(),
       getEvents({ from: todaySpan.from, to: todaySpan.to }).catch(none),
       getEvents({ from: now.toISOString(), to: weekSpan.to }).catch(none),
@@ -95,11 +122,15 @@ async function HomeContent() {
       user ? getMyApplications() : Promise.resolve<ApplicationItem[]>([]),
       getMyEvents(),
       user ? getAssociationsByIds(user.managedAssociationIds) : Promise.resolve<Association[]>([]),
+      // The carte cotisante of the BDE, read alongside the rest rather than after it.
+      getBde().then((b) => (b ? getMemberCardOffer(legacyId(b)) : null)),
+      // The BDE's spotlights: blocks among many, the front door opens without them.
+      getFeaturedCampaigns().catch(() => []),
+      getFeaturedAssociations().catch(() => []),
     ]);
 
   const personal = personalFor(user ? personalStates(my) : null);
   const mine = splitMyEvents(my, now);
-  const cardOffer = bde ? await getMemberCardOffer(legacyId(bde)) : null;
   // The card is presented on the BDE's page; without one, the index still finds it.
   const memberCard: MemberCardLink = {
     href: bde && cardOffer ? memberCardHref(bde.slug) : routes.associations,
@@ -188,10 +219,22 @@ async function HomeContent() {
 
       {cardOffer && <HomeMemberCard offer={cardOffer} href={memberCard.href} index={next()} />}
 
-      {campaigns.length > 0 && <HomeRecruitment campaigns={campaigns} applications={applications} index={next()} />}
+      {campaigns.length > 0 && (
+        <HomeRecruitment
+          campaigns={campaigns}
+          applications={applications}
+          featuredIds={new Set(spotlightCampaigns.map((c) => c.id))}
+          index={next()}
+        />
+      )}
 
       {otherAssociations.length > 0 && (
-        <AssociationsRail associations={associations} recruitingSeats={recruitingSeats} index={next()} />
+        <AssociationsRail
+          associations={associations}
+          recruitingSeats={recruitingSeats}
+          featuredId={spotlightAssociations[0]?.id ?? null}
+          index={next()}
+        />
       )}
 
       {(fil.items.length > 0 || highlights.important.length > 0) && (

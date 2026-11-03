@@ -27,6 +27,7 @@ type PublicRpc =
   | "public_post_facets"
   | "public_featured_posts"
   | "public_association_posts"
+  | "public_related_posts"
   | "public_post_sitemap";
 
 async function rpc<T>(name: PublicRpc, args?: Record<string, unknown>): Promise<T | null> {
@@ -113,6 +114,16 @@ export const getFeaturedPosts = cache(async (): Promise<{ featured: PostItem[]; 
 export async function getAssociationPosts(slug: string, limit = 6): Promise<PostItem[]> {
   return ((await rpc<PostCardPayload[]>("public_association_posts", { p_slug: slug, p_limit: limit })) ?? []).map((p) => toPostItem(p));
 }
+
+/**
+ * Published articles related by real links (public_related_posts): those
+ * about an event or a recruitment campaign, or, for an article, the ones
+ * about the same event or campaign, then the same association, then the
+ * same rubrique. Never matched on shared words.
+ */
+export const getRelatedPosts = cache(async (type: "post" | "event" | "campaign", id: string, limit = 3): Promise<PostItem[]> =>
+  ((await rpc<PostCardPayload[]>("public_related_posts", { p_type: type, p_id: id, p_limit: limit })) ?? []).map((p) => toPostItem(p)),
+);
 
 export async function getPostSitemap(): Promise<{ slug: string; published_at: string }[]> {
   return (await rpc<{ slug: string; published_at: string }[]>("public_post_sitemap")) ?? [];

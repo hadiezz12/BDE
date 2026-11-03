@@ -15,7 +15,7 @@ import type { GovernanceActionState } from "./governance";
 
 /**
  * Actions of events (Phase 7): the association's event desk and wizard,
- * students' registrations, saved events and messages, BDE moderation and
+ * students' registrations and messages (saving: actions/saved), BDE moderation and
  * front page. Each one forwards to a database function
  * (supabase/migrations/2026102312*) that identifies the caller, checks the
  * right in the event's own association (or the platform right), locks the
@@ -253,15 +253,6 @@ export async function cancelMyRegistration(_prev: RegistrationActionState, form:
     outcome: { status: "cancelled", position: null, already: false },
     at: Date.now(),
   };
-}
-
-export async function setEventBookmark(_prev: GovernanceActionState, form: FormData): Promise<GovernanceActionState> {
-  const saved = text(form, "saved") === "1";
-  return run(
-    "set_event_bookmark",
-    (s) => s.rpc("set_event_bookmark", { p_event_id: text(form, "event_id"), p_saved: saved }),
-    saved ? "Enregistré dans Mes événements." : "Retiré de tes événements enregistrés.",
-  );
 }
 
 // ---- BDE: moderation, the front page, the catalog ------------------------------------------------

@@ -7,16 +7,29 @@ import { Icon } from "@/components/ui/Icon";
 
 /**
  * The /search field: a plain GET form (works without JavaScript; next/form
- * adds client-side navigation when it is there). The button sets the row
- * height and the field stretches to it. Keyed on the query so the field shows
- * the new words after a suggestion link is followed.
+ * adds client-side navigation when it is there). The chosen type and its
+ * filters ride along as hidden fields, so a new query stays in the same
+ * tab. The button sets the row height and the field stretches to it. Keyed
+ * on the query so the field shows the new words after a suggestion link.
  */
-export function SearchForm({ query, className }: { query: string; className?: string }) {
+export function SearchForm({
+  query,
+  keep = {},
+  className,
+}: {
+  query: string;
+  /** Other parameters of the current search to keep (type, filters). */
+  keep?: Record<string, string>;
+  className?: string;
+}) {
   return (
     <Form action={routes.search} role="search" className={cx("flex items-stretch gap-2 sm:gap-3", className)}>
+      {Object.entries(keep).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
       <div className="relative min-w-0 flex-1">
         <label htmlFor="recherche-q" className="sr-only">
-          Rechercher une association, un événement, un poste ou un article
+          Rechercher une association, un événement, un recrutement ou un article
         </label>
         <Icon
           name="search"
@@ -29,10 +42,11 @@ export function SearchForm({ query, className }: { query: string; className?: st
           name="q"
           type="search"
           defaultValue={query}
-          placeholder="Événement, asso, page…"
+          placeholder="Asso, événement, poste, article…"
           autoComplete="off"
           enterKeyHint="search"
           spellCheck={false}
+          maxLength={80}
           className="h-full pl-12 text-[1.1rem] font-semibold sm:text-[1.25rem]"
         />
       </div>

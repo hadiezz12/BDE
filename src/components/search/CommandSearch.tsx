@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { SearchEntry, SearchKind } from "@/lib/types";
-import { searchEntries, SEARCH_KIND_LABEL } from "@/lib/search";
+import { SEARCH_KIND_LABEL } from "@/lib/search/match";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { Dialog } from "@/components/ui/Dialog";
@@ -11,30 +11,87 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { SEARCH_KIND_ICON as KIND_ICON } from "./kinds";
 import { matchPages, SEARCH_SHORTCUTS } from "./pages";
 
+/** Typing pauses this long before the database is asked. */
+const DEBOUNCE_MS = 200;
+/** Display order of the groups. */
+const KIND_ORDER: SearchKind[] = ["association", "evenement", "recrutement", "poste", "article"];
+
+/** The database's last answer, for the query it answered. */
+type Answer = { q: string; results: SearchEntry[]; total: number; tooShort: boolean } | { q: string; error: true };
+
 /**
- * Universal quick search (⌘K / Ctrl+K, or "/"). Searches the local index
- * (associations, the BDE's events, recruitments, posts) and the site's own
- * pages (carte, VSS / VDH…); keyboard-first combobox, full screen on phones.
- * Before anything is typed it offers shortcuts to pages that exist. The
- * /search page is the no-JS equivalent.
+ * Universal quick search (⌘K / Ctrl+K, or "/"). Once the typing pauses it
+ * asks /api/search (the database's public search: associations, articles,
+ * events, recruitment and positions, whatever a visitor may read right now)
+ * and cancels the previous question, so answers never arrive out of order;
+ * the site's own pages (carte, VSS / VDH…) are matched here. Nothing is
+ * downloaded before the dialog is used. Keyboard-first combobox, full
+ * screen on phones; the /search page is the no-JS equivalent.
  */
-export function CommandSearch({ index }: { index: SearchEntry[] }) {
+export function CommandSearch() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
+  const [answer, setAnswer] = useState<Answer | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
+  const trimmed = query.replace(/\s+/g, " ").trim();
 
-  const results = useMemo(() => searchEntries(index, query), [index, query]);
+  useEffect(() => {
+    if (!open || trimmed.length < 2) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`, {
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        const body = (await res.json()) as { results: SearchEntry[]; total: number; tooShort: boolean };
+        setAnswer({ q: trimmed, results: body.results ?? [], total: body.total ?? 0, tooShort: body.tooShort });
+      } catch {
+        if (controller.signal.aborted) return;
+        setAnswer({ q: trimmed, error: true });
+      }
+    }, DEBOUNCE_MS);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [open, trimmed]);
+
+  // While the next answer is on its way, the previous one stays (dimmed).
+  const searching = open && trimmed.length >= 2;
+  const loading = searching && answer?.q !== trimmed;
+  const failed = searching && !loading && answer !== null && "error" in answer;
+  const settled = searching && !loading && answer !== null && !("error" in answer);
+  const total = answer && !("error" in answer) ? answer.total : 0;
+  const results = useMemo(() => (searching && answer && !("error" in answer) ? answer.results : []), [searching, answer]);
   const pages = useMemo(() => matchPages(query), [query]);
+
+  // Group results by kind, keeping each entry's flat index for keyboard navigation.
+  const groups = useMemo(() => {
+    const map = new Map<SearchKind, SearchEntry[]>();
+    for (const entry of results) map.set(entry.kind, [...(map.get(entry.kind) ?? []), entry]);
+    let i = 0;
+    return KIND_ORDER.filter((k) => map.has(k)).map((kind) => ({
+      kind,
+      entries: map.get(kind)!.map((entry) => ({ entry, index: i++ })),
+    }));
+  }, [results]);
+  const resultCount = groups.reduce((n, g) => n + g.entries.length, 0);
+
   // One flat list for the keyboard: data results first, then pages.
   const options = useMemo(
     () =>
-      query.trim()
-        ? [...results.map((r) => ({ id: r.id, href: r.href })), ...pages.map((p) => ({ id: p.id, href: p.href }))]
+      trimmed
+        ? [
+            ...groups.flatMap((g) => g.entries.map(({ entry }) => ({ id: `${entry.kind}-${entry.id}`, href: entry.href }))),
+            ...pages.map((p) => ({ id: p.id, href: p.href })),
+          ]
         : SEARCH_SHORTCUTS.map((s) => ({ id: s.id, href: s.href })),
-    [query, results, pages],
+    [trimmed, groups, pages],
   );
 
   const close = useCallback(() => {
@@ -68,7 +125,15 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
     if (open) requestAnimationFrame(() => inputRef.current?.focus());
   }, [open]);
 
+  const allHref = `${routes.search}?q=${encodeURIComponent(trimmed)}`;
+
   function onInputKey(e: ReactKeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && trimmed && !options.length) {
+      // Nothing to pick yet: Enter opens the full search.
+      e.preventDefault();
+      go(allHref);
+      return;
+    }
     if (!options.length) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -86,12 +151,16 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
   const optionId = (id: string) => `${listId}-${id}`;
   const activeId = options[active] ? optionId(options[active].id) : undefined;
 
-  // Group results by kind, keeping each entry's flat index for keyboard navigation.
-  const groups = useMemo(() => {
-    const map = new Map<SearchKind, { entry: SearchEntry; index: number }[]>();
-    results.forEach((entry, index) => map.set(entry.kind, [...(map.get(entry.kind) ?? []), { entry, index }]));
-    return [...map.entries()];
-  }, [results]);
+  // What the live region says (the list itself is not announced).
+  const announcement = !trimmed
+    ? ""
+    : trimmed.length < 2
+      ? "Tape au moins deux caractères."
+      : loading
+        ? "Recherche en cours…"
+        : failed
+          ? "La recherche ne répond pas."
+          : `${resultCount + pages.length} résultat${resultCount + pages.length > 1 ? "s" : ""}.`;
 
   return (
     <>
@@ -111,9 +180,13 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
 
       <Dialog open={open} onClose={close} label="Recherche" variant="screen">
         <div className="flex items-center gap-3 border-b border-line px-4 sm:px-5">
-          <Icon name="search" size={20} className="shrink-0 text-accent-text" />
+          <Icon
+            name="search"
+            size={20}
+            className={cx("shrink-0 text-accent-text transition-opacity", loading && "animate-pulse")}
+          />
           <label htmlFor={`${listId}-input`} className="sr-only">
-            Rechercher une association, un événement, un poste…
+            Rechercher une association, un événement, un recrutement, un article…
           </label>
           <input
             ref={inputRef}
@@ -124,15 +197,18 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
             aria-controls={listId}
             aria-activedescendant={activeId}
             aria-autocomplete="list"
+            aria-busy={loading || undefined}
             autoComplete="off"
             spellCheck={false}
+            maxLength={80}
+            enterKeyHint="search"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
               setActive(0);
             }}
             onKeyDown={onInputKey}
-            placeholder="Événement, asso, page…"
+            placeholder="Asso, événement, poste, article…"
             className="h-16 min-w-0 flex-1 bg-transparent text-[1.15rem] font-semibold text-fg placeholder:font-normal placeholder:text-subtle focus:outline-none"
           />
           <button
@@ -144,9 +220,18 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
           </button>
         </div>
 
+        <p role="status" aria-live="polite" className="sr-only">
+          {announcement}
+        </p>
+
         <div className="max-h-[min(60vh,32rem)] flex-1 overflow-y-auto overscroll-contain px-2 py-3 sm:max-h-[60vh]">
-          <ul id={listId} role="listbox" aria-label={query ? "Résultats" : "Raccourcis"} className="flex flex-col">
-            {!query.trim() &&
+          <ul
+            id={listId}
+            role="listbox"
+            aria-label={trimmed ? "Résultats" : "Raccourcis"}
+            className={cx("flex flex-col transition-opacity", loading && results.length > 0 && "opacity-60")}
+          >
+            {!trimmed &&
               SEARCH_SHORTCUTS.map((s, i) => (
                 <Option
                   key={s.id}
@@ -161,8 +246,8 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
                 />
               ))}
 
-            {query.trim() &&
-              groups.map(([kind, entries]) => (
+            {trimmed &&
+              groups.map(({ kind, entries }) => (
                 <li key={kind} role="presentation" className="mt-2 first:mt-0">
                   <p className="px-3 pb-1.5 pt-2 type-label text-subtle" aria-hidden>
                     {SEARCH_KIND_LABEL[kind]}
@@ -170,14 +255,14 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
                   <ul role="group" aria-label={SEARCH_KIND_LABEL[kind]}>
                     {entries.map(({ entry: r, index: i }) => (
                       <Option
-                        key={r.id}
-                        id={optionId(r.id)}
+                        key={`${r.kind}-${r.id}`}
+                        id={optionId(`${r.kind}-${r.id}`)}
                         active={active === i}
                         onHover={() => setActive(i)}
                         onPick={() => go(r.href)}
                         icon={KIND_ICON[r.kind]}
                         title={r.title}
-                        context={r.context}
+                        context={r.status ? `${r.status.label} · ${r.context}` : r.context}
                         accent={r.accent}
                       />
                     ))}
@@ -185,14 +270,14 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
                 </li>
               ))}
 
-            {query.trim() && pages.length > 0 && (
+            {trimmed && pages.length > 0 && (
               <li role="presentation" className="mt-2 first:mt-0">
                 <p className="px-3 pb-1.5 pt-2 type-label text-subtle" aria-hidden>
                   Pages
                 </p>
                 <ul role="group" aria-label="Pages">
                   {pages.map((p, j) => {
-                    const i = results.length + j;
+                    const i = resultCount + j;
                     return (
                       <Option
                         key={p.id}
@@ -212,11 +297,21 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
             )}
           </ul>
 
-          {query.trim() && options.length === 0 && (
+          {trimmed.length === 1 && (
+            <p className="px-3 py-8 text-muted">Encore une lettre : la recherche commence à deux caractères.</p>
+          )}
+          {failed && options.length === 0 && (
             <div className="px-3 py-8">
-              <p className="type-card">Rien pour « {query.trim()} ».</p>
+              <p className="type-card">La recherche ne répond pas.</p>
+              <p className="mt-2 text-muted">Réessaie dans un instant, ou ouvre la page de recherche.</p>
+            </div>
+          )}
+          {settled && options.length === 0 && (
+            <div className="px-3 py-8">
+              <p className="type-card break-words">Rien pour « {trimmed} ».</p>
               <p className="mt-2 text-muted">
-                Essaie le nom d&apos;un événement (« WEI », « Boo Party »), « carte » ou « VSS ».
+                Essaie un mot plus court, le nom d&apos;une asso, « carte » ou « VSS ». Les accents et les majuscules ne
+                comptent pas.
               </p>
             </div>
           )}
@@ -224,9 +319,9 @@ export function CommandSearch({ index }: { index: SearchEntry[] }) {
 
         <div className="hidden items-center justify-between gap-4 border-t border-line px-5 py-3 type-meta text-subtle sm:flex">
           <span>↑ ↓ pour naviguer · Entrée pour ouvrir · Échap pour fermer</span>
-          {query.trim() && (
-            <a href={`${routes.search}?q=${encodeURIComponent(query.trim())}`} className="text-fg hover:text-accent-text">
-              Tous les résultats
+          {trimmed.length >= 2 && (
+            <a href={allHref} className="text-fg hover:text-accent-text">
+              {settled && total > resultCount ? `Tous les résultats (${total})` : "Tous les résultats"}
             </a>
           )}
         </div>
@@ -264,10 +359,7 @@ function Option({
       data-accent={accent}
       onMouseMove={onHover}
       onClick={onPick}
-      className={cx(
-        "flex cursor-pointer items-center gap-3.5 rounded-sm px-3 py-2.5",
-        active ? "bg-fg/8" : "",
-      )}
+      className={cx("flex cursor-pointer items-center gap-3.5 rounded-sm px-3 py-2.5", active ? "bg-fg/8" : "")}
     >
       <span
         aria-hidden

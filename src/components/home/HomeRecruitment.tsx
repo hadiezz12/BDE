@@ -17,6 +17,7 @@ export function HomeRecruitment({
   applications,
   index,
   max = 3,
+  featuredIds = new Set<string>(),
 }: {
   /** Open campaigns, already sorted by urgency (getOpenCampaigns()). */
   campaigns: CampaignItem[];
@@ -24,9 +25,13 @@ export function HomeRecruitment({
   applications: ApplicationItem[];
   index?: string;
   max?: number;
+  /** Put "à la une" by the BDE: shown first, and marked so. */
+  featuredIds?: Set<string>;
 }) {
   const roles = campaigns.reduce((n, c) => n + openPositions(c).length, 0);
-  const shown = campaigns.slice(0, max);
+  // The BDE's choice first (still open: the read checks it), then the urgency order.
+  const ordered = [...campaigns.filter((c) => featuredIds.has(c.id)), ...campaigns.filter((c) => !featuredIds.has(c.id))];
+  const shown = ordered.slice(0, max);
   const more = campaigns.length - shown.length;
   const noteFor = (c: CampaignItem) => personalNote(applications, c.id);
 
@@ -50,7 +55,7 @@ export function HomeRecruitment({
       {shown.length > 0 ? (
         <div className="mt-6 border-b border-line-strong">
           {shown.map((c) => (
-            <CampaignRow key={c.id} campaign={c} note={noteFor(c)} />
+            <CampaignRow key={c.id} campaign={c} note={noteFor(c)} featured={featuredIds.has(c.id)} />
           ))}
         </div>
       ) : (

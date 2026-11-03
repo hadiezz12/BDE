@@ -4,9 +4,12 @@ import type { PostItem as Post } from "@/lib/types";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { siteUrl } from "@/lib/site-url";
-import { getAssociationPosts, getLatestPosts, getPostPage } from "@/lib/data/posts";
+import { getLatestPosts, getPostPage, getRelatedPosts } from "@/lib/data/posts";
 import { getAssociationById } from "@/lib/data/associations";
 import { getSession } from "@/lib/session";
+import { withNext } from "@/lib/auth/next-path";
+import { isSaved } from "@/lib/saved/data";
+import { SaveButton } from "@/components/saved/SaveButton";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { ArticleView } from "@/components/campus/ArticleView";
 import { PostItem } from "@/components/campus/PostItem";
@@ -68,9 +71,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
  * unknown is a plain 404 that says nothing about why. Archived posts stay
  * readable here, with a banner.
  *
- * After the text: share, and report for signed-in students. Then two short
- * lists to keep reading: the association's other posts (its pinned ones
- * first) and the latest from the other associations.
+ * After the text: save, share, and report for signed-in students. Then two
+ * short lists to keep reading: related articles by real links (the same
+ * event or recruitment, the same association, the same rubrique) and the
+ * latest from the other associations.
  */
 export default async function CampusPostPage({ params }: { params: Params }) {
   const { slug } = await params;
@@ -80,19 +84,20 @@ export default async function CampusPostPage({ params }: { params: Params }) {
   const post = page.post;
 
   // The article never fails because a side list could not load.
-  const [association, session, sameAssociation, latest] = await Promise.all([
+  const [association, session, related, latest, saved] = await Promise.all([
     getAssociationById(post.association.id).catch(() => null),
     getSession(),
-    getAssociationPosts(post.association.slug, 4).catch(() => [] as Post[]),
-    // 30, like the search index of the site header: one read for both.
-    getLatestPosts(30).catch(() => [] as Post[]),
+    getRelatedPosts("post", post.id, 3).catch(() => [] as Post[]),
+    getLatestPosts(12).catch(() => [] as Post[]),
+    isSaved("post", post.id),
   ]);
   // The student's own relation to the event the article is about (none for a visitor).
   const mine = post.event && session.user ? personalStates(await getMyEvents()).get(post.event.id) : undefined;
   const attendance: EventAttendance = mine?.registered ? "inscrit" : mine?.waitlisted ? "attente" : mine?.saved ? "favori" : null;
 
-  const more = sameAssociation.filter((p) => p.id !== post.id).slice(0, 3);
-  const elsewhere = latest.filter((p) => p.association.id !== post.association.id).slice(0, 3);
+  const more = related;
+  const shown = new Set([post.id, ...more.map((p) => p.id)]);
+  const elsewhere = latest.filter((p) => p.association.id !== post.association.id && !shown.has(p.id)).slice(0, 3);
   const path = routes.post(post.slug);
 
   return (
@@ -104,6 +109,13 @@ export default async function CampusPostPage({ params }: { params: Params }) {
         campaign={post.campaign ? <CampaignCard campaign={post.campaign} headingLevel={3} className="max-w-md" /> : undefined}
         actions={
           <>
+            <SaveButton
+              kind="post"
+              id={post.id}
+              initialSaved={saved}
+              signedIn={session.user !== null}
+              loginHref={withNext(routes.login, path)}
+            />
             <ShareArticle title={post.title} path={path} />
             <ReportPost
               postId={post.id}
@@ -120,9 +132,9 @@ export default async function CampusPostPage({ params }: { params: Params }) {
             <section aria-labelledby="meme-asso" className={elsewhere.length > 0 ? "lg:col-span-6" : "lg:col-span-12"}>
               <SectionHeader
                 id="meme-asso"
-                kicker={post.association.name}
-                title="Même asso, autres papiers"
-                action={{ href: routes.campusFor(post.association.slug), label: "Tous ses articles" }}
+                kicker="Même sujet, même asso ou même rubrique"
+                title="À lire aussi"
+                action={{ href: routes.campusFor(post.association.slug), label: `Tous les articles de ${post.association.shortName ?? post.association.name}` }}
               />
               {elsewhere.length > 0 ? <StoryList posts={more} /> : <StoryColumns posts={more} />}
             </section>

@@ -50,6 +50,8 @@ export const routes = {
 
   account: "/account",
   accountEvents: "/account/events",
+  /** Saved associations, articles, events and recruitment (?type= one kind). */
+  accountSaved: "/account/saved",
   accountApplications: "/account/applications",
   accountApplication: (id: string) => `/account/applications/${id}`,
   /** Upload (POST) a document to one's own draft; download (GET) one's own document. */

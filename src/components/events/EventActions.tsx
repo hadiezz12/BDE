@@ -1,22 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  createContext,
-  startTransition,
-  use,
-  useActionState,
-  useOptimistic,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  cancelMyRegistration,
-  registerForEvent,
-  setEventBookmark,
-  type RegistrationActionState,
-} from "@/app/actions/events";
-import type { GovernanceActionState } from "@/app/actions/governance";
+import { createContext, startTransition, use, useActionState, useState, type ReactNode } from "react";
+import { cancelMyRegistration, registerForEvent, type RegistrationActionState } from "@/app/actions/events";
+import { saveItem, type SaveActionState } from "@/app/actions/saved";
 import { routes } from "@/lib/routes";
 import { cx } from "@/lib/cx";
 import { Button, type ButtonSize, type ButtonVariant } from "@/components/ui/Button";
@@ -35,6 +22,8 @@ import { Icon } from "@/components/ui/Icon";
 interface EventActionsState {
   eventId: string;
   saved: boolean;
+  /** A save is on its way: the button waits for the database. */
+  saving: boolean;
   toggleSaved: () => void;
   register: (form: FormData) => void;
   registerState: RegistrationActionState;
@@ -42,7 +31,7 @@ interface EventActionsState {
   cancel: (form: FormData) => void;
   cancelState: RegistrationActionState;
   cancelling: boolean;
-  bookmarkState: GovernanceActionState;
+  bookmarkState: SaveActionState;
 }
 
 const EventActionsContext = createContext<EventActionsState | null>(null);
@@ -65,20 +54,21 @@ export function EventActionsProvider({
 }) {
   const [registerState, register, registering] = useActionState(registerForEvent, { status: "idle" });
   const [cancelState, cancel, cancelling] = useActionState(cancelMyRegistration, { status: "idle" });
-  const [bookmarkState, bookmark] = useActionState(setEventBookmark, { status: "idle" });
-  const [saved, setSavedOptimistic] = useOptimistic(initialSaved);
+  const [bookmarkState, bookmark, saving] = useActionState(saveItem, { status: "idle" });
+  // What the database last confirmed (never assumed before it answered).
+  const saved = bookmarkState.status === "done" && bookmarkState.saved !== undefined ? bookmarkState.saved : initialSaved;
 
   const value: EventActionsState = {
     eventId,
     saved,
+    saving,
     toggleSaved: () => {
+      if (saving) return;
       const form = new FormData();
-      form.set("event_id", eventId);
+      form.set("kind", "event");
+      form.set("id", eventId);
       form.set("saved", saved ? "0" : "1");
-      startTransition(() => {
-        setSavedOptimistic(!saved);
-        bookmark(form);
-      });
+      startTransition(() => bookmark(form));
     },
     register,
     registerState,
@@ -190,7 +180,7 @@ export function CancelRegistration({ waitlisted, className }: { waitlisted: bool
  * square icon-only version for the phone bar.
  */
 export function SaveToggle({ compact, className }: { compact?: boolean; className?: string }) {
-  const { saved, toggleSaved } = useEventActions();
+  const { saved, saving, toggleSaved } = useEventActions();
   const icon = <Icon name={saved ? "bookmark-filled" : "bookmark"} size={compact ? 20 : 18} />;
 
   if (compact) {
@@ -198,6 +188,7 @@ export function SaveToggle({ compact, className }: { compact?: boolean; classNam
       <button
         type="button"
         aria-pressed={saved}
+        aria-busy={saving || undefined}
         aria-label="Enregistrer"
         onClick={toggleSaved}
         className={cx(
@@ -215,6 +206,7 @@ export function SaveToggle({ compact, className }: { compact?: boolean; classNam
     <button
       type="button"
       aria-pressed={saved}
+      aria-busy={saving || undefined}
       onClick={toggleSaved}
       className={cx(
         "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-sm border-2 px-5 type-button transition-colors duration-150",
