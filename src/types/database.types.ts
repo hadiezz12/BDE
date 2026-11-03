@@ -4999,7 +4999,7 @@ export type Database = {
           organization_id?: string | null
           position_id?: string | null
           post_id?: string | null
-          target_id?: string | null
+          target_id?: never
           user_id: string
         }
         Update: {
@@ -5011,7 +5011,7 @@ export type Database = {
           organization_id?: string | null
           position_id?: string | null
           post_id?: string | null
-          target_id?: string | null
+          target_id?: never
           user_id?: string
         }
         Relationships: [
