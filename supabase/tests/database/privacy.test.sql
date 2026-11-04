@@ -15,7 +15,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(168);
+select plan(171);
 
 create temporary table fx (k text primary key, id uuid, v text) on commit drop;
 grant select, insert, update on fx to anon, authenticated, service_role;
@@ -380,6 +380,35 @@ set local role authenticated;
 select pg_temp.as_user('nina', 'aal2');
 select throws_ok($$ select public.reconcile_privacy_erasures() $$, 'P0001', 'insufficient_permission', 'a student cannot trigger it');
 reset role;
+
+-- Files a Storage restore brings back with no row pointing to them are queued for deletion; referenced ones are not.
+insert into fx (k, v) values ('orphan_doc', 'applications/' || gen_random_uuid() || '/' || gen_random_uuid()),
+                             ('kept_doc', 'applications/' || pg_temp.fid('app5') || '/' || gen_random_uuid()),
+                             ('orphan_avatar', gen_random_uuid() || '/' || gen_random_uuid() || '.webp'),
+                             ('kept_avatar', pg_temp.fid('s3') || '/' || gen_random_uuid() || '.webp');
+insert into public.application_documents (application_id, question_id, object_path, file_name, mime_type, size_bytes, status, confirmed_at)
+values (pg_temp.fid('app5'), 'cv', (select v from fx where k = 'kept_doc'), 'cv-garde.pdf', 'application/pdf', 1000, 'ready', now());
+update public.profiles set avatar_path = (select v from fx where k = 'kept_avatar') where id = pg_temp.fid('s3');
+do $$
+declare
+  v_key text;
+begin
+  foreach v_key in array array['orphan_doc', 'kept_doc', 'orphan_avatar', 'kept_avatar'] loop
+    if exists (select 1 from information_schema.columns where table_schema = 'storage' and table_name = 'objects' and column_name = 'created_at') then
+      execute 'insert into storage.objects (bucket_id, name, created_at) values ($1, $2, now() - interval ''2 days'')'
+        using case when v_key like '%doc' then 'recruitment-documents' else 'avatars' end, (select v from fx where fx.k = v_key);
+    else
+      execute 'insert into storage.objects (bucket_id, name) values ($1, $2)'
+        using case when v_key like '%doc' then 'recruitment-documents' else 'avatars' end, (select v from fx where fx.k = v_key);
+    end if;
+  end loop;
+end $$;
+select ok((private.queue_storage_orphans() ->> 'documents')::integer >= 1, 'the restored files nobody references are found');
+select ok(exists (select 1 from private.storage_cleanup_queue where object_path = (select v from fx where k = 'orphan_doc') and reason = 'orphan_after_restore')
+          and exists (select 1 from private.storage_cleanup_queue where object_path = (select v from fx where k = 'orphan_avatar')),
+  'and queued for deletion (a CV and a photo)');
+select ok(not exists (select 1 from private.storage_cleanup_queue where object_path in ((select v from fx where k = 'kept_doc'), (select v from fx where k = 'kept_avatar'))),
+  'files still in use are left alone');
 
 -- =============================================================================
 -- 6. Retention: decisions with their reference, holds, append-only logs (§107, §60)

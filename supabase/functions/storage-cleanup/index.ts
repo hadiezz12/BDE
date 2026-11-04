@@ -1,8 +1,9 @@
 /**
  * storage-cleanup — deletes from Storage the files the database let go:
  * application documents replaced, removed, purged with their application
- * (by the retention rules or an erasure), or reserved and never confirmed.
- * A database trigger queues them in private.storage_cleanup_queue.
+ * (by the retention rules or an erasure), or reserved and never confirmed,
+ * and the profile photo of an erased account (Phase 14). A database
+ * trigger or the erasure queues them in private.storage_cleanup_queue.
  *
  * Woken by the database when files wait (private.kick_storage_cleanup,
  * job storage-cleanup: pg_cron → pg_net), with `Authorization: Bearer <token>`
@@ -22,8 +23,11 @@
 
 import postgres from "npm:postgres@3.4.5";
 
-const BUCKETS = new Set(["recruitment-documents"]);
-const PATH = /^applications\/[0-9a-f-]{36}\/[0-9a-f-]{36}$/;
+/** The only buckets it may delete from, each with the only path shape it accepts there. */
+const PATHS: Record<string, RegExp> = {
+  "recruitment-documents": /^applications\/[0-9a-f-]{36}\/[0-9a-f-]{36}$/,
+  avatars: /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(webp|png|jpg)$/,
+};
 
 const dbUrl = Deno.env.get("SUPABASE_DB_URL");
 const sql = dbUrl ? postgres(dbUrl, { prepare: false, max: 2, idle_timeout: 20, connect_timeout: 10 }) : null;
@@ -60,7 +64,8 @@ interface Claimed {
 }
 
 async function remove(url: string, headers: Record<string, string>, item: Claimed): Promise<string | null> {
-  if (!BUCKETS.has(item.bucket) || !PATH.test(item.path)) return "unexpected_path";
+  const pattern = Object.hasOwn(PATHS, item.bucket) ? PATHS[item.bucket] : null;
+  if (!pattern || !pattern.test(item.path)) return "unexpected_path";
   try {
     const response = await fetch(`${url}/storage/v1/object/${encodeURIComponent(item.bucket)}`, {
       method: "DELETE",
