@@ -33,6 +33,8 @@ export async function proxy(request: NextRequest) {
     url.search = target.slice(routes.login.length);
     const redirect = NextResponse.redirect(url);
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    // The way to the sign-in page is personal too: never kept by a shared cache (Phase 15).
+    redirect.headers.set("Cache-Control", "private, no-store");
     return redirect;
   }
 
