@@ -1,0 +1,192 @@
+import AxeBuilder from "@axe-core/playwright";
+import { devices, expect, test, type Page } from "@playwright/test";
+
+/**
+ * Phase 15 — accessibility on the production build with the seed data.
+ *
+ * Automated: axe-core with the WCAG 2.0, 2.1 and 2.2 A/AA rules on public,
+ * phone, light-theme, candidate and officer pages (form builder and editor
+ * included); a page passes only with no violation at all. Automated rules
+ * cover part of WCAG only (docs/qa/accessibility.md lists what was checked by
+ * hand). Then what axe cannot see: the skip link, the search dialog with the
+ * keyboard alone, reflow at 320 px, reduced motion. Fictional seed accounts.
+ */
+
+const SEED_PASSWORD = "seed-local-password-2026";
+const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+test.describe.configure({ mode: "serial" });
+
+async function signInAs(page: Page, local: string) {
+  await page.goto("/login");
+  await page.getByLabel("Adresse du compte test").fill(`${local}@comptes.example.test`);
+  await page.getByLabel("Mot de passe du compte test").fill(SEED_PASSWORD);
+  await page.getByRole("button", { name: "Entrer avec le compte test" }).click();
+  await expect(page).toHaveURL(/\/account$/);
+}
+
+async function expectAccessible(page: Page, path: string) {
+  await page.goto(path);
+  await page.waitForLoadState("networkidle");
+  // Mail previews are sandboxed frames without scripts: axe cannot enter them (their words are checked by the mail tests).
+  const { violations } = await new AxeBuilder({ page }).withTags(TAGS).exclude("iframe[sandbox]").analyze();
+  const found = violations.map((v) => `${v.id} [${v.impact}] ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`);
+  expect(found, `accessibility violations on ${path}`).toEqual([]);
+}
+
+/** The first link under a prefix that ends with an id (a campaign, an event, a post). */
+async function firstIdLink(page: Page, prefix: string) {
+  return page.locator(`a[href^="${prefix}"]`).evaluateAll(
+    (as, pre) =>
+      as
+        .map((a) => a.getAttribute("href") ?? "")
+        .find((h) => h.startsWith(pre) && /^[0-9a-f-]{36}$/.test(h.slice(pre.length))),
+    prefix,
+  );
+}
+
+const PUBLIC = [
+  "/",
+  "/associations",
+  "/associations/exemple-finance",
+  "/events",
+  "/events/calendrier",
+  "/recruitment",
+  "/campus",
+  "/search?q=finance",
+  "/privacy",
+  "/cookies",
+  "/legal",
+  "/vss",
+  "/login",
+];
+
+test("public pages have no automated accessibility violation", async ({ page }) => {
+  for (const path of PUBLIC) await expectAccessible(page, path);
+});
+
+test("in the light theme too", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "vpc-theme", value: "light", url: baseURL! }]);
+  for (const path of ["/", "/associations/exemple-finance", "/events", "/recruitment", "/login"]) await expectAccessible(page, path);
+});
+
+test.describe("on a phone", () => {
+  const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch } = devices["Pixel 7"];
+  test.use({ viewport, userAgent, deviceScaleFactor, isMobile, hasTouch });
+  test("the main public pages", async ({ page }) => {
+    for (const path of ["/", "/events", "/recruitment", "/associations/exemple-finance", "/login"]) await expectAccessible(page, path);
+  });
+});
+
+test("a student's own pages", async ({ page }) => {
+  await signInAs(page, "nina");
+  for (const path of [
+    "/account",
+    "/account/profile",
+    "/account/events",
+    "/account/applications",
+    "/account/saved",
+    "/account/notifications",
+    "/account/notifications/reglages",
+    "/account/privacy",
+    "/account/security",
+  ]) {
+    await expectAccessible(page, path);
+  }
+  await page.goto("/account/applications");
+  const app = await firstIdLink(page, "/account/applications/");
+  if (app) await expectAccessible(page, app);
+});
+
+test("an association president's workspace, form builder and editor included", async ({ page }) => {
+  await signInAs(page, "julie.finance");
+  for (const path of [
+    "/manage",
+    "/manage/exemple-finance",
+    "/manage/exemple-finance/team",
+    "/manage/exemple-finance/content",
+    "/manage/exemple-finance/events",
+    "/manage/exemple-finance/recruitment",
+    "/manage/exemple-finance/analytics",
+    "/manage/exemple-finance/settings",
+    "/manage/exemple-finance/communication",
+  ]) {
+    await expectAccessible(page, path);
+  }
+  await page.goto("/manage/exemple-finance/recruitment");
+  const campaign = await firstIdLink(page, "/manage/exemple-finance/recruitment/");
+  expect(campaign, "a Finance campaign").toBeTruthy();
+  for (const step of ["", "?etape=postes", "?etape=formulaire", "?etape=publication"]) await expectAccessible(page, campaign + step);
+  await page.goto("/manage/exemple-finance/events");
+  const event = await firstIdLink(page, "/manage/exemple-finance/events/");
+  expect(event, "a Finance event").toBeTruthy();
+  for (const step of ["", "?etape=lieu", "?etape=inscriptions"]) await expectAccessible(page, event + step);
+  await page.goto("/manage/exemple-finance/content");
+  const post = await firstIdLink(page, "/manage/exemple-finance/content/");
+  expect(post, "a Finance post").toBeTruthy();
+  await expectAccessible(page, post!);
+});
+
+test("the keyboard alone: skip link, then the search dialog opens, traps and gives focus back", async ({ page }) => {
+  await page.goto("/events");
+  await page.keyboard.press("Tab");
+  const skip = page.getByRole("link", { name: "Aller au contenu" });
+  await expect(skip).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/#contenu$/);
+
+  const opener = page.getByRole("button", { name: /Rechercher/ }).first();
+  await opener.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Recherche" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("combobox")).toBeFocused();
+  await page.keyboard.type("finance");
+  // The page behind is inert: tabbing never lands on it (focus may leave to the browser's own
+  // interface, which WCAG 2.1.2 requires to stay possible).
+  for (let i = 0; i < 12; i += 1) {
+    await page.keyboard.press("Tab");
+    const inside = await dialog.evaluate((d) => d.contains(document.activeElement) || document.activeElement === document.body);
+    expect(inside, "focus never reaches the page behind the dialog").toBe(true);
+  }
+  // As in any search field, a first Escape empties it; the next one closes the dialog.
+  await dialog.getByRole("combobox").focus();
+  await page.keyboard.press("Escape");
+  await expect(dialog.getByRole("combobox")).toHaveValue("");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test("content reflows at 320 px without sideways scrolling (WCAG 1.4.10)", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 320, height: 640 } });
+  const page = await context.newPage();
+  for (const path of ["/", "/events", "/recruitment", "/associations/exemple-finance", "/campus", "/login", "/privacy"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, `horizontal overflow on ${path}`).toBeLessThanOrEqual(1);
+  }
+  await context.close();
+});
+
+test("reduced motion stops the moving strips, and they stay reachable", async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
+  await page.goto("/");
+  const tracks = page.locator(".marquee-track");
+  const n = await tracks.count();
+  expect(n).toBeGreaterThan(0);
+  for (let i = 0; i < n; i += 1) {
+    const style = await tracks.nth(i).evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { duration: parseFloat(cs.animationDuration), count: cs.animationIterationCount };
+    });
+    expect(style.duration).toBeLessThan(0.01);
+    expect(style.count).toBe("1");
+  }
+  // Mail previews are sandboxed frames without scripts: axe cannot enter them (their words are checked by the mail tests).
+  const { violations } = await new AxeBuilder({ page }).withTags(TAGS).exclude("iframe[sandbox]").analyze();
+  expect(violations.map((v) => v.id)).toEqual([]);
+  await context.close();
+});

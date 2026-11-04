@@ -35,7 +35,7 @@ export function SiteHeader({
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg">
       <div className="wrap flex h-[var(--header-h)] items-center gap-2 xs:gap-3">
-        <Link href={routes.home} className="group flex shrink-0 items-center gap-2 xs:gap-2.5" aria-label="Very Pink Club — accueil">
+        <Link href={routes.home} className="group flex shrink-0 items-center gap-2 xs:gap-2.5">
           <BrandMark
             variant="panther"
             height={38}
@@ -43,13 +43,14 @@ export function SiteHeader({
             priority
             className="transition-transform duration-300 group-hover:-rotate-6"
           />
-          <span aria-hidden className="flex flex-col leading-none">
+          <span className="flex flex-col leading-none max-[22rem]:sr-only">
             <span className="text-[0.82rem] font-black uppercase tracking-[0.03em] [font-stretch:110%] xs:text-[0.92rem] xs:[font-stretch:125%] sm:text-[1rem]">
               Very Pink Club
             </span>
             <span className="mt-1.5 font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em] text-subtle">
               BDE · GEM Paris
             </span>
+            <span className="sr-only">, accueil</span>
           </span>
         </Link>
 

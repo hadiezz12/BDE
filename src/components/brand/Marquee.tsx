@@ -35,6 +35,8 @@ export function Marquee({
   return (
     <section
       aria-label={label}
+      // Focusable: with reduced motion the strip scrolls sideways (WCAG 2.1.1); otherwise focus pauses it (2.2.2).
+      tabIndex={0}
       className={cx("group overflow-hidden motion-reduce:overflow-x-auto", className)}
     >
       <div

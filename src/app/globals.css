@@ -147,7 +147,8 @@
   --bg-inverse: #141216;
   --fg: #141216;
   --fg-muted: #57505a;
-  --fg-subtle: #6f6872;
+  /* Phase 15: 4.69:1 on --bg-sunken (was 4.42, below WCAG 1.4.3). */
+  --fg-subtle: #6b646e;
   --fg-inverse: #f7f1f4;
   --line: #e4dfd8;
   --line-strong: #cbc3ba;

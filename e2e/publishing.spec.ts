@@ -173,7 +173,7 @@ test("§104 author: Lucas writes an article with a cover, finds his draft again 
   await text.click();
   await lucas.keyboard.type(PARAGRAPH);
   await lucas.keyboard.press("Enter");
-  await tools.getByRole("button", { name: "Intertitre", exact: true }).click();
+  await tools.getByRole("button", { name: "H2, Intertitre", exact: true }).click();
   await lucas.keyboard.type(SUBHEAD);
   await lucas.keyboard.press("Enter");
   await lucas.keyboard.type("Puis un ");

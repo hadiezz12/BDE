@@ -171,7 +171,7 @@ export function Toolbar({
                 }}
                 type="button"
                 tabIndex={i === current ? 0 : -1}
-                aria-label={tool.label}
+                aria-label={tool.text ? `${tool.text}, ${tool.label}` : tool.label}
                 aria-pressed={tool.pressed}
                 aria-disabled={tool.disabled || undefined}
                 aria-keyshortcuts={tool.shortcut ? `${apple ? "Meta" : "Control"}+${tool.shortcut}` : undefined}

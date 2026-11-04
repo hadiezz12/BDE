@@ -13,7 +13,7 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "assoc" | "inver
 export type ButtonSize = "sm" | "md" | "lg";
 
 const base =
-  "group/btn relative inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border-2 type-button select-none " +
+  "group/btn relative inline-flex max-w-full shrink-0 items-center justify-center gap-2 rounded-sm border-2 text-center type-button select-none " +
   "transition-[transform,box-shadow,background-color,border-color,color] duration-150 ease-out " +
   "disabled:pointer-events-none disabled:opacity-45 aria-disabled:pointer-events-none aria-disabled:opacity-45";
 

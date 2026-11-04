@@ -36,7 +36,7 @@ export function SectionHeader({
   return (
     <header className={cx("flex flex-col gap-4", rule && "border-t-2 border-fg pt-3", className)}>
       {(kicker || index || action) && (
-        <div className="flex items-baseline justify-between gap-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
           <p className="flex items-baseline gap-3 type-label text-muted">
             {index && <span className="text-accent-text">{index}</span>}
             {kicker}

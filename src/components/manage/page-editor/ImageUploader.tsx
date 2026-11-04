@@ -153,7 +153,10 @@ export function ImageUploader({
           type="file"
           accept={ACCEPT}
           className="sr-only"
-          aria-describedby={statusId}
+          // Opened by the button below, like the other uploaders: one keyboard stop, the button is what is
+          // announced, and the status below is read out as the upload goes (Phase 15, WCAG 4.1.2).
+          tabIndex={-1}
+          aria-hidden
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) send(file);
