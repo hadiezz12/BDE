@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { routes } from "@/lib/routes";
 import { formatDateLong, formatDayShort, formatTime } from "@/lib/format";
-import type { PrivacyQueue } from "@/lib/privacy/data";
+import type { ErasureLedgerStatus, PrivacyQueue } from "@/lib/privacy/data";
 import {
   AUTHORITY_DECISION,
   DATA_CATEGORIES,
@@ -16,6 +16,7 @@ import {
 import { DRAFT_VERSION } from "@/lib/privacy/notice";
 import {
   assessPrivacyIncident,
+  importErasureLedger,
   openPrivacyIncident,
   placeRetentionHold,
   reconcileErasures,
@@ -25,6 +26,8 @@ import {
 } from "@/app/actions/privacy";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { ManageSection } from "@/components/manage/ManagePageHeader";
 import { ActionForm } from "@/components/manage/governance/ActionForm";
 import { Disclosure } from "@/components/manage/governance/Disclosure";
@@ -384,13 +387,48 @@ export function NoticeApproval({ current }: { current: { version: string; effect
   );
 }
 
-export function ReconcileSection() {
+export function ReconcileSection({ ledger }: { ledger: ErasureLedgerStatus | null }) {
   return (
     <ManageSection
-      title="Après une restauration"
-      description="Une sauvegarde restaurée peut ramener des données effacées depuis. Avant de rouvrir le site, refais ces effacements : le site les retrouve avec une clé à sens unique, sans garder ce qui a été effacé."
+      title="Registre des effacements et restaurations"
+      description="Une sauvegarde restaurée ramène les données effacées depuis, et aussi un registre qui ne les connaît pas. C'est pourquoi une copie du registre est gardée hors du site : des clés à sens unique et des dates, rien de ce qui a été effacé."
     >
-      <ActionForm action={reconcileErasures} submitLabel="Refaire les effacements" variant="secondary" size="sm" />
+      <div className="flex flex-col gap-6">
+        {ledger && (
+          <div className="flex flex-col gap-2">
+            <p className="type-small text-muted">
+              {ledger.entries === 0 ? "Aucun effacement pour l'instant." : `${ledger.entries} effacement(s) au registre`}
+              {ledger.last_erasure_at && ` · dernier le ${formatDateLong(ledger.last_erasure_at)}`}
+              {ledger.last_export_at ? ` · dernière copie le ${formatDateLong(ledger.last_export_at)}` : ledger.entries > 0 ? " · aucune copie téléchargée" : ""}
+            </p>
+            {ledger.copy_outdated && (
+              <p className="type-small flex items-start gap-2 text-warn">
+                <Icon name="alert" size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  La copie hors du site est plus ancienne que le dernier effacement : télécharge-la et range-la avec les copies des
+                  fichiers (personne responsable technique).
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+        <form method="post" action={routes.managePrivacyLedger}>
+          <Button type="submit" icon="file" variant="secondary" size="sm">
+            Télécharger une copie du registre (JSON)
+          </Button>
+        </form>
+        <div className="flex flex-col gap-3">
+          <h3 className="type-label">Après une restauration, dans cet ordre</h3>
+          <ActionForm action={importErasureLedger} submitLabel="1. Réimporter la copie du registre" variant="secondary" size="sm" resetOnDone>
+            <Field label="Dernière copie du registre (fichier JSON)">
+              {({ id, describedBy }) => (
+                <Input id={id} aria-describedby={describedBy} name="ledger" type="file" accept="application/json,.json" required />
+              )}
+            </Field>
+          </ActionForm>
+          <ActionForm action={reconcileErasures} submitLabel="2. Refaire les effacements" variant="secondary" size="sm" />
+        </div>
+      </div>
     </ManageSection>
   );
 }

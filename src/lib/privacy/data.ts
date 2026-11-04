@@ -182,6 +182,16 @@ export const getMyPrivacyOverview = () => read<MyPrivacyOverview>("my_privacy_ov
 
 export const getPrivacyQueue = () => read<PrivacyQueue>("privacy_requests_queue", (s) => s.rpc("privacy_requests_queue"));
 
+/** The erasure ledger's state: whether the copy kept outside the database is behind (Phase 15, D1). */
+export type ErasureLedgerStatus = {
+  entries: number;
+  last_erasure_at: string | null;
+  last_export_at: string | null;
+  copy_outdated: boolean;
+};
+
+export const getErasureLedgerStatus = () => read<ErasureLedgerStatus>("erasure_ledger_status", (s) => s.rpc("erasure_ledger_status"));
+
 export const getPrivacyRequest = (id: string) =>
   read<PrivacyRequestDetail>("privacy_request_detail", (s) => s.rpc("privacy_request_detail", { p_request_id: id }));
 

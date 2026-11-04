@@ -5858,6 +5858,7 @@ export type Database = {
         Args: { p_assignment_id: string; p_reason: string }
         Returns: undefined
       }
+      erasure_ledger_status: { Args: never; Returns: Json }
       event_attendees: {
         Args: {
           p_event_id: string
@@ -5879,6 +5880,7 @@ export type Database = {
         }
         Returns: Json
       }
+      export_erasure_ledger: { Args: never; Returns: Json }
       export_event_attendees: { Args: { p_event_id: string }; Returns: Json }
       extend_clarification: {
         Args: {
@@ -5919,6 +5921,7 @@ export type Database = {
         Args: { p_campaign_id: string; p_reason: string }
         Returns: undefined
       }
+      import_erasure_ledger: { Args: { p_document: Json }; Returns: Json }
       invite_member: {
         Args: {
           p_email: string

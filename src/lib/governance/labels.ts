@@ -301,6 +301,8 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   privacy_export_prepared: "a préparé l'export des données d'une personne (demande d'accès)",
   privacy_erasure_executed: "a effacé les données d'une personne (demande d'effacement)",
   privacy_erasures_reapplied: "a effacé à nouveau des données revenues avec une restauration",
+  erasure_ledger_exported: "a téléchargé une copie du registre des effacements",
+  erasure_ledger_imported: "a réimporté une copie du registre des effacements",
   retention_hold_placed: "a placé une conservation exceptionnelle",
   retention_hold_released: "a levé une conservation exceptionnelle",
   privacy_incident_opened: "a ouvert un incident de données personnelles",

@@ -12,7 +12,7 @@ import { ActionForm } from "@/components/manage/governance/ActionForm";
 import { Field, Input } from "@/components/ui/Field";
 import { lookupResponsibilities } from "@/app/actions/continuity";
 import { PrivacyDesk } from "@/components/manage/review/PrivacyDesk";
-import { getPrivacyQueue, getPublishedNotice } from "@/lib/privacy/data";
+import { getErasureLedgerStatus, getPrivacyQueue, getPublishedNotice } from "@/lib/privacy/data";
 import { governanceErrorMessage } from "@/lib/governance/messages";
 import { HoldsSection, IncidentsSection, NoticeApproval, ReconcileSection, RequestQueue } from "@/components/manage/privacy/PrivacyOffice";
 
@@ -56,7 +56,9 @@ export default async function PrivacyPage() {
     );
   }
   const aal2 = ctx.aal === "aal2";
-  const [queue, notice] = aal2 ? await Promise.all([getPrivacyQueue(), getPublishedNotice()]) : [null, null];
+  const [queue, notice, ledger] = aal2
+    ? await Promise.all([getPrivacyQueue(), getPublishedNotice(), getErasureLedgerStatus()])
+    : [null, null, null];
   return (
     <ManageMain>
       <div className="flex flex-col gap-10">
@@ -85,7 +87,7 @@ export default async function PrivacyPage() {
             <IncidentsSection queue={queue.data} />
             <HoldsSection queue={queue.data} />
             <NoticeApproval current={notice?.current ?? null} />
-            <ReconcileSection />
+            <ReconcileSection ledger={ledger?.ok ? ledger.data : null} />
           </>
         )}
         <PrivacyDesk />

@@ -110,7 +110,11 @@ one by one from the application page (existing candidate route).
 
 ## After a restore
 
-Run `select private.reconcile_erasures();` as the owner (SQL editor) or the
+A restored database brings back an old ledger too: first import the latest
+copy of the ledger kept outside the database (**Réimporter la copie du
+registre**, `public.import_erasure_ledger`; the officer downloads a copy after
+each erasure, `public.export_erasure_ledger`), then run
+`select private.reconcile_erasures();` as the owner (SQL editor) or the
 officer's **Refaire les effacements** before reopening the site: every
 account whose key is in the ledger and that came back identifiable is erased
 again (test: restore simulation in `privacy.test.sql`), then the restored

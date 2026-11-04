@@ -290,6 +290,28 @@ export async function recordPrivacyNoticeApproval(_prev: GovernanceActionState, 
   return r.ok ? done(`Version ${version} enregistrée ; elle s'affiche à partir du ${effective}.`) : failure(r.code);
 }
 
+/** After a restore: bring back the copy of the erasure ledger kept outside the database (Phase 15, D1). */
+export async function importErasureLedger(_prev: GovernanceActionState, form: FormData): Promise<GovernanceActionState> {
+  const file = form.get("ledger");
+  if (!(file instanceof File) || file.size === 0 || file.size > 5 * 1024 * 1024) return failure("erasure_ledger_invalid");
+  let document: unknown;
+  try {
+    document = JSON.parse(await file.text());
+  } catch {
+    return failure("erasure_ledger_invalid");
+  }
+  const r = await call(
+    "import_erasure_ledger",
+    (s) => s.rpc("import_erasure_ledger", { p_document: document as never }),
+    DESK,
+  );
+  if (!r.ok) return failure(r.code);
+  const out = r.data as { entries?: number; added?: number };
+  return done(
+    `${out.entries ?? 0} effacement(s) lu(s), ${out.added ?? 0} ajouté(s) au registre. Lance maintenant « Refaire les effacements ».`,
+  );
+}
+
 export async function reconcileErasures(): Promise<GovernanceActionState> {
   const r = await call("reconcile_privacy_erasures", (s) => s.rpc("reconcile_privacy_erasures"), DESK);
   if (!r.ok) return failure(r.code);

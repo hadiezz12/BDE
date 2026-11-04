@@ -182,4 +182,5 @@ export const routes = {
   /** Data-rights requests about applications (the privacy officer only). */
   managePrivacy: "/manage/donnees",
   managePrivacyRequest: (id: string) => `/manage/donnees/demandes/${id}`,
+  managePrivacyLedger: "/manage/donnees/registre",
 } as const;

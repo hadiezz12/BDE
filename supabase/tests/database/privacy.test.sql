@@ -15,7 +15,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(171);
+select plan(195);
 
 create temporary table fx (k text primary key, id uuid, v text) on commit drop;
 grant select, insert, update on fx to anon, authenticated, service_role;
@@ -380,6 +380,60 @@ set local role authenticated;
 select pg_temp.as_user('nina', 'aal2');
 select throws_ok($$ select public.reconcile_privacy_erasures() $$, 'P0001', 'insufficient_permission', 'a student cannot trigger it');
 reset role;
+
+-- 5b. A real restore brings back the OLD ledger too (Phase 15, defect D1): only a copy kept outside the
+-- database can re-apply erasures made after the backup. Proven with pg_dump/pg_restore by
+-- supabase/tests/restore/restore-drill.sh; here, the same situation inside one transaction.
+select ok(jsonb_array_length(private.erasure_ledger_document() -> 'entries') >= 1, 'the ledger exports as a document');
+select ok(private.erasure_ledger_document()::text !~ '@', 'with no e-mail address in it');
+select ok(position(pg_temp.fid('s2')::text in private.erasure_ledger_document()::text) = 0, 'and no account id');
+insert into fx (k, v) values ('ledger_copy', private.erasure_ledger_document()::text);
+-- The restore: s2 is identifiable again and the ledger no longer knows them.
+delete from private.erasure_ledger where person_key = private.person_key(pg_temp.fid('s2'));
+update auth.users set email = 'vieprivee-2@student.example.test', raw_app_meta_data = '{}'::jsonb where id = pg_temp.fid('s2');
+update public.profiles set first_name = 'Étudiant2', display_name = 'Étudiant2 Fictif', erased_at = null where id = pg_temp.fid('s2');
+select is((private.reconcile_erasures() ->> 'reapplied')::integer, 0, 'with the restored ledger alone, nothing is re-applied (the defect)');
+select ok((select email is not null from auth.users where id = pg_temp.fid('s2')), 'so the person stays identifiable');
+set local role authenticated;
+select pg_temp.as_user('nina', 'aal2');
+select throws_ok($$ select public.export_erasure_ledger() $$, 'P0001', 'insufficient_permission', 'a student cannot export the ledger');
+select throws_ok($$ select public.import_erasure_ledger('{"format":"vpc-erasure-ledger/1","entries":[]}') $$, 'P0001',
+  'insufficient_permission', 'nor import one');
+select throws_ok($$ select public.erasure_ledger_status() $$, 'P0001', 'insufficient_permission', 'nor read its status');
+select pg_temp.as_user('alice', 'aal2');
+select throws_ok($$ select public.import_erasure_ledger('{"format":"vpc-erasure-ledger/1","entries":[]}') $$, 'P0001',
+  'insufficient_permission', 'a BDE office cannot import one');
+select pg_temp.as_user('garance', 'aal2');
+select throws_ok($$ select public.export_erasure_ledger() $$, 'P0001', 'insufficient_permission', 'nor can the guardian export one');
+select pg_temp.as_user('lea', 'aal1');
+select throws_ok($$ select public.import_erasure_ledger('{"format":"vpc-erasure-ledger/1","entries":[]}') $$, 'P0001',
+  'mfa_required', 'the privacy officer needs the second factor');
+select pg_temp.as_user('lea', 'aal2');
+select throws_ok($$ select public.import_erasure_ledger('{"format":"autre","entries":[]}') $$, 'P0001', 'erasure_ledger_invalid',
+  'a document of another format is refused');
+select throws_ok($$ select public.import_erasure_ledger('{"format":"vpc-erasure-ledger/1","entries":[{"k":"pas-une-cle","at":"2026-11-01T10:00:00Z"}]}') $$,
+  'P0001', 'erasure_ledger_invalid', 'a key that is not a one-way key is refused');
+select throws_ok($$ select public.import_erasure_ledger(('{"format":"vpc-erasure-ledger/1","entries":[{"k":"' || repeat('a', 64) || '","at":"hier"}]}')::jsonb) $$,
+  'P0001', 'erasure_ledger_invalid', 'an unreadable date is refused');
+select throws_ok($$ select public.import_erasure_ledger(('{"format":"vpc-erasure-ledger/1","entries":[{"k":"' || repeat('a', 64) || '","at":"2026-11-01T10:00:00Z","ref":"<script>"}]}')::jsonb) $$,
+  'P0001', 'erasure_ledger_invalid', 'a reference that is not a request reference is refused');
+select ok((select public.import_erasure_ledger((select v from fx where k = 'ledger_copy')::jsonb) ->> 'added')::integer >= 1,
+  'the officer imports the copy: the missing erasure comes back into the ledger');
+select is((public.import_erasure_ledger((select v from fx where k = 'ledger_copy')::jsonb) ->> 'added')::integer, 0,
+  'importing it twice adds nothing');
+select ok((public.erasure_ledger_status() ->> 'copy_outdated')::boolean, 'before any copy is taken, the desk says the copy is missing');
+select ok(jsonb_typeof(public.export_erasure_ledger() -> 'entries') = 'array', 'the officer downloads a copy');
+select ok((public.erasure_ledger_status() ->> 'copy_outdated')::boolean is false, 'the copy just taken is not outdated');
+select ok((public.reconcile_privacy_erasures() ->> 'reapplied')::integer >= 1, 'the reconciliation then erases the person again');
+reset role;
+select ok((select email is null from auth.users where id = pg_temp.fid('s2')), 'the restored e-mail is gone');
+select ok(exists (select 1 from public.governance_audit_events where action = 'erasure_ledger_imported' and actor_user_id = pg_temp.fid('lea'))
+      and exists (select 1 from public.governance_audit_events where action = 'erasure_ledger_exported' and actor_user_id = pg_temp.fid('lea')),
+  'the export and the import are in the audit');
+select ok(not has_function_privilege('authenticated', 'private.import_erasure_ledger(jsonb)', 'execute')
+      and not has_function_privilege('authenticated', 'private.erasure_ledger_document()', 'execute')
+      and not has_function_privilege('anon', 'public.export_erasure_ledger()', 'execute'),
+  'the ledger helpers are closed to API roles, the officer functions to visitors');
 
 -- Files a Storage restore brings back with no row pointing to them are queued for deletion; referenced ones are not.
 insert into fx (k, v) values ('orphan_doc', 'applications/' || gen_random_uuid() || '/' || gen_random_uuid()),

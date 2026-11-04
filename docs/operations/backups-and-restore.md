@@ -69,9 +69,17 @@ Storage needs its own copy:
    account created there), RLS refuses what it should (`supabase test db`
    against it if possible), pg_cron jobs exist, the Edge Functions and their
    secrets are configured.
-5. **Privacy after a restore (Phase 14)**: before the restored site is opened
-   to anyone, run `select private.reconcile_erasures();` as the owner (or the
-   privacy officer's « Refaire les effacements »). It erases again every
+5. **Privacy after a restore (Phase 14, corrected in Phase 15)**: a restored
+   database also brings back an **old erasure ledger** that does not know the
+   erasures made after the backup (shown by `supabase/tests/restore/restore-drill.sh`).
+   So, before the restored site is opened to anyone:
+   1. import the **latest copy of the ledger kept outside the database**
+      (privacy officer: *Données personnelles › Registre des effacements ›
+      Réimporter*, or the owner: `select private.import_erasure_ledger('<file contents>'::jsonb);`).
+      If the database being replaced still exists, export its ledger first
+      (`select private.erasure_ledger_document();`) and import that one too;
+   2. then run `select private.reconcile_erasures();` (or « Refaire les
+      effacements »). It erases again every
    account the erasure ledger says was erased (one-way keys, no data kept),
    and queues for deletion the restored CVs, documents and photos that no
    row points to any more (older than a day); the `storage-cleanup` worker
@@ -98,3 +106,14 @@ Only the technical owner and the person they name as backup. Not the BDE
 offices, not the guardian, not association presidents: a backup contains more
 than any of them may read in the site. No page of the site lists, downloads
 or restores a backup, and none ever should.
+
+## Keeping the erasure ledger outside the database (Phase 15)
+
+The ledger is the only thing that can re-apply erasures after a restore, and a
+database backup cannot carry the erasures made after it. After each erasure
+(and at least monthly), the privacy officer downloads a copy (*Registre des
+effacements › Télécharger une copie*): one-way keys, dates and request
+references, no personal data. The technical owner keeps it with the
+off-database copies of the Storage files. The desk says when the copy is
+older than the last erasure. Importing a copy only ever adds keys: it cannot
+un-erase anyone.

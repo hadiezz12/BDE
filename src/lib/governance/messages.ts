@@ -319,6 +319,7 @@ export type GovernanceErrorCode =
   | "erasure_responsibilities_active"
   | "privacy_confirmation_required"
   | "privacy_erasure_pending"
+  | "erasure_ledger_invalid"
   | "privacy_export_expired"
   | "privacy_export_limit"
   | "privacy_export_missing"
@@ -723,6 +724,8 @@ export const GOVERNANCE_MESSAGES: Record<GovernanceErrorCode, string> = {
   erasure_responsibilities_active:
     "Cette personne occupe encore un poste, un rôle ou un siège de comité. Confirme qu'ils prennent fin maintenant pour lancer l'effacement.",
   privacy_confirmation_required: "Recopie la référence de la demande (PR-…) pour confirmer l'effacement.",
+  erasure_ledger_invalid:
+    "Ce fichier n'est pas un registre des effacements téléchargé depuis le site, ou il a été modifié. Reprends la copie gardée hors du site.",
   privacy_erasure_pending: "Des fichiers attendent encore d'être supprimés du stockage : la demande sera terminée une fois le nettoyage fait.",
   privacy_export_expired: "Ce fichier n'est plus disponible (14 jours passés). Fais une nouvelle demande si tu en as encore besoin.",
   privacy_export_limit: "Tu as déjà téléchargé tes données dix fois aujourd'hui. Réessaie demain.",
