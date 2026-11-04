@@ -12,7 +12,10 @@ a setting.
 
 - **Centre de contrôle › Continuité › Conservation**: notifications, e-mail
   delivery records, notification preference history, cleared address blocks,
-  registrations of past events, resolved continuity points.
+  registrations of past events, resolved continuity points, and since Phase
+  14 closed privacy requests, closed invitations (they hold the invited
+  e-mail), resolved content reports, the access log of applications and
+  files, and the governance audit log (these two: twelve months at least).
 - **Centre de contrôle › Recrutements**: drafts, withdrawn, unsuccessful and
   selected applications (Phase 8 settings). Deleting an application deletes
   everything evaluated about it and queues its files for deletion from
@@ -25,13 +28,21 @@ a setting.
    exact number of rows and the oldest date, and asks you to type that number
    in « Nombre à confirmer ». Nothing has been deleted yet.
 3. Save again with the number. The rule is recorded with your name and your
-   note (write where it was decided).
+   note: since Phase 14 the note is **required** for any duration (who decided,
+   when, where — 10 characters at least).
 4. The nightly job deletes at most 5 000 rows per rule per night (a large
    backlog spreads over several nights) and records the counts in the
    history.
 
-Deleting a notification also deletes the record of its e-mail. Governance
-history (who appointed whom, when, why) is never deleted by these rules.
+Deleting a notification also deletes the record of its e-mail. Mandates and
+positions (who held what, when) are never deleted by these rules; the audit
+log loses its oldest lines only under its own decided period.
+
+**Holds** (Phase 14): the privacy officer can exempt a person, an
+application, a campaign, an event or an association from every rule and from
+erasure, with a purpose, a basis, who decided and a review date within a
+year (`/manage/donnees` › Conservations exceptionnelles). Past its review
+date a hold stops applying.
 
 ## Technical housekeeping (fixed)
 
@@ -44,21 +55,22 @@ of these is a code change (`private.run_retention`), reviewed like any other.
 
 ## Privacy requests (access, rectification, erasure, restriction, information)
 
-- Requests about applications go to the **privacy officer**
-  (`/manage/donnees`, role provisioned outside the site): candidate report,
-  erasure of an application, each with a reason and the second factor, in the
-  audit.
-- Other personal data (profile, memberships, registrations, notifications):
-  the person edits their own profile and choices in their account; anything
-  else is handled by the technical owner on a written request, recorded in an
-  incident (kind *Données personnelles*) without copying the data into it.
+- Since Phase 14, every request goes through **Mes données** (the person) and
+  the **privacy officer** (`/manage/donnees`, role provisioned outside the
+  site): deadlines, identity, decisions, exports, erasure across modules and
+  Storage. Procedure: `docs/privacy/rights-procedure.md`.
+- A person who lost access writes to the controller; the officer records the
+  request (« Enregistrer une demande reçue hors du site ») and verifies identity
+  with what suffices.
 - The guardian is **not** a data-access role and must not be asked to read
   anyone's data.
 
 ## Deleting an account that still holds responsibilities
 
-Before erasing an account, the privacy officer uses **Avant de supprimer un
-compte** on `/manage/donnees`: it lists the person's ongoing positions (with
+The request page lists the person's responsibilities, and the erasure refuses
+to run until the officer confirms they end now (the governance checker then
+reports the vacancies). Before that, the privacy officer can also use **Avant
+de supprimer un compte** on `/manage/donnees`: it lists the person's ongoing positions (with
 their organization and end date), transitions, delegations, committee
 appointments, handover items and platform roles (the lookup is audited).
 Route each through the normal workflows first (a succession, an appointment,

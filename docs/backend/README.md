@@ -23,6 +23,12 @@ Phase 12 added one public search across the campus, saved items, optional intere
 front-page spotlights and links between modules by real ids. Phase 13 added statistics: an
 association dashboard and a BDE platform dashboard counted in the database by each section's key,
 small groups hidden, printable reports and CSV exports (audited), and no audience measurement.
+Phase 14 added privacy engineering: data-subject requests with deadlines and a
+distinct privacy officer, the self-service export, coordinated erasure with
+Storage and restore reconciliation, retention holds and decision notes, a
+breach register, approved notice versions, a justification gate for sensitive
+recruitment questions, public privacy/cookies/legal pages
+([../privacy/README.md](../privacy/README.md)).
 
 Read in this order:
 
@@ -41,6 +47,7 @@ Read in this order:
 | [notifications.md](notifications.md) | Phase 10: the catalog and `private.notify`, the notification centre and bell, choices and unsubscribing, e-mail by Edge Function (modes, retries, webhook, suppression), reminders, broadcasts, monitoring, retention, configuration |
 | [continuity.md](continuity.md) | Phase 11: expiry without jobs, academic years and the rollover, the job dispatcher and its health, the governance checker, handover checklists, retention policies, the storage-cleanup function, the institutional register, backups, incidents, reads per audience. Runbooks: `docs/operations/`; role guides: `docs/guides/` |
 | [search.md](search.md) | Phase 12: the public search (what is searchable, ranking, filters, the API), saved items, interests, spotlights, related articles, caching and performance |
+| [../privacy/README.md](../privacy/README.md) | Phase 14: data inventory, processing register draft, providers, trackers, rights procedure, retention schedule, security findings, breach runbook, DPIA screening, launch checklist |
 | [analytics.md](analytics.md) | Phase 13: the statistics — who reads what, how counts are made and refreshed, the metric dictionary, small-group suppression and residual risks, the audience-measurement assessment, reports and exports, performance |
 | [recruitment-review.md](recruitment-review.md) | Phase 9: who reads an application (keys, committees, scopes, the seal), grids and reviews, conflicts, interviews, questions, decisions, offers and onboarding, what candidates see, exports, data rights, retention |
 | [publishing.md](publishing.md) | Posts and revisions, the three state concerns, editorial policy and approval, body format and XSS layers, images, scheduling (the pg_cron worker), addresses, the public read model, reports and moderation |

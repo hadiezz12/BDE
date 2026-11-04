@@ -1024,3 +1024,66 @@ foundational choice.
   document infrastructure.
 - **Consequence:** a report URL alone shows nothing; each opening is one audit line (who, scope,
   sections, period, never the figures).
+
+## D99. A distinct privacy officer handles requests; not the BDE, not the guardian (Phase 14)
+
+- **Decision:** every data-subject request and personal-data incident is handled through
+  `platform.privacy.requests` (the Phase 9 privacy officer, provisioned by the project owner), with
+  the second factor for every action; the requester sees only their own requests.
+- **Reason:** brief §39–40: privacy administration must be narrowly authorized; the guardian's role
+  is governance recovery, the BDE offices run the platform, neither should read people's data.
+- **Consequence:** production needs a named officer before launch; the officer cannot handle their own request.
+
+## D100. Erasure turns the account into a non-identifying stub, never a bare row deletion (Phase 14)
+
+- **Decision:** `private.erase_person` deletes the person's own records, queues their files, ends
+  responsibilities when confirmed, and keeps the `auth.users` row only as an anchor without e-mail,
+  metadata, identities, sessions or factors (banned, soft-deleted); the profile reads "Compte supprimé".
+- **Reason:** brief §47–§50: deleting `auth.users` would either cascade into association histories or
+  fail on governance references (RESTRICT foreign keys); erasing must not destroy other people's records.
+- **Consequence:** mandates, audit lines and reviews written for others stay pseudonymous; whether some
+  of them must go too is a controller decision.
+
+## D101. A one-way ledger re-applies erasures after a restore (Phase 14)
+
+- **Decision:** `private.erasure_ledger` keeps sha256 of the account id, the date and the request
+  reference; `private.reconcile_erasures()` erases again any ledger account that came back identifiable
+  and queues restored files that nothing references.
+- **Reason:** brief §52–§53: backups keep deleted data; a restore must not silently undo an erasure,
+  and the ledger must not itself store the deleted data.
+- **Consequence:** the restore runbook runs it before reopening; the ledger is kept as long as older backups can be restored.
+
+## D102. Holds instead of a global "keep" switch; every period needs its decision reference (Phase 14)
+
+- **Decision:** `retention_holds` exempt one person, application, campaign, event or association with a
+  purpose, a basis, a decider and a review date within a year; `set_retention_policy` requires a note
+  naming the decision; the audit and access logs get policies (twelve months minimum) and are purged only
+  by the job.
+- **Reason:** brief §55–§62: no indefinite retention by default, no indefinite legal hold either.
+- **Consequence:** nothing is deleted until the BDE decides each period (launch blocker).
+
+## D103. No consent banner while nothing optional is stored on the device (Phase 14)
+
+- **Decision:** two cookies (session, theme) and no third-party request; `/cookies` documents them; an
+  end-to-end test fails if a visitor's browser contacts a third-party host or receives a cookie.
+- **Reason:** brief §24: a banner with nothing to choose would be decorative; CNIL exempts strictly
+  necessary and user-chosen interface cookies.
+- **Consequence:** adding any optional tracker requires a real consent manager first (`docs/privacy/trackers.md`).
+
+## D104. The notice is drafted in code and approved in the database with its exact text (Phase 14)
+
+- **Decision:** `src/lib/privacy/notice.ts` holds the draft written from what the code does; the
+  controller's approval is recorded with `record_privacy_notice_version` (sections, sha256, approver,
+  dates), and `/privacy` shows the version in force, or the draft clearly marked with what is missing.
+- **Reason:** brief §17–§20: versioned approved text, no placeholders, no fabricated legal details;
+  acknowledging a notice is not consent.
+- **Consequence:** changing the text means a new draft version and a new approval.
+
+## D105. Sensitive questions in recruitment forms need a recorded justification (Phase 14)
+
+- **Decision:** a trigger refuses to publish a form version whose questions match
+  `private.form_sensitive_terms` until a justification for those themes is recorded for that version;
+  the privacy officer is told.
+- **Reason:** brief §13–§16: associations must not collect special-category or unnecessary data by
+  default, and keyword filtering alone is not enough.
+- **Consequence:** the word list flags, people justify, the officer can follow up; false positives cost a sentence.

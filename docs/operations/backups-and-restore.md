@@ -69,9 +69,17 @@ Storage needs its own copy:
    account created there), RLS refuses what it should (`supabase test db`
    against it if possible), pg_cron jobs exist, the Edge Functions and their
    secrets are configured.
-5. Delete the isolated project when done. Real applicant data must not stay
+5. **Privacy after a restore (Phase 14)**: before the restored site is opened
+   to anyone, run `select private.reconcile_erasures();` as the owner (or the
+   privacy officer's « Refaire les effacements »). It erases again every
+   account the erasure ledger says was erased (one-way keys, no data kept),
+   and queues for deletion the restored CVs, documents and photos that no
+   row points to any more (older than a day); the `storage-cleanup` worker
+   then deletes them. Restore Storage *before* running it, so both are
+   reconciled together.
+6. Delete the isolated project when done. Real applicant data must not stay
    in a test environment; prefer synthetic data whenever the test allows.
-6. Record it: **Registre et sauvegardes › Déclarer une vérification**
+7. Record it: **Registre et sauvegardes › Déclarer une vérification**
    (*Restauration de la base testée* / *Restauration des fichiers testée*,
    result, environment, date, how). The site shows it as "À refaire cette
    année" once it is older than three months before the current academic

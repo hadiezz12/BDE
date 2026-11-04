@@ -356,3 +356,21 @@ second factor, and the platform exports too. The helpers (`private.analytics_sou
 `analytics_k`, `analytics_suppress`, `analytics_check_period`, `analytics_sums`,
 `analytics_series`, `analytics_campaign_funnel`, `analytics_campaign_workflow`) are executable by
 no API role ([analytics.md](analytics.md)).
+
+## Phase 14: privacy
+
+| Table | Who reads |
+| --- | --- |
+| `privacy_requests`, `privacy_request_events`, `privacy_request_artifacts` | nobody through the API; the requester through `my_privacy_overview` / `privacy_artifact_payload`, the privacy officer (`platform.privacy.requests` + second factor) through the officer functions |
+| `retention_holds` | the privacy officer, through `privacy_requests_queue` |
+| `privacy_notice_versions` | everyone, the version in force, through `public_privacy_notice` |
+| `recruitment_form_privacy_reviews` | the association's form editors through `recruitment_form_privacy_check` |
+| `private.erasure_ledger` | nobody through the API |
+
+RLS on, nothing granted to `anon` or `authenticated` on any of them. Granted
+to `authenticated`: the request, export, officer, hold, incident, notice and
+form-review functions; to `anon` too: `public_privacy_notice`. Every
+`private.*` helper (erasure, personal data, reconciliation, orphan sweep,
+housekeeping) is executable by no API role. The audit and access logs stay
+append-only; only the retention job may delete their oldest lines, under a
+decided period of twelve months at least ([../privacy/README.md](../privacy/README.md)).
