@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routes } from "@/lib/routes";
 import { withNext } from "@/lib/auth/next-path";
 import { updateSession } from "@/lib/supabase/proxy";
+import { contentSecurityPolicy, newNonce } from "@/lib/security/csp";
 
 /**
  * Next.js 16 proxy (the former middleware): keeps the Supabase session fresh
@@ -13,7 +14,15 @@ import { updateSession } from "@/lib/supabase/proxy";
  * require an account.
  */
 export async function proxy(request: NextRequest) {
-  const { response, claims } = await updateSession(request);
+  // A fresh nonce for this response: only Next's own scripts carry it (lib/security/csp.ts).
+  const nonce = newNonce();
+  const csp = contentSecurityPolicy({
+    nonce,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    development: process.env.NODE_ENV === "development",
+  });
+  const { response, claims } = await updateSession(request, { "x-nonce": nonce, "Content-Security-Policy": csp });
+  response.headers.set("Content-Security-Policy", csp);
   const { pathname, search } = request.nextUrl;
   const personal = pathname === routes.account || pathname.startsWith(`${routes.account}/`);
 

@@ -7,6 +7,13 @@
       "runtimeArgs": [],
       "port": 3020,
       "autoPort": false
+    },
+    {
+      "name": "vpc-prod",
+      "runtimeExecutable": "H:\tools\u000bpc-prod.cmd",
+      "runtimeArgs": [],
+      "port": 3021,
+      "autoPort": false
     }
   ]
 }

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // No "X-Powered-By: Next.js": nothing to gain from announcing the framework (Phase 15).
+  poweredByHeader: false,
   images: {
     // Brand images are local (public/brand). Association images and public
     // team photos are served by the site's own routes (src/app/media/), which
@@ -21,7 +23,8 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           // Phase 14: no plugin content, no <base> rewriting, forms post to this site only.
-          // A script-src policy with nonces is left for the release hardening (Phase 15).
+          // Phase 15: pages get the full policy with a script nonce from the proxy (src/lib/security/csp.ts),
+          // which replaces this one; this stays for the responses the proxy does not see.
           { key: "Content-Security-Policy", value: "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

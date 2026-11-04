@@ -19,10 +19,12 @@ export const PATHNAME_HEADER = "x-vpc-pathname";
  * return `response` (or copy its cookies): otherwise refreshed sessions are
  * lost and people get signed out at random.
  */
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest, requestHeaders: Record<string, string> = {}) {
   const forward = () => {
     const headers = new Headers(request.headers);
     headers.set(PATHNAME_HEADER, request.nextUrl.pathname);
+    // The page's Content-Security-Policy travels on the request: Next reads its nonce while rendering.
+    for (const [key, value] of Object.entries(requestHeaders)) headers.set(key, value);
     return NextResponse.next({ request: { headers } });
   };
 
