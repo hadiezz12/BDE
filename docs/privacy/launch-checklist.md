@@ -27,7 +27,7 @@ Nothing here is done by the site on its own: each line names who decides.
 | # | Task | Blocks launch | Status |
 | --- | --- | --- | --- |
 | T1 | Production Supabase project under an institutional organization, with backups | **Yes** | Open |
-| T2 | Vault secrets for `storage-cleanup`; deploy the updated worker (avatars) | **Yes** | Open |
+| T2 | Vault secrets for `storage-cleanup` (dev and production); the updated worker (avatars) is deployed on dev, to deploy on production | **Yes** | Open |
 | T3 | Session time-box and inactivity timeout in Supabase Auth | Recommended | Open |
 | T4 | Restore test including `select private.reconcile_erasures();` and the Storage orphan step | Before launch | Open |
 | T5 | Nonce-based script CSP and a penetration test | Phase 15 | Planned |
