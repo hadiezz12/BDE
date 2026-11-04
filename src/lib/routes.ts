@@ -66,6 +66,14 @@ export const routes = {
   notificationUnsubscribe: "/notifications/desabonnement",
   accountProfile: "/account/profile",
   accountSecurity: "/account/security",
+  /** "Mes données" (Phase 14): what the site holds, the download, the requests. Downloads are POST routes. */
+  accountPrivacy: "/account/privacy",
+  accountPrivacyExport: "/account/privacy/export",
+  accountPrivacyFile: "/account/privacy/fichier",
+  /** Public legal pages (Phase 14). */
+  privacy: "/privacy",
+  cookies: "/cookies",
+  legal: "/legal",
   /** Invitations to answer, presidencies to accept, BDE approvals to give. */
   accountInvitations: "/account/invitations",
   /** First sign-in: name and study details, once. */
@@ -173,4 +181,5 @@ export const routes = {
   manageReviewWork: "/manage/evaluations",
   /** Data-rights requests about applications (the privacy officer only). */
   managePrivacy: "/manage/donnees",
+  managePrivacyRequest: (id: string) => `/manage/donnees/demandes/${id}`,
 } as const;

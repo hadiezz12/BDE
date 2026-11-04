@@ -32,6 +32,7 @@ import { DerouleStep, InfosStep, ReglesStep, type StepBase } from "@/components/
 import { PositionsEditor } from "@/components/manage/recruitment/PositionsEditor";
 import { FormBuilder } from "@/components/manage/recruitment/FormBuilder";
 import { CampaignPublication } from "@/components/manage/recruitment/CampaignPublication";
+import { FormPrivacyCheck } from "@/components/manage/recruitment/FormPrivacyCheck";
 import { ReviewTabs } from "@/components/manage/review/ReviewFrame";
 
 type Params = Promise<{ asso: string; campaign: string }>;
@@ -224,6 +225,9 @@ export default async function CampaignWizardPage({ params, searchParams }: { par
               canPublish={can.publish}
               openId={first(sp.poste)}
             />
+          )}
+          {(step === "formulaire" || step === "publication") && (
+            <FormPrivacyCheck campaignId={data.campaign.id} asso={asso} writable={writable} />
           )}
           {step === "formulaire" && (
             <FormBuilder

@@ -20,9 +20,16 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          // Phase 14: no plugin content, no <base> rewriting, forms post to this site only.
+          // A script-src policy with nonces is left for the release hardening (Phase 15).
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // No page needs a camera, a microphone, the location or payment.
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          // Ignored over plain HTTP (local development); on the real domain, HTTPS only for a year.
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
         ],
       },
     ];

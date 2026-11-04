@@ -90,7 +90,23 @@ export function SiteFooter() {
 
       <div className="wrap">
         <div className="flex flex-col gap-6 border-t-2 border-fg py-6 lg:flex-row lg:items-end lg:justify-between">
-          <span aria-hidden />
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 type-small">
+            <li>
+              <Link href={routes.privacy} className="font-semibold hover:text-accent-text">
+                Confidentialité
+              </Link>
+            </li>
+            <li>
+              <Link href={routes.cookies} className="font-semibold hover:text-accent-text">
+                Cookies
+              </Link>
+            </li>
+            <li>
+              <Link href={routes.legal} className="font-semibold hover:text-accent-text">
+                Mentions légales
+              </Link>
+            </li>
+          </ul>
           <p className="type-meta text-muted">
             © {year} Very Pink Club — BDE · GEM Alpine Business School — Paris
           </p>

@@ -26,6 +26,7 @@ export const ACCOUNT_NAV: NavItem[] = [
   { href: routes.accountNotifications, label: "Notifications", short: "Notifs", icon: "bell" },
   { href: routes.accountProfile, label: "Profil", short: "Profil", icon: "user" },
   { href: routes.accountSecurity, label: "Sécurité", short: "Sécurité", icon: "lock" },
+  { href: routes.accountPrivacy, label: "Mes données", short: "Données", icon: "shield" },
 ];
 
 export function isActive(pathname: string, href: string): boolean {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { routes } from "@/lib/routes";
 import { requireUser } from "@/lib/auth/context";
 import { getMyMfaStatus } from "@/lib/auth/mfa";
@@ -26,8 +27,8 @@ function methodLabel(methods: string[]): string {
  * Sécurité: two-factor authentication (optional for students; required by
  * the database for sensitive governance actions: handing out rights,
  * passations, BDE platform actions), how you sign in, and signing out
- * of this or every device. No account deletion here yet: it touches
- * applications, memberships and history, and comes with the privacy phase.
+ * of this or every device. Deleting the account is a request handled in
+ * Mes données (Phase 14): it touches applications, memberships and history.
  */
 export default async function AccountSecurityPage() {
   const user = await requireUser(routes.accountSecurity);
@@ -95,7 +96,13 @@ export default async function AccountSecurityPage() {
                 Perdre ton application bloque la connexion : la récupération de compte n&apos;existe pas encore sur le
                 site, garde-la précieusement.
               </li>
-              <li>Supprimer ton compte n&apos;est pas encore possible ici : cela viendra avec les réglages de confidentialité.</li>
+              <li>
+                Pour supprimer ton compte ou télécharger tes données, va dans{" "}
+                <Link href={routes.accountPrivacy} className="link font-semibold text-fg">
+                  Mes données
+                </Link>
+                .
+              </li>
             </ul>
           </section>
         </aside>

@@ -12,12 +12,18 @@ import { ActionForm } from "@/components/manage/governance/ActionForm";
 import { Field, Input } from "@/components/ui/Field";
 import { lookupResponsibilities } from "@/app/actions/continuity";
 import { PrivacyDesk } from "@/components/manage/review/PrivacyDesk";
+import { getPrivacyQueue, getPublishedNotice } from "@/lib/privacy/data";
+import { governanceErrorMessage } from "@/lib/governance/messages";
+import { HoldsSection, IncidentsSection, NoticeApproval, ReconcileSection, RequestQueue } from "@/components/manage/privacy/PrivacyOffice";
 
-export const metadata: Metadata = { title: "Données des candidat·es" };
+export const metadata: Metadata = { title: "Données personnelles" };
 
 /**
  * /manage/donnees — the privacy officer's page (platform role
- * privacy_officer, platform.privacy.requests). Provisioned outside the site
+ * privacy_officer, platform.privacy.requests): data-subject requests and
+ * their deadlines (Phase 14), personal-data incidents, retention holds, the
+ * notice approval, the reconciliation after a restore, and the Phase 9
+ * candidate report. Provisioned outside the site
  * by the project owner (private.provision_privacy_officer); neither the BDE
  * offices nor the guardian hold it. Everything here needs a second factor
  * and a written reason, and is in the audit.
@@ -49,16 +55,19 @@ export default async function PrivacyPage() {
       </ManageMain>
     );
   }
+  const aal2 = ctx.aal === "aal2";
+  const [queue, notice] = aal2 ? await Promise.all([getPrivacyQueue(), getPublishedNotice()]) : [null, null];
   return (
     <ManageMain>
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-10">
         <ManagePageHeader
           kicker="Plateforme"
-          title="Données des candidat·es"
+          title="Données personnelles"
           description={
             <p>
-              Répondre aux demandes d&apos;accès et d&apos;effacement concernant les candidatures. À utiliser seulement sur une demande
-              écrite de la personne concernée (ou une obligation légale) : chaque rapport et chaque effacement est noté, avec la raison.
+              Les demandes des personnes sur leurs données (accès, correction, effacement…), les incidents de données, les
+              conservations exceptionnelles et la notice. Rien n&apos;est ouvert hors d&apos;une demande ou d&apos;un incident : chaque
+              action demande la double authentification et est notée.
             </p>
           }
         />
@@ -69,6 +78,16 @@ export default async function PrivacyPage() {
             : tu décides de ce qui est communiqué, et par quel moyen.
           </p>
         </Notice>
+        {queue && !queue.ok && <Notice tone="danger" icon="alert" title={governanceErrorMessage(queue.code)} />}
+        {queue?.ok && (
+          <>
+            <RequestQueue queue={queue.data} />
+            <IncidentsSection queue={queue.data} />
+            <HoldsSection queue={queue.data} />
+            <NoticeApproval current={notice?.current ?? null} />
+            <ReconcileSection />
+          </>
+        )}
         <PrivacyDesk />
         <ManageSection
           title="Avant de supprimer un compte"
