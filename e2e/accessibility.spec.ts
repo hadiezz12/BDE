@@ -224,14 +224,21 @@ test("content reflows at 320 px without sideways scrolling (WCAG 1.4.10)", async
       // pseudo-elements, through their parent); the innermost ones are the cause.
       const wide = all.filter((el) => el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflowX === "visible" && el.clientWidth > 0);
       const innermost = wide.filter((el) => !wide.some((o) => o !== el && el.contains(o)));
-      // And anything whose box passes the right edge of the page.
-      const past = all.filter((el) => {
+      // And the outermost boxes past the right edge of the page that no ancestor scrolls or clips.
+      const free = (el: HTMLElement) => {
+        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+          if (getComputedStyle(a).overflowX !== "visible") return false;
+        }
+        return true;
+      };
+      const isPast = (el: Element) => {
         const r = el.getBoundingClientRect();
-        return r.width > 0 && r.right > width + 1;
-      });
+        return r.width > 1 && r.right > width + 1;
+      };
+      const past = all.filter((el) => isPast(el) && free(el) && !(el.parentElement && isPast(el.parentElement)));
       const culprits = [
-        ...innermost.slice(0, 4).map((el) => `${name(el)} content ${el.scrollWidth}px in ${el.clientWidth}px`),
-        ...past.slice(-3).map((el) => `${name(el)} right=${Math.round(el.getBoundingClientRect().right)}`),
+        ...innermost.filter((el) => el.clientWidth > 1).slice(0, 3).map((el) => `${name(el)} content ${el.scrollWidth}px in ${el.clientWidth}px`),
+        ...past.slice(0, 4).map((el) => `PAST ${name(el)} left=${Math.round(el.getBoundingClientRect().left)} right=${Math.round(el.getBoundingClientRect().right)}`),
       ];
       return { overflow: document.documentElement.scrollWidth - width, culprits };
     });

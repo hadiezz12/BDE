@@ -28,7 +28,8 @@ export function StatusBadge({
   children: React.ReactNode;
 }) {
   return (
-    <span className={cx("inline-flex items-center gap-1.5 type-label whitespace-nowrap", TONE[tone], className)}>
+    // Wraps only when its column is too narrow (WCAG 1.4.10); otherwise one line.
+    <span className={cx("inline-flex max-w-full items-center gap-1.5 type-label", TONE[tone], className)}>
       <span aria-hidden className="relative inline-flex size-2">
         {pulse && (
           <span className="absolute inset-0 animate-ping rounded-full bg-current opacity-60 motion-reduce:hidden" />
