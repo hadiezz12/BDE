@@ -144,11 +144,22 @@ test("an association president's workspace, form builder and editor included", a
   for (const step of ["", "?etape=lieu", "?etape=inscriptions"]) await expectAccessible(page, event + step);
   // The page preview frames the site itself (frame-src 'self').
   await expectAccessible(page, "/associations/exemple-finance/apercu?vue=telephone");
+  // The editor: the first Finance post that opens in it (a submitted revision is frozen, read-only).
   await page.goto("/manage/exemple-finance/content");
-  const post = await firstIdLink(page, "/manage/exemple-finance/content/");
-  expect(post, "a Finance post").toBeTruthy();
-  await expectAccessible(page, post!);
-  // The editor (ProseMirror) only becomes editable once its script has run under the policy.
+  const posts = await page.locator('a[href^="/manage/exemple-finance/content/"]').evaluateAll((as) => [
+    ...new Set(as.map((a) => a.getAttribute("href") ?? "").filter((h) => /\/content\/[0-9a-f-]{36}$/.test(h))),
+  ]);
+  let editable: string | null = null;
+  for (const href of posts) {
+    await page.goto(href);
+    // ProseMirror only becomes editable once its script has run under the policy.
+    if (await page.locator('[contenteditable="true"]').first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+      editable = href;
+      break;
+    }
+  }
+  expect(editable, "a Finance post open in the editor").toBeTruthy();
+  await expectAccessible(page, editable!);
   await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
 });
 
