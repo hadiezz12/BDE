@@ -298,7 +298,11 @@
     *::after {
       animation-duration: 0.001ms !important;
       animation-iteration-count: 1 !important;
+      /* No delay either: an animation waiting to start shows its first frame meanwhile
+         (the neon headline sat at 15 % opacity for 0.3 s — Phase 15). */
+      animation-delay: 0s !important;
       transition-duration: 0.001ms !important;
+      transition-delay: 0s !important;
       scroll-behavior: auto !important;
     }
   }
@@ -313,6 +317,8 @@
   font-weight: 900;
   font-stretch: 125%;
   font-size: clamp(2.6rem, 0.9rem + 8.2vw, 9rem);
+  /* Phase 15 (WCAG 1.4.10): a word too long for the line breaks instead of pushing the page sideways. */
+  overflow-wrap: break-word;
   line-height: 0.86;
   letter-spacing: -0.015em;
   text-transform: uppercase;
@@ -321,7 +327,10 @@
 @utility type-display {
   font-weight: 900;
   font-stretch: 118%;
-  font-size: clamp(2.3rem, 1rem + 5.4vw, 6.25rem);
+  /* Phase 15 (WCAG 1.4.10): below ~450 px the size follows the screen so a 13-letter word
+     ("Recrutements.") still fits at 320 px; above, unchanged. Longer words break. */
+  font-size: min(8.2vw, clamp(2.3rem, 1rem + 5.4vw, 6.25rem));
+  overflow-wrap: break-word;
   line-height: 0.9;
   letter-spacing: -0.01em;
   text-transform: uppercase;
@@ -333,12 +342,14 @@
   font-size: clamp(2.2rem, 1rem + 4.8vw, 5.5rem);
   line-height: 0.88;
   text-transform: uppercase;
+  overflow-wrap: break-word;
 }
 
 @utility type-title {
   font-weight: 800;
   font-stretch: 108%;
   font-size: clamp(1.9rem, 1.1rem + 3vw, 3.4rem);
+  overflow-wrap: break-word;
   line-height: 1;
   letter-spacing: -0.012em;
 }
@@ -350,6 +361,7 @@
   line-height: 1.02;
   letter-spacing: -0.005em;
   text-transform: uppercase;
+  overflow-wrap: break-word;
 }
 
 @utility type-headline {

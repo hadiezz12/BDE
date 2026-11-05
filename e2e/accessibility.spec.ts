@@ -253,6 +253,18 @@ test("reduced motion stops the moving strips, and they stay reachable", async ({
   const page = await context.newPage();
   await page.goto("/");
   const tracks = page.locator(".marquee-track");
+  // The neon headline is lit at once: no flicker, and no waiting on its first (dim) frame.
+  const headline = page.locator(".neon-flicker").first();
+  if (await headline.count()) expect(await headline.evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
   const n = await tracks.count();
   expect(n).toBeGreaterThan(0);
   for (let i = 0; i < n; i += 1) {
