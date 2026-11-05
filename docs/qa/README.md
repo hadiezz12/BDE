@@ -37,7 +37,7 @@ free plan (no backups, no custom SMTP, Auth settings partly default — `launch-
 | Concurrency | Real parallel `psql` sessions | `supabase/tests/concurrency/*.sh` (8 scripts, in CI) |
 | Backup / restore | `pg_dump -Fc` / `pg_restore` into a new database | `supabase/tests/restore/restore-drill.sh` (local only) |
 | Pure logic | Node's test runner (`npm run test:unit`, coverage `npm run test:coverage`) | `src/**/*.test.mjs` (232 tests) |
-| Browser end-to-end | Playwright 1.63 on the production build (`next start`) and the local stack | `e2e/*.spec.ts` (83 tests; 91 runs with Firefox, WebKit, iPhone) |
+| Browser end-to-end | Playwright 1.63 on the production build (`next start`) and the local stack | `e2e/*.spec.ts` (84 tests; 92 runs with Firefox, WebKit, iPhone — all passing in CI at the end of Phase 15) |
 | Accessibility | `@axe-core/playwright` 4.14.0 (WCAG 2.0/2.1/2.2 A+AA) + keyboard, reflow, motion checks | `e2e/accessibility.spec.ts` |
 | Security headers / CSP | Playwright | `e2e/security.spec.ts`, `src/lib/security/csp.test.mjs` |
 | Secrets, dependencies | `scripts/secret-scan.mjs` (repository + browser bundle), `npm audit --omit=dev` | CI app job |
