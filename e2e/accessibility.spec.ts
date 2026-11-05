@@ -154,11 +154,19 @@ test("the rich-text editor, opened by the author of a draft", async ({ page }) =
   const posts = await page.locator('a[href^="/manage/exemple-finance/content/"]').evaluateAll((as) => [
     ...new Set(as.map((a) => a.getAttribute("href") ?? "").filter((h) => /\/content\/[0-9a-f-]{36}$/.test(h))),
   ]);
+  expect(posts.length, "Finance posts listed for Lucas").toBeGreaterThan(0);
   let editable: string | null = null;
   for (const href of posts) {
     await page.goto(href);
-    // ProseMirror only becomes editable once its script has run under the policy.
-    if (await page.locator('[contenteditable="true"]').first().isVisible({ timeout: 5_000 }).catch(() => false)) {
+    // ProseMirror only becomes editable once its script has run under the policy: wait for it
+    // (isVisible() would answer at once, before hydration).
+    const live = await page
+      .locator('[contenteditable="true"]')
+      .first()
+      .waitFor({ state: "visible", timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (live) {
       editable = href;
       break;
     }
