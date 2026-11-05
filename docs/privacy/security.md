@@ -74,8 +74,8 @@ Phase 14 report.
 | F3 | Controller, contact, DPO, legal bases, notice approval missing | High | Notice | Provide the facts, approve, record the version | Controller | Legal | Open | **Yes** |
 | F4 | No malware scanning of uploaded CVs and documents | High | Recruitment | Decide: scanning service (a processor), or accept with attachment-only downloads | Controller + technical owner | Technical / institutional | Open | To decide |
 | F5 | Storage cleanup not configured on dev (Vault secrets); the updated worker (avatars) is deployed on dev (v2) | Medium | Storage | Create the two Vault secrets; deploy `storage-cleanup` on production | Technical owner | Technical | Open | Yes for production |
-| F6 | Session cookie readable by scripts (`@supabase/ssr` default) and no script CSP | Medium | Auth / site | Nonce-based CSP (Phase 15); keep no `dangerouslySetInnerHTML` | Phase 15 | Technical | Mitigated | No |
-| F7 | Supabase Auth session timeouts not set | Medium | Auth | Set time-box and inactivity timeout in production | Technical owner | Technical | Open | Recommended |
+| F6 | Session cookie readable by scripts (`@supabase/ssr` default) and no script CSP | Medium | Auth / site | Nonce-based script CSP done in Phase 15 (`src/lib/security/csp.ts`); keep no `dangerouslySetInnerHTML` | — | Technical | **Fixed** (Phase 15) | No |
+| F7 | Supabase Auth session timeouts not set | Medium | Auth | Set time-box and inactivity timeout in production (since Phase 15 D10 they take effect at once: an ended session is refused by the database) | Technical owner | Technical | Open | Recommended |
 | F8 | Production providers (host, e-mail) and DPAs not chosen | High | Processors | Choose, sign DPAs, assess transfers | Controller | Legal | Open | **Yes** |
 | F9 | Dev project on a free plan in a personal organization (no backups) | Medium | Continuity | Production under an institutional organization with backups | Owner | Institutional | Open (Phase 11) | Yes |
 | F10 | Reviewer download window of 2 minutes after a check (residual after revocation) | Low | Recruitment | Documented; shorten if needed | — | Technical | Accepted | No |

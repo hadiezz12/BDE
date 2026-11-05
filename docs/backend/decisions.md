@@ -1087,3 +1087,36 @@ foundational choice.
 - **Reason:** brief §13–§16: associations must not collect special-category or unnecessary data by
   default, and keyword filtering alone is not enough.
 - **Consequence:** the word list flags, people justify, the officer can follow up; false positives cost a sentence.
+
+## D106. A copy of the erasure ledger lives outside the database (Phase 15)
+
+- **Decision:** the privacy officer exports the ledger (one-way keys, dates, request references) after each erasure;
+  the technical owner keeps it with the off-database copies; after a restore it is imported before reconciling. An
+  import only adds keys.
+- **Reason:** a real restore (`supabase/tests/restore/restore-drill.sh`) showed that a backup brings back the old
+  ledger with the data, so an erasure made after the backup was silently undone (defect D1).
+- **Consequence:** one more routine for the officer (the desk warns when the copy is behind); the runbook imports first.
+
+## D107. A token whose session has ended is no one (Phase 15)
+
+- **Decision:** `private.session_alive()` (the token's session still in `auth.sessions`, before `not_after`) is
+  checked by `require_actor()`, by a restrictive policy on every directly readable table and on Storage, and by the
+  site once per request.
+- **Reason:** JWTs stay valid for their lifetime (60 minutes); a copied cookie kept working after sign-out, "sign out
+  everywhere", an erasure or a time-box (defect D10).
+- **Consequence:** one database round trip per signed-in request; new tables readable by students need the
+  `*_live_session` policy (a posture test fails otherwise).
+
+## D108. Scripts run only with the response's nonce (Phase 15)
+
+- **Decision:** the proxy sends a Content-Security-Policy with a fresh nonce and `'strict-dynamic'`; styles keep
+  `'unsafe-inline'` (style attributes); `connect-src` names only the project's Supabase origin.
+- **Reason:** Phase 14 finding F6: without a script policy, any injection would run with the session.
+- **Consequence:** every page is rendered per request; adding a script, a frame or an outside origin means changing
+  `src/lib/security/csp.ts` and its tests on purpose.
+
+## D109. The neon headline powers on, then stays lit (Phase 15)
+
+- **Decision:** the maquette's flicker plays once at load (0.3–1.9 s); the endless dimming every nine seconds is removed.
+- **Reason:** WCAG 2.2.2 — blinking that lasts more than five seconds needs a way to pause it.
+- **Consequence:** `DESIGN.md` updated; reduced motion still removes the flicker entirely.

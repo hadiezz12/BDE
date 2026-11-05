@@ -16,6 +16,7 @@
 set -euo pipefail
 
 DB="${1:?usage: continuity.sh <database url>}"
+. "$(dirname "$0")/_local-only.sh"
 PSQL=(psql "$DB" -X -q -t -A -v ON_ERROR_STOP=1)
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT

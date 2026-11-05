@@ -29,8 +29,8 @@ Nothing here is done by the site on its own: each line names who decides.
 | T1 | Production Supabase project under an institutional organization, with backups | **Yes** | Open |
 | T2 | Vault secrets for `storage-cleanup` (dev and production); the updated worker (avatars) is deployed on dev, to deploy on production | **Yes** | Open |
 | T3 | Session time-box and inactivity timeout in Supabase Auth | Recommended | Open |
-| T4 | Restore test including `select private.reconcile_erasures();` and the Storage orphan step | Before launch | Open |
-| T5 | Nonce-based script CSP and a penetration test | Phase 15 | Planned |
+| T4 | Restore test on the provider: import the latest copy of the erasure ledger, then `select private.reconcile_erasures();` and the Storage orphan step (database part drilled locally in Phase 15, `supabase/tests/restore/restore-drill.sh`) | Before launch | Open |
+| T5 | Nonce-based script CSP (done, Phase 15) and a penetration test by an independent party (not done: Phase 15 is the developers' verification, `docs/qa/security.md`) | Recommended before launch | CSP done; pen test open |
 | T6 | Redeploy `notifications-worker` so e-mails use the Phase 13–14 words | Before e-mail goes live | Open |
 
 ## Done in Phase 14 (technical, tested)

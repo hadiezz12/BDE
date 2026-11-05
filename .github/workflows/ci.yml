@@ -31,9 +31,17 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test:unit
+      # Phase 15 release gates: no privileged credential in the repository, no high or
+      # critical advisory in what ships (development tooling is reported, not gated).
+      - name: Secret scan (tracked files)
+        run: node scripts/secret-scan.mjs
+      - name: Dependency audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
       # Builds without any Supabase settings on purpose: the Phase 1 pages
       # read mock data and must not depend on a database yet.
       - run: npm run build
+      - name: Secret scan (browser bundle)
+        run: node scripts/secret-scan.mjs --bundle
 
   database:
     name: Database — reset from scratch, tests, lint, types
