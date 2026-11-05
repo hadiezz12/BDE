@@ -119,7 +119,7 @@ test("a student's own pages", async ({ page }) => {
   if (app) await expectAccessible(page, app);
 });
 
-test("an association president's workspace, form builder and editor included", async ({ page }) => {
+test("an association president's workspace, form builder and page preview", async ({ page }) => {
   await signInAs(page, "julie.finance");
   for (const path of [
     "/manage",
@@ -144,7 +144,12 @@ test("an association president's workspace, form builder and editor included", a
   for (const step of ["", "?etape=lieu", "?etape=inscriptions"]) await expectAccessible(page, event + step);
   // The page preview frames the site itself (frame-src 'self').
   await expectAccessible(page, "/associations/exemple-finance/apercu?vue=telephone");
-  // The editor: the first Finance post that opens in it (a submitted revision is frozen, read-only).
+});
+
+test("the rich-text editor, opened by the author of a draft", async ({ page }) => {
+  // In the seed, the only Finance draft is Lucas's (the others are submitted, approved or
+  // scheduled: frozen, read-only). Lucas has no second factor yet when this file runs.
+  await signInAs(page, "lucas.finance");
   await page.goto("/manage/exemple-finance/content");
   const posts = await page.locator('a[href^="/manage/exemple-finance/content/"]').evaluateAll((as) => [
     ...new Set(as.map((a) => a.getAttribute("href") ?? "").filter((h) => /\/content\/[0-9a-f-]{36}$/.test(h))),
@@ -158,7 +163,7 @@ test("an association president's workspace, form builder and editor included", a
       break;
     }
   }
-  expect(editable, "a Finance post open in the editor").toBeTruthy();
+  expect(editable, "Lucas's draft open in the editor").toBeTruthy();
   await expectAccessible(page, editable!);
   await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
 });
