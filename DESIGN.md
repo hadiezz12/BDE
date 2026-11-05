@@ -28,7 +28,7 @@ A third, calm **studio** surface (warm grey + white panels) serves association m
 | Maquette element | Decision | Result |
 |---|---|---|
 | Night palette, magenta + cyan | **Keep** | Night surface; cyan (from the triangle) is the info/focus colour |
-| "effet néon clignotant" headline | **Keep** | `NeonText` + `neon-flicker`: power-on stutter, then rare irregular flickers; off with reduced motion |
+| "effet néon clignotant" headline | **Keep** | `NeonText` + `neon-flicker`: power-on stutter (0.3–1.9 s), then steady; off with reduced motion. No endless flicker: blinking past five seconds needs a pause control (WCAG 2.2.2, Phase 15) |
 | "effet déroulant style carrousel" ticker | **Keep** | `Marquee`: pauses on hover/focus, static scrollable row with reduced motion |
 | "effet 3D de la carte" (carte cotisante) | **Keep** | Member card with pointer tilt in the student space and on the BDE page |
 | Neon event emblems in circles | **Keep / promote** | Emblems are the accent system: their eight colours become the association palette |

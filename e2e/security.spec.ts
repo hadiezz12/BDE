@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { expect, test, type Cookie, type Page } from "@playwright/test";
 
 /**
  * Phase 15 — the browser-side security policy on the production build (the
@@ -6,7 +7,8 @@ import { expect, test, type Page } from "@playwright/test";
  * script nonce changes with each response, Next's scripts run under it (the
  * page works), and nothing on the public, account and management pages —
  * the rich-text editor included — is refused by it. The other headers come
- * with it. Fictional seed accounts only.
+ * with it. And a session copied before signing out stops working at once
+ * (Phase 15, D10). Fictional seed accounts only.
  */
 
 const SEED_PASSWORD = "seed-local-password-2026";
@@ -90,29 +92,62 @@ test("no public page breaks the policy", async ({ page }) => {
   }
 });
 
-test("no account or management page breaks it either, editor included", async ({ page }) => {
+test("no account page breaks it either", async ({ page }) => {
+  // Nina never gets a second factor in the suite. The management pages, the page preview and the
+  // editor are checked for violations by e2e/accessibility.spec.ts, which runs first.
   const visit = await watchViolations(page);
-  await signInAs(page, "julie.finance");
-  for (const path of [
-    "/account",
-    "/account/notifications",
-    "/account/privacy",
-    "/manage",
-    "/manage/exemple-finance",
-    "/manage/exemple-finance/analytics",
-    // The page preview frames the site itself (frame-src 'self').
-    "/associations/exemple-finance/apercu?vue=telephone",
-  ]) {
+  await signInAs(page, "nina");
+  for (const path of ["/account", "/account/notifications", "/account/privacy", "/account/applications", "/account/saved", "/manage"]) {
     await visit(path);
   }
-  await visit("/manage/exemple-finance/content");
-  const post = await page
-    .locator('a[href^="/manage/exemple-finance/content/"]')
-    .evaluateAll((as) => as.map((a) => a.getAttribute("href")).find((h) => /\/content\/[0-9a-f-]{36}$/.test(h ?? "")));
-  expect(post, "a Finance post to open in the editor").toBeTruthy();
-  await visit(post!);
-  // The editor (ProseMirror) only becomes editable once its script has run.
-  await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
-  const late = await page.evaluate(() => (window as unknown as { __csp: string[] }).__csp ?? []);
-  expect(late).toEqual([]);
+});
+
+/** The access token inside the Supabase session cookie (possibly split and base64-encoded). */
+function accessToken(cookies: Cookie[]): string {
+  const parts = cookies.filter((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name)).sort((a, b) => a.name.localeCompare(b.name));
+  let raw = parts.map((c) => c.value).join("");
+  if (raw.startsWith("base64-")) raw = Buffer.from(raw.slice(7), "base64").toString("utf8");
+  return (JSON.parse(raw) as { access_token: string }).access_token;
+}
+
+/** The project's public URL and publishable key, as the CI wrote them for the app. */
+function publicSupabase() {
+  const env = Object.fromEntries(
+    readFileSync(".env.local", "utf8")
+      .split(/\r?\n/)
+      .filter((l) => l.startsWith("NEXT_PUBLIC_SUPABASE_"))
+      .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]),
+  );
+  return { url: env.NEXT_PUBLIC_SUPABASE_URL, key: env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY };
+}
+
+test("a session copied before signing out stops working at once (site and API)", async ({ page, context, browser, baseURL }) => {
+  await signInAs(page, "nina");
+  const copied = await context.cookies();
+  const token = accessToken(copied);
+  const { url, key } = publicSupabase();
+  const rpc = (bearer: string) =>
+    fetch(`${url}/rest/v1/rpc/my_privacy_overview`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${bearer}`, "Content-Type": "application/json" },
+      body: "{}",
+    });
+  expect((await rpc(token)).status, "control: the token works before signing out").toBe(200);
+
+  await page.getByRole("banner").getByRole("button", { name: /Nina/ }).click();
+  await page.getByRole("button", { name: "Se déconnecter" }).click();
+  await expect(page).toHaveURL(/\/login/);
+
+  // Someone who copied the cookies before the sign-out.
+  const thief = await browser.newContext({ baseURL });
+  await thief.addCookies(copied);
+  const other = await thief.newPage();
+  await other.goto("/account");
+  await expect(other).toHaveURL(/\/login/);
+  const exported = await other.request.post("/account/privacy/export", { headers: { origin: new URL(baseURL!).origin } });
+  expect(exported.status(), "the personal-data export").toBe(401);
+  const direct = await rpc(token);
+  expect(direct.ok, "the database API with the old access token").toBe(false);
+  expect(await direct.text()).toContain("not_authenticated");
+  await thief.close();
 });

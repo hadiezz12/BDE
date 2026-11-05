@@ -25,13 +25,34 @@ async function signInAs(page: Page, local: string) {
   await expect(page).toHaveURL(/\/account$/);
 }
 
+test.beforeEach(async ({ page }) => {
+  // The pages scanned here are also checked against the Content-Security-Policy (e2e/security.spec.ts).
+  await page.addInitScript(() => {
+    (window as unknown as { __csp: string[] }).__csp = [];
+    document.addEventListener("securitypolicyviolation", (e) => {
+      (window as unknown as { __csp: string[] }).__csp.push(`${e.violatedDirective} ${e.blockedURI}`);
+    });
+  });
+});
+
 async function expectAccessible(page: Page, path: string) {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
+  // Contrast is measured at rest: let one-off animations (the neon power-on) finish first.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
   // Mail previews are sandboxed frames without scripts: axe cannot enter them (their words are checked by the mail tests).
   const { violations } = await new AxeBuilder({ page }).withTags(TAGS).exclude("iframe[sandbox]").analyze();
   const found = violations.map((v) => `${v.id} [${v.impact}] ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`);
   expect(found, `accessibility violations on ${path}`).toEqual([]);
+  const csp = await page.evaluate(() => (window as unknown as { __csp?: string[] }).__csp ?? []);
+  expect(csp, `Content-Security-Policy violations on ${path}`).toEqual([]);
 }
 
 /** The first link under a prefix that ends with an id (a campaign, an event, a post). */
@@ -121,10 +142,14 @@ test("an association president's workspace, form builder and editor included", a
   const event = await firstIdLink(page, "/manage/exemple-finance/events/");
   expect(event, "a Finance event").toBeTruthy();
   for (const step of ["", "?etape=lieu", "?etape=inscriptions"]) await expectAccessible(page, event + step);
+  // The page preview frames the site itself (frame-src 'self').
+  await expectAccessible(page, "/associations/exemple-finance/apercu?vue=telephone");
   await page.goto("/manage/exemple-finance/content");
   const post = await firstIdLink(page, "/manage/exemple-finance/content/");
   expect(post, "a Finance post").toBeTruthy();
   await expectAccessible(page, post!);
+  // The editor (ProseMirror) only becomes editable once its script has run under the policy.
+  await expect(page.locator('[contenteditable="true"]').first()).toBeVisible();
 });
 
 test("the keyboard alone: skip link, then the search dialog opens, traps and gives focus back", async ({ page }) => {

@@ -549,9 +549,11 @@
     0 0 0.7em color-mix(in srgb, var(--neon, #fa0479) calc(20% + var(--is-night) * 40%), transparent);
 }
 
-/* The maquette's blinking neon, made irregular like a tired tube. */
+/* The maquette's blinking neon, made irregular like a tired tube: it powers on, then stays lit.
+   (Phase 15: the endless dimming every nine seconds went — blinking past five seconds needs a
+   pause control, WCAG 2.2.2.) */
 @utility neon-flicker {
-  animation: neon-power-on 1.6s steps(1, end) 0.3s both, neon-flicker 9s steps(1, end) 2.4s infinite;
+  animation: neon-power-on 1.6s steps(1, end) 0.3s both;
 }
 
 @keyframes neon-power-on {
@@ -564,11 +566,6 @@
   100% { opacity: 1; }
 }
 
-@keyframes neon-flicker {
-  0%, 41%, 43%, 44.5%, 79%, 80.5%, 100% { opacity: 1; }
-  42%, 44% { opacity: 0.4; text-shadow: none; }
-  80% { opacity: 0.55; text-shadow: none; }
-}
 
 /* Sticker label: wordmark-style keyline on night, ink outline + offset on paper. */
 @utility sticker {
