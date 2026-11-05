@@ -35,7 +35,10 @@ Findings of the Phase 14 security review keep their numbers
 - Restore drill compared grants with `string_agg(… order by 1)` (orders by a constant): fixed before any conclusion.
 - Security matrix: one refusal passed for the wrong reason (`invalid_office`); the denial pattern was narrowed to authorization codes only and the guardian case asserts the exact refusal.
 - CI ordering: `julie.finance` gets a second factor in `governance.spec`; the management-page CSP pass moved into `accessibility.spec` (runs first).
-- The first Finance post may be a frozen submission (read-only): the editor check picks an editable one.
+- The first Finance post may be a frozen submission (read-only), and only its author opens a draft in the
+  editor: the editor check signs in as Lucas, the draft's author.
+- `locator.isVisible()` answers at once (its `timeout` is ignored), so "is the editor live?" was always false before
+  hydration: replaced by `waitFor({ state: "visible" })`.
 
 ## Still open from Phase 14 (`docs/privacy/security.md`)
 

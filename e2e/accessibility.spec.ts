@@ -210,11 +210,32 @@ test("the keyboard alone: skip link, then the search dialog opens, traps and giv
 test("content reflows at 320 px without sideways scrolling (WCAG 1.4.10)", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 320, height: 640 } });
   const page = await context.newPage();
-  for (const path of ["/", "/events", "/recruitment", "/associations/exemple-finance", "/campus", "/login", "/privacy"]) {
+  for (const path of ["/", "/events", "/events/calendrier", "/recruitment", "/associations", "/associations/exemple-finance", "/campus", "/login", "/privacy"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow, `horizontal overflow on ${path}`).toBeLessThanOrEqual(1);
+    const { overflow, culprits } = await page.evaluate(() => {
+      const width = document.documentElement.clientWidth;
+      const culprits: string[] = [];
+      for (const el of document.querySelectorAll<HTMLElement>("body *")) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.right <= width + 1) continue;
+        // Inside a container that scrolls or clips sideways on purpose (rails, tables): fine.
+        let clipped = false;
+        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+          if (getComputedStyle(a).overflowX !== "visible") {
+            clipped = true;
+            break;
+          }
+        }
+        if (!clipped && culprits.length < 4) {
+          const cls = typeof el.className === "string" ? el.className.split(" ").slice(0, 6).join(".") : "";
+          culprits.push(`${el.tagName.toLowerCase()}.${cls} right=${Math.round(r.right)} «${(el.textContent ?? "").trim().slice(0, 40)}»`);
+        }
+      }
+      return { overflow: document.documentElement.scrollWidth - width, culprits };
+    });
+    // Soft: one run reports every page, with what sticks out.
+    expect.soft(overflow, `horizontal overflow on ${path}: ${culprits.join(" ; ")}`).toBeLessThanOrEqual(1);
   }
   await context.close();
 });
