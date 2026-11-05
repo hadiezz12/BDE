@@ -215,23 +215,24 @@ test("content reflows at 320 px without sideways scrolling (WCAG 1.4.10)", async
     await page.waitForLoadState("networkidle");
     const { overflow, culprits } = await page.evaluate(() => {
       const width = document.documentElement.clientWidth;
-      const culprits: string[] = [];
-      for (const el of document.querySelectorAll<HTMLElement>("body *")) {
+      const name = (el: Element) => {
+        const cls = typeof (el as HTMLElement).className === "string" ? (el as HTMLElement).className.split(" ").slice(0, 6).join(".") : "";
+        return `${el.tagName.toLowerCase()}.${cls} «${(el.textContent ?? "").trim().slice(0, 30)}»`;
+      };
+      const all = [...document.querySelectorAll<HTMLElement>("body *")];
+      // Elements whose own content is wider than them without clipping it (this also catches
+      // pseudo-elements, through their parent); the innermost ones are the cause.
+      const wide = all.filter((el) => el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflowX === "visible" && el.clientWidth > 0);
+      const innermost = wide.filter((el) => !wide.some((o) => o !== el && el.contains(o)));
+      // And anything whose box passes the right edge of the page.
+      const past = all.filter((el) => {
         const r = el.getBoundingClientRect();
-        if (r.width === 0 || r.right <= width + 1) continue;
-        // Inside a container that scrolls or clips sideways on purpose (rails, tables): fine.
-        let clipped = false;
-        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
-          if (getComputedStyle(a).overflowX !== "visible") {
-            clipped = true;
-            break;
-          }
-        }
-        if (!clipped && culprits.length < 4) {
-          const cls = typeof el.className === "string" ? el.className.split(" ").slice(0, 6).join(".") : "";
-          culprits.push(`${el.tagName.toLowerCase()}.${cls} right=${Math.round(r.right)} «${(el.textContent ?? "").trim().slice(0, 40)}»`);
-        }
-      }
+        return r.width > 0 && r.right > width + 1;
+      });
+      const culprits = [
+        ...innermost.slice(0, 4).map((el) => `${name(el)} content ${el.scrollWidth}px in ${el.clientWidth}px`),
+        ...past.slice(-3).map((el) => `${name(el)} right=${Math.round(el.getBoundingClientRect().right)}`),
+      ];
       return { overflow: document.documentElement.scrollWidth - width, culprits };
     });
     // Soft: one run reports every page, with what sticks out.
