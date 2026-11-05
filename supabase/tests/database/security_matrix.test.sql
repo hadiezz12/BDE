@@ -10,7 +10,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(66);
+select plan(79);
 
 create temporary table fx (k text primary key, id uuid, v text) on commit drop;
 grant select, insert, update on fx to anon, authenticated, service_role;
@@ -262,6 +262,54 @@ select pg_temp.as_user('m4', 'aal2');
 select is(pg_temp.attempt($$ select public.recruitment_application(pg_temp.fid('app')) $$), 'denied',
   'revoked reviewer, same session → the application again: denied');
 select is(pg_temp.attempt($$ select public.recruitment_document(pg_temp.fid('cv')) $$), 'denied', 'revoked reviewer → the CV again: denied');
+
+-- =============================================================================
+-- A session that ended stops working at once (Phase 15, D10; brief §24)
+-- =============================================================================
+reset role;
+insert into auth.sessions (id, user_id) values ('f0000000-0000-4000-8000-0000000000a1', pg_temp.fid('m2'));
+insert into public.saved_items (user_id, kind, organization_id) values (pg_temp.fid('m2'), 'association', pg_temp.fid('sports'));
+create function pg_temp.as_session(p_key text, p_session text) returns void language plpgsql as $f$
+begin
+  perform set_config('request.jwt.claims',
+    jsonb_build_object('sub', (select id from fx where k = p_key), 'role', 'authenticated', 'aal', 'aal1',
+                       'session_id', p_session)::text, true);
+end $f$;
+grant execute on function pg_temp.as_session(text, text) to authenticated;
+set local role authenticated;
+select pg_temp.as_session('m2', 'f0000000-0000-4000-8000-0000000000a1');
+select is(pg_temp.attempt($$ select public.my_privacy_overview() $$), 'ALLOWED', 'control: with an open session, the student''s own functions work');
+select ok(pg_temp.reads($$ select id from public.saved_items $$), 'control: and their own rows can be read');
+reset role;
+delete from auth.sessions where id = 'f0000000-0000-4000-8000-0000000000a1';
+set local role authenticated;
+select pg_temp.as_session('m2', 'f0000000-0000-4000-8000-0000000000a1');
+select is(pg_temp.attempt($$ select public.my_privacy_overview() $$), 'denied',
+  'signed out (session deleted), the same token → the student''s functions: refused');
+select ok(not pg_temp.reads($$ select id from public.saved_items $$), 'and their rows: nothing');
+select ok(not pg_temp.reads($$ select id from public.profiles $$), 'nor any profile');
+select ok(not pg_temp.reads($$ select id from storage.objects $$), 'nor any Storage object');
+select ok(public.my_access() is null, 'their permissions: none');
+select ok(public.my_notification_summary() is null, 'their notifications: none');
+select ok(not public.session_alive(), 'and the site is told the session has ended');
+reset role;
+insert into auth.sessions (id, user_id, not_after) values ('f0000000-0000-4000-8000-0000000000a2', pg_temp.fid('m2'), now() - interval '1 minute');
+set local role authenticated;
+select pg_temp.as_session('m2', 'f0000000-0000-4000-8000-0000000000a2');
+select is(pg_temp.attempt($$ select public.my_privacy_overview() $$), 'denied', 'a session past its time-box (not_after): refused too');
+select pg_temp.as_session('m2', 'pas-un-identifiant');
+select is(pg_temp.attempt($$ select public.my_privacy_overview() $$), 'denied', 'a malformed session id: refused');
+select pg_temp.as_user('m2', 'aal1');
+select is(pg_temp.attempt($$ select public.my_privacy_overview() $$), 'ALLOWED', 'a token naming no session (jobs, these tests) is not affected');
+reset role;
+select is((select count(*)::integer
+             from (select distinct g.table_name from information_schema.role_table_grants g
+                    where g.grantee = 'authenticated' and g.privilege_type = 'SELECT' and g.table_schema = 'public') t
+            where not exists (select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = t.table_name
+                                and p.permissive = 'RESTRICTIVE' and p.qual ~ 'session_alive')), 0,
+  'every table a student can read directly refuses a session that ended');
+set local role authenticated;
+select pg_temp.as_user('julie', 'aal2');
 
 -- =============================================================================
 -- Statistics hold no candidate; workers and buckets stay closed

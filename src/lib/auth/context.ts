@@ -49,6 +49,14 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
   const claims = data?.claims;
   if (error || !claims?.sub) return { status: "anonymous" };
 
+  // The signature alone does not say the session is still open: a token copied before a
+  // sign-out (or a "sign out everywhere", an erasure, a time-box) stays valid until it
+  // expires. The database knows (auth.sessions) and refuses it anyway (Phase 15, D10);
+  // here it just means the page treats that visitor as signed out. If the check itself
+  // fails, nothing changes: the database still enforces it.
+  const { data: alive, error: aliveError } = await supabase.rpc("session_alive");
+  if (!aliveError && alive === false) return { status: "anonymous" };
+
   const email = typeof claims.email === "string" ? claims.email : null;
   const aal: AssuranceLevel = claims.aal === "aal2" ? "aal2" : "aal1";
   // nextLevel is aal2 when the user has a verified factor. The database

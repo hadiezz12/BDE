@@ -56,7 +56,8 @@ select is_empty(
           'my_application_ids',
           'can_upload_application_document', -- Phase 8: Storage policies (candidate's own paths)
           'can_read_application_document',
-          'can_delete_application_document'
+          'can_delete_application_document',
+          'session_alive' -- Phase 15: every live-session policy (the caller's own session, a boolean)
         ) $$,
   'authenticated can execute only the allowlisted private helpers'
 );

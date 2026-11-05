@@ -6622,6 +6622,7 @@ export type Database = {
         Returns: Json
       }
       security_health: { Args: never; Returns: Json }
+      session_alive: { Args: never; Returns: boolean }
       set_analytics_min_group_size: {
         Args: { p_value: number }
         Returns: undefined
