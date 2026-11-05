@@ -103,6 +103,12 @@ jobs:
           DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
           test -n "$DB_URL"
           bash supabase/tests/concurrency/analytics.sh "$DB_URL"
+      - name: Integrity under concurrency (parallel sessions)
+        # A capacity cut racing registrations, two tabs autosaving one draft, two successions at once (Phase 15).
+        run: |
+          DB_URL=$(supabase status -o json | jq -r '.DB_URL // .db_url // empty')
+          test -n "$DB_URL"
+          bash supabase/tests/concurrency/integrity.sh "$DB_URL"
       - name: Database lint (plpgsql_check)
         # Findings are also published as a notice (the job log needs a GitHub session).
         run: |
@@ -188,7 +194,8 @@ jobs:
           npx next start -p 3020 > "$RUNNER_TEMP/next.log" 2>&1 &
           for i in $(seq 1 60); do curl -sf http://localhost:3020/ > /dev/null && exit 0; sleep 1; done
           cat "$RUNNER_TEMP/next.log"; exit 1
-      - run: npx playwright install --with-deps chromium
+      # Chromium for the whole suite; Firefox and WebKit for e2e/cross-browser.spec.ts (Phase 15).
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npx playwright test
       - name: Test counts
         if: always()

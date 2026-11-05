@@ -23,7 +23,11 @@ export default defineConfig({
     trace: "off",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: /mobile\.spec/ },
+    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: /(mobile|cross-browser)\.spec/ },
     { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /mobile\.spec/ },
+    // Phase 15: the main paths on the other engines (emulated in CI, not real devices).
+    { name: "firefox", use: { ...devices["Desktop Firefox"] }, testMatch: /cross-browser\.spec/ },
+    { name: "webkit", use: { ...devices["Desktop Safari"] }, testMatch: /cross-browser\.spec/ },
+    { name: "iphone", use: { ...devices["iPhone 14"] }, testMatch: /cross-browser\.spec/ },
   ],
 });
